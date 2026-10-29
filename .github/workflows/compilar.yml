@@ -34,7 +34,7 @@ jobs:
         shell: bash
         run: |
           pytest 2>&1 | tee salida.txt; r=${PIPESTATUS[0]}
-          [ $r -eq 0 ] || grep -E "FAILED|ERROR|Error|assert" salida.txt | tail -25 | sed 's/^/::error::/'
+          [ $r -eq 0 ] || tail -10 salida.txt | sed 's/^/::error::/'
           exit $r
       - name: Pruebas con MariaDB
         shell: bash
@@ -42,7 +42,7 @@ jobs:
           PROSPECTOS_BD_JSON: '{"MOTOR":"mariadb","HOST":"127.0.0.1","PUERTO":3307,"NOMBRE":"prospectos","USUARIO":"root","CLAVE":"raiz"}'
         run: |
           pytest --ds=config.settings_pruebas_mariadb 2>&1 | tee salida.txt; r=${PIPESTATUS[0]}
-          [ $r -eq 0 ] || grep -E "FAILED|ERROR|Error|assert" salida.txt | tail -25 | sed 's/^/::error::/'
+          [ $r -eq 0 ] || tail -10 salida.txt | sed 's/^/::error::/'
           exit $r
 
   windows:
