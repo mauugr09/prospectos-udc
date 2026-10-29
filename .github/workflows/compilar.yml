@@ -66,23 +66,31 @@ jobs:
         shell: pwsh
         env: { PROSPECTOS_DATOS: '${{ runner.temp }}\humo' }
         run: |
+          $ErrorActionPreference = 'Stop'
+          function Falla($msg) { Write-Output "::error::$msg"; if ($script:p) { Stop-Process $script:p -Force -ErrorAction SilentlyContinue }; exit 1 }
           $exe = ".\dist\Prospectos\Prospectos.exe"
-          & $exe preparar; if ($LASTEXITCODE) { exit 1 }
-          & $exe demo --familias 20; if ($LASTEXITCODE) { exit 1 }
-          & $exe respaldo crear; if ($LASTEXITCODE) { exit 1 }
+          foreach ($cmd in @('preparar', 'demo --familias 20', 'respaldo crear')) {
+            $salida = & $exe $cmd.Split(' ') 2>&1
+            if ($LASTEXITCODE) { $salida | Select-Object -Last 8 | ForEach-Object { Write-Output "::error::$_" }; Falla "Falló: Prospectos.exe $cmd" }
+          }
           $cfg = Join-Path $env:PROSPECTOS_DATOS 'config.json'
           $j = Get-Content $cfg -Raw | ConvertFrom-Json; $j | Add-Member EN_RED $true -Force
           $j | ConvertTo-Json -Depth 10 | Set-Content $cfg -Encoding utf8
-          $p = Start-Process $exe -PassThru -RedirectStandardOutput "$env:RUNNER_TEMP\salida.txt" -RedirectStandardError "$env:RUNNER_TEMP\errores.txt"
+          $script:p = Start-Process $exe -PassThru -RedirectStandardOutput "$env:RUNNER_TEMP\salida.txt" -RedirectStandardError "$env:RUNNER_TEMP\errores.txt"
           $ok = $false
           foreach ($i in 1..60) { Start-Sleep 2; try { $r = Invoke-WebRequest http://127.0.0.1:8000/salud/ -UseBasicParsing; if ($r.Content -like 'prospectos-ok*') { $ok = $true; break } } catch {} }
           Get-Content "$env:RUNNER_TEMP\salida.txt"
-          if (-not $ok) { Get-Content "$env:RUNNER_TEMP\errores.txt" | Select-Object -Last 30 | ForEach-Object { "::error::$_" }; Stop-Process $p -Force; exit 1 }
-          curl.exe --fail -sS --cacert (Join-Path $env:PROSPECTOS_DATOS 'red\ca.crt') https://localhost:8443/salud/
-          if ($LASTEXITCODE) { Stop-Process $p -Force; exit 1 }
-          curl.exe --fail -sS -o NUL -w "%{http_code} login`n" --cacert (Join-Path $env:PROSPECTOS_DATOS 'red\ca.crt') https://localhost:8443/admin/login/
-          if ($LASTEXITCODE) { Stop-Process $p -Force; exit 1 }
-          Stop-Process $p -Force
+          if (-not $ok) { Get-Content "$env:RUNNER_TEMP\errores.txt" | Select-Object -Last 10 | ForEach-Object { Write-Output "::error::$_" }; Falla 'El servidor local no respondió' }
+          Start-Sleep 3
+          $ca = Join-Path $env:PROSPECTOS_DATOS 'red\ca.crt'
+          if (-not (Test-Path $ca)) { Get-Content "$env:RUNNER_TEMP\salida.txt" | ForEach-Object { Write-Output "::error::$_" }; Falla 'No se creó el certificado de red' }
+          # Windows (Schannel) revisaría la lista de revocación, que una autoridad local no publica: --ssl-no-revoke.
+          $r = curl.exe --fail -sS --ssl-no-revoke --cacert $ca https://localhost:8443/salud/ 2>&1
+          if ($LASTEXITCODE) { Falla "HTTPS en red: $r" }
+          $r = curl.exe --fail -sS --ssl-no-revoke -o NUL -w "%{http_code}" --cacert $ca https://localhost:8443/admin/login/ 2>&1
+          if ($LASTEXITCODE) { Falla "Login por HTTPS: $r" }
+          Write-Output "HTTPS en red: login $r"
+          Stop-Process $script:p -Force
       - name: Empaquetar
         shell: pwsh
         run: |
@@ -110,7 +118,7 @@ jobs:
         env: { PROSPECTOS_DATOS: '${{ runner.temp }}/humo' }
         run: |
           set -e
-          trap 'tail -40 "$RUNNER_TEMP/salida.txt" 2>/dev/null | sed "s/^/::error::/"' ERR
+          trap 'grep -iE "aviso|error|exception" "$RUNNER_TEMP/salida.txt" 2>/dev/null | tail -6 | sed "s/^/::error::/"' ERR
           APP=dist/Prospectos.app/Contents/MacOS/Prospectos
           file dist/Prospectos.app/Contents/Resources/prospectos/Prospectos | grep -q arm64
           "$APP" preparar

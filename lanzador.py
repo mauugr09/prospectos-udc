@@ -152,9 +152,11 @@ def _iniciar_red(application, settings):
     try:
         srv = red.servidor_https(application, settings.DATA_DIR, settings.CONFIG)
         srv.prepare()
-    except OSError as e:
-        print(f'AVISO: no se pudo abrir el acceso por red en el puerto {red.puerto(settings.CONFIG)} ({e}). '
-              'Las demás computadoras no podrán entrar; en esta sí funciona.')
+    except Exception as e:  # noqa: BLE001 - sin red el programa debe seguir funcionando en esta computadora
+        import logging
+        logging.getLogger('prospectos').exception('acceso por red')
+        print(f'AVISO: no se pudo abrir el acceso por red en el puerto {red.puerto(settings.CONFIG)} '
+              f'({type(e).__name__}: {e}). Las demás computadoras no podrán entrar; en esta sí funciona.')
         return
     threading.Thread(target=srv.serve, name='https-red', daemon=True).start()
     dirs = red.direcciones(settings.CONFIG)
