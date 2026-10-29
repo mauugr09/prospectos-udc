@@ -32,6 +32,7 @@
     <form id="ub-buscar" class="flex gap-2 mb-3" autocomplete="off">
       <input id="ub-q" type="search" class="udc-campo grow" placeholder="Nombre, dirección, coordenadas o enlace de Google Maps (p. ej. «EPO 45 Cuautitlán» o «19.685, -99.128»)">
       <button class="udc-btn" type="submit"><span class="material-symbols-outlined">search</span>Buscar</button>
+      <a id="ub-gmaps" class="udc-btn secundario" target="_blank" rel="noopener" href="https://www.google.com/maps" title="Ábrela en Google Maps, clic derecho sobre la escuela, clic en los números y pégalos aquí">Google Maps</a>
     </form>
     <ul id="ub-resultados" class="ub-resultados" hidden></ul>
     <div id="ub-mapa"></div>
@@ -40,9 +41,10 @@
       <label class="text-sm">Municipio<br><input id="ub-municipio" class="udc-campo" style="width:16rem"></label>
       <button id="ub-guardar" class="udc-btn" type="button" disabled><span class="material-symbols-outlined">save</span>Guardar ubicación</button>
     </div>
-    <p class="text-xs text-subtle mt-2">{% if tiles.google %}La búsqueda usa Google Maps{% else %}La búsqueda usa OpenStreetMap; si no encuentra la escuela,
-      búscala en Google Maps, haz clic derecho sobre ella, copia las coordenadas y pégalas aquí{% endif %}. Solo se envía lo que escribes, nunca datos de aspirantes.
-      Sin internet puedes ubicar con clic sobre el mapa de estados.</p>
+    <p class="text-xs text-subtle mt-2">{% if tiles.google %}La búsqueda usa Google Maps.{% else %}La búsqueda usa OpenStreetMap, que en el Estado de México no tiene muchas
+      escuelas, calles ni colonias. Lo más rápido: botón <b>Google Maps</b> → clic derecho sobre la escuela → clic en los números (se copian) → pégalos en el buscador:
+      el pin se pone solo. Con una {% if request.user.is_superuser %}<a class="underline" href="{% url 'prospectos:configurar_mapa' %}">llave de Google Maps</a>{% else %}llave de Google Maps (la pone el administrador){% endif %} el buscador encuentra las escuelas por su nombre.{% endif %}
+      Solo se envía lo que escribes, nunca datos de aspirantes.</p>
   </section>
 </div>
 {% csrf_token %}{{ lista|json_script:"ub-lista" }}{{ ubicadas|json_script:"ub-ubicadas" }}{{ tiles|json_script:"tiles" }}

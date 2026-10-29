@@ -564,6 +564,9 @@ button.udc-btn.peligro, a.udc-btn.peligro { background-color: var(--c-rojo); }
   .ub-resultados li + li button { border-top: .5px solid var(--c-separador); }
   .ub-resultados button:hover { background: var(--c-hover); }
   .ub-resultados button b { font-weight: 500; }
+  .ub-resultados .ub-ayuda { padding: 10px 12px; color: var(--c-texto); }
+  .ub-resultados .ub-ayuda ol { margin: 6px 0 10px 18px; list-style: decimal; color: var(--c-texto-2); }
+  .ub-resultados .ub-pie a.udc-btn { margin-top: 6px; }
   .ub-resultados .ub-pie { color: var(--c-texto-2); font-size: 12px; padding: 6px 12px; }
 
   /* ============================================================ respuestas */

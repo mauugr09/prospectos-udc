@@ -26,6 +26,8 @@
     if (pin) { pin.remove(); pin = null; }
     if (actual && actual.lat != null) poner([actual.lat, actual.lng], false);
     $('ub-guardar').disabled = !pin;
+    const gm = $('ub-gmaps');
+    if (gm) gm.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(actual ? `${actual.nombre} ${actual.municipio || 'Estado de México'}` : '')}`;
     texto($('ub-estado'), actual ? 'Busca la escuela o haz clic en el mapa donde está.' : 'Elige una preparatoria de la lista.');
   }
 
@@ -127,12 +129,90 @@
                                         lng: p.location.lng(), municipio: municipioDe(p.addressComponents || []) }));
   }
 
+  // ------------------------------------------------------------------ búsqueda con OpenStreetMap (sin llave de Google)
+  // Nominatim exige que TODAS las palabras coincidan: «Col.», «C.P. 54800», «Edo. Méx.» o «No.» hacen que no encuentre
+  // nada. Se intenta: 1) tal cual, 2) sin esas palabras, 3) por calle y municipio por separado, 4) Photon, otro buscador
+  // de OpenStreetMap que tolera errores de dedo. Si la escuela no está en OpenStreetMap, ninguno la encontrará:
+  // para eso está el botón «Buscar en Google Maps» y pegar las coordenadas.
+  const RUIDO = [/\bc\.?\s?p\.?\s*\d{5}\b/gi, /\b\d{5}\b/g, /\bcol(onia)?\b\.?/gi, /\bfracc(ionamiento)?\b\.?/gi, /\bbarrio\b/gi,
+                 /\bcalle\b/gi, /\bno\.?\s*(?=\d)/gi, /\bn[uú]m(ero)?\.?\s*(?=\d)/gi, /#/g, /\bs\/n\b/gi,
+                 /\bedo\.?\s*(de\s*)?m[eé]x(ico)?\.?/gi, /\bestado de m[eé]xico\b/gi, /\bm[eé]xico\b/gi, /\bmpio\.?\b/gi];
+  const limpiar = (q) => RUIDO.reduce((t, re) => t.replace(re, ' '), q)
+    .replace(/\bav\.?\s/gi, 'Avenida ').replace(/\bprol\.?\s/gi, 'Prolongación ').replace(/\s*,\s*/g, ', ')
+    .replace(/(,\s*)+/g, ', ').replace(/\s{2,}/g, ' ').replace(/^[\s,]+|[\s,]+$/g, '');
+  const enLaZona = (x) => x.lat >= 19.3 && x.lat <= 20.1 && x.lng >= -99.6 && x.lng <= -98.8;
+
+  async function nominatim(params) {
+    await esperarTurno();
+    const base = 'format=jsonv2&countrycodes=mx&limit=6&accept-language=es&addressdetails=1&viewbox=-99.60,20.10,-98.80,19.30';
+    const r = await fetch(`${NOMINATIM}/search?${base}&${params}`, OPC);
+    if (!r.ok) throw new Error(`OpenStreetMap respondió ${r.status}`);
+    return (await r.json()).map((x) => {
+      const a = x.address || {};
+      return { nombre: x.name || '', direccion: x.display_name, lat: +x.lat, lng: +x.lon,
+               municipio: (a.municipality || a.county || a.city || a.town || '').replace(/^Municipio de /i, '') };
+    });
+  }
+
+  async function photon(q) {
+    const r = await fetch(`https://photon.komoot.io/api/?limit=6&bbox=-99.60,19.30,-98.80,20.10&q=${encodeURIComponent(q)}`,
+                          { referrerPolicy: 'origin' });
+    if (!r.ok) throw new Error(`Photon respondió ${r.status}`);
+    return ((await r.json()).features || []).map((f) => {
+      const p = f.properties || {};
+      const partes = [p.street && `${p.street}${p.housenumber ? ' ' + p.housenumber : ''}`, p.district || p.locality, p.city || p.county, p.state];
+      return { nombre: p.name || '', direccion: partes.filter(Boolean).join(', '), lat: f.geometry.coordinates[1],
+               lng: f.geometry.coordinates[0], municipio: p.county || p.city || '' };
+    });
+  }
+
+  async function buscarOSM(q) {
+    const limpio = limpiar(q);
+    const intentos = [() => nominatim(`q=${encodeURIComponent(q)}`)];
+    if (limpio && limpio !== q) intentos.push(() => nominatim(`q=${encodeURIComponent(limpio)}`));
+    const partes = limpio.split(',').map((x) => x.trim()).filter(Boolean);
+    if (partes.length >= 2) {  // «Morelos 12, San Juan, Cuautitlán» → calle + municipio
+      intentos.push(() => nominatim(`street=${encodeURIComponent(partes[0])}&city=${encodeURIComponent(partes[partes.length - 1])}`));
+      intentos.push(() => nominatim(`q=${encodeURIComponent(partes.slice(-2).join(', '))}`));  // colonia + municipio
+    }
+    intentos.push(() => photon(limpio || q));
+    let error = null;
+    for (const intento of intentos) {
+      try {
+        const res = (await intento()).filter(enLaZona);
+        if (res.length) return res;
+      } catch (e) { error = e; }
+    }
+    if (error) throw error;
+    return [];
+  }
+
+  function enlaceGoogleMaps(q) {
+    const a = document.createElement('a');
+    a.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+    a.target = '_blank'; a.rel = 'noopener'; a.className = 'udc-btn chico secundario';
+    a.textContent = 'Buscar en Google Maps';
+    return a;
+  }
+
+  function ayudaGoogle(q, encabezado) {
+    const caja = $('ub-resultados');
+    caja.innerHTML = ''; caja.hidden = false;
+    const li = document.createElement('li'); li.className = 'ub-ayuda';
+    const t = document.createElement('p'); t.textContent = encabezado;
+    const pasos = document.createElement('ol');
+    ['Abre la escuela en Google Maps (botón de abajo).', 'Haz clic derecho justo sobre la escuela.',
+     'Haz clic en los números que aparecen arriba del menú (se copian solos).', 'Regresa aquí y pégalos en el buscador (Ctrl+V).']
+      .forEach((x) => { const i = document.createElement('li'); i.textContent = x; pasos.append(i); });
+    li.append(t, pasos, enlaceGoogleMaps(q));
+    caja.append(li);
+  }
+
   async function buscar(q) {
     const coords = coordenadas(q);
     if (coords) { $('ub-resultados').hidden = true; poner(coords); return; }
     if (/goo\.gl|maps\.app/.test(q)) {
-      mostrar([], 'Los enlaces cortos de Google Maps no se pueden leer. En Google Maps haz clic derecho sobre la escuela: ' +
-                  'las coordenadas se copian al hacer clic en ellas; pégalas aquí.');
+      ayudaGoogle(q, 'Los enlaces cortos de Google Maps (maps.app.goo.gl) no traen las coordenadas. Cópialas así:');
       return;
     }
     const caja = $('ub-resultados');
@@ -145,17 +225,17 @@
       }
     }
     try {
-      await esperarTurno();
-      const r = await fetch(`${NOMINATIM}/search?format=jsonv2&countrycodes=mx&limit=6&accept-language=es&` +
-        `viewbox=-99.45,19.95,-98.85,19.45&q=${encodeURIComponent(q)}`, OPC);
-      const res = await r.json();
-      mostrar(res.map((x) => ({ direccion: x.display_name, lat: +x.lat, lng: +x.lon })),
-              'Resultados de OpenStreetMap. Si no aparece la escuela, búscala en Google Maps y pega aquí sus coordenadas.');
+      const res = await buscarOSM(q);
+      if (!res.length) {
+        ayudaGoogle(actual ? `${actual.nombre} ${actual.municipio || ''}` : q,
+                    'OpenStreetMap no tiene esa escuela ni esa dirección (en el Estado de México le faltan muchas calles y colonias). Ubícala con Google Maps:');
+        return;
+      }
+      mostrar(res, 'Resultados de OpenStreetMap. Si ninguno es, usa «Buscar en Google Maps».');
+      $('ub-resultados').append(Object.assign(document.createElement('li'), { className: 'ub-pie' }));
+      $('ub-resultados').lastChild.append(enlaceGoogleMaps(actual ? `${actual.nombre} ${actual.municipio || ''}` : q));
     } catch (e) {
-      caja.innerHTML = '';
-      const li = document.createElement('li');
-      li.textContent = 'No se pudo buscar (¿sin internet?). Haz clic en el mapa donde está la escuela.';
-      caja.append(li);
+      ayudaGoogle(q, `No se pudo consultar OpenStreetMap (${e.message || 'sin conexión'}). Puedes ubicarla con Google Maps o con clic en el mapa:`);
     }
   }
 
@@ -209,12 +289,8 @@
         if (r.length) return r[0];
       } catch (e) { conGoogle = false; }
     }
-    await esperarTurno();
-    const r = await fetch(`${NOMINATIM}/search?format=jsonv2&countrycodes=mx&limit=5&accept-language=es&bounded=1&` +
-      `viewbox=${ZONA.o},${ZONA.n},${ZONA.e},${ZONA.s}&q=${encodeURIComponent(q)}`, OPC);
-    const res = (await r.json()).map((x) => ({ nombre: x.name || '', direccion: x.display_name, lat: +x.lat, lng: +x.lon,
-                                               escuela: ['school', 'college', 'university'].includes(x.type) }));
-    return res.filter(enZona).sort((a, b) => (b.escuela - a.escuela))[0] || null;
+    const res = await buscarOSM(q);
+    return res[0] || null;
   }
 
   function filaLote(p, x) {
@@ -226,7 +302,7 @@
     const sm = document.createElement('small');
     if (x) {
       const sim = parecido(p.nombre, `${x.nombre} ${x.direccion}`);
-      const seguro = sim >= 0.5 || (x.escuela && sim >= 0.3);  // ser escuela no basta: puede ser otra escuela
+      const seguro = sim >= 0.5;  // se parece por nombre; si no, puede ser otro lugar con la misma calle
       cb.checked = seguro; cb.dataset.id = p.id;
       sm.textContent = `${seguro ? '' : 'Revisa: '}${x.nombre ? x.nombre + ', ' : ''}${x.direccion || ''}`;
       if (!seguro) sm.classList.add('ub-dudosa');
@@ -297,6 +373,10 @@
     mapa.on('click', (e) => poner(e.latlng, false));
     document.querySelectorAll('#ub-prepas button').forEach((b) => b.addEventListener('click', () => elegir(+b.dataset.id)));
     $('ub-buscar').addEventListener('submit', (e) => { e.preventDefault(); if ($('ub-q').value.trim()) buscar($('ub-q').value.trim()); });
+    $('ub-q').addEventListener('paste', () => setTimeout(() => {  // pegar coordenadas o enlace de Google Maps: se pone el pin solo
+      const c = coordenadas($('ub-q').value);
+      if (c) { $('ub-resultados').hidden = true; poner(c); }
+    }, 0));
     $('ub-guardar').addEventListener('click', guardar);
     $('ub-todas')?.addEventListener('click', buscarTodas);
     $('ub-lote-guardar').addEventListener('click', guardarLote);
