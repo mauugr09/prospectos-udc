@@ -340,6 +340,8 @@ UNFOLD = {
                  'permission': _permiso('prospectos.view_formulario')},
                 {'title': 'Preguntas y opciones', 'icon': 'quiz', 'link': reverse_lazy('admin:prospectos_pregunta_changelist'),
                  'permission': _permiso('prospectos.view_pregunta')},
+                {'title': 'Publicar en Google', 'icon': 'cloud_upload', 'link': reverse_lazy('prospectos:publicar'),
+                 'permission': _permiso('prospectos.change_formulario'), 'badge': 'prospectos.views.badge_publicar'},
                 {'title': 'Carreras', 'icon': 'menu_book', 'link': reverse_lazy('admin:prospectos_carrera_changelist'),
                  'permission': _permiso('prospectos.view_carrera')},
                 {'title': 'Mapa (Google Maps)', 'icon': 'map', 'link': reverse_lazy('prospectos:configurar_mapa'),

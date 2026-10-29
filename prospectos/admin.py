@@ -18,7 +18,7 @@ from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationFo
 from unfold.widgets import UnfoldAdminTextareaWidget
 
 from .formularios_panel import CarreraForm, NuevoUsuarioForm, OpcionesFormSet, PreguntaForm, PreparatoriaForm
-from .models import (etiqueta_segmento, Auditoria, Carrera, Cuestionario, Etiqueta, Evento, Formulario, Importacion, OpcionPregunta, Perfil,
+from .models import (etiqueta_segmento, Auditoria, Carrera, Configuracion, Cuestionario, Etiqueta, Evento, Formulario, Importacion, OpcionPregunta, Perfil,
                      PosibleCoincidencia, Pregunta, Preparatoria, Prospecto, Respaldo, Segmento, Seguimiento, TipoSeguimiento)
 from .servicios import auditoria, familias, importacion, inteligencia, reportes, respaldos, seguimiento
 from .servicios.cifrado import enmascarar_correo, enmascarar_telefono
@@ -195,8 +195,33 @@ class PreparatoriaAdmin(ModelAdmin):
                                    'las próximas respuestas que lo escriban así caerán aquí solas.', messages.SUCCESS)
 
 
+class AvisaPublicar:
+    """Tras cambiar preguntas, opciones o carreras: recuerda que el Google Form todavía no tiene el cambio."""
+
+    def _tipos(self, obj):
+        return [obj.cuestionario] if isinstance(obj, Pregunta) else ['ALUMNO', 'TUTOR']
+
+    def _marcar(self, request, obj):
+        for t in self._tipos(obj):
+            Configuracion.guardar(f'publicar.pendiente.{t}', True, request.user)
+        if Formulario.objects.filter(activo=True).exclude(google_form_id__startswith='demo-').exists():
+            self.message_user(request, mark_safe(
+                f'El Google Form todavía no tiene este cambio. <a class="underline" href="{reverse("prospectos:publicar")}">'
+                'Revisar y publicar en Google</a>.'), messages.INFO)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        self._marcar(request, obj)
+
+    def delete_model(self, request, obj):
+        tipos = self._tipos(obj)
+        super().delete_model(request, obj)
+        for t in tipos:
+            Configuracion.guardar(f'publicar.pendiente.{t}', True, request.user)
+
+
 @admin.register(Carrera)
-class CarreraAdmin(ModelAdmin):
+class CarreraAdmin(AvisaPublicar, ModelAdmin):
     form = CarreraForm
     list_display = ['nombre', 'area', 'planteles_txt', 'interesados_n', 'activo']
     list_editable = ['activo']
@@ -258,7 +283,7 @@ class OpcionInline(TabularInline):
 
 
 @admin.register(Pregunta)
-class PreguntaAdmin(ModelAdmin):
+class PreguntaAdmin(AvisaPublicar, ModelAdmin):
     form = PreguntaForm
     list_display = ['etiqueta_txt', 'cuestionario', 'tipo_txt', 'tema', 'opciones_n', 'origen', 'orden']
     list_display_links = ['etiqueta_txt']

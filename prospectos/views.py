@@ -553,6 +553,46 @@ def configurar_mapa(request):
         origen=request.build_absolute_uri('/').rstrip('/'), desde_config=bool(settings.CONFIG.get('GOOGLE_MAPS_API_KEY'))))
 
 
+# --------------------------------------------------------------------------- publicar en Google
+def badge_publicar(request):
+    """Hay cambios en preguntas, opciones o carreras que el Google Form todavía no tiene."""
+    if not request.user.has_perm('prospectos.change_formulario'):
+        return None
+    pendientes = [t for t in (Cuestionario.ALUMNO, Cuestionario.TUTOR) if Configuracion.obtener(f'publicar.pendiente.{t}', False)
+                  and Formulario.objects.filter(activo=True, tipo=t).exclude(google_form_id__startswith='demo-').exists()]
+    return len(pendientes) or None
+
+
+@staff_member_required
+def publicar_google(request):
+    """Aplicar al Google Form lo que se cambió en el programa (textos, opciones, carreras), con confirmación."""
+    _permiso(request, 'change_formulario')
+    from .servicios import publicar
+    from .servicios.fuentes import ErrorFuente, FuenteGoogle
+    formularios = list(Formulario.objects.filter(activo=True).exclude(google_form_id__startswith='demo-').order_by('tipo'))
+    if request.method == 'POST':
+        f = get_object_or_404(Formulario, pk=request.POST.get('formulario'), activo=True)
+        try:
+            r = publicar.publicar(f, set(request.POST.getlist('cambio')), request.user)
+            if r['aplicados']:
+                messages.success(request, f'{f}: se aplicaron {r["aplicados"]} cambios en Google. El Form anterior quedó guardado en {r["respaldo"]}.')
+            else:
+                messages.info(request, f'{f}: no elegiste ningún cambio.')
+        except ErrorFuente as e:
+            messages.error(request, f'{f}: {e}')
+        return redirect(request.path)
+    lectura = FuenteGoogle()
+    bloques = []
+    for f in formularios:
+        b = {'formulario': f, 'cambios': [], 'error': None, 'url': f'https://docs.google.com/forms/d/{f.google_form_id}/edit'}
+        try:
+            b['cambios'] = publicar.plan(f, lectura.info(f))
+        except ErrorFuente as e:
+            b['error'] = str(e)
+        bloques.append(b)
+    return render(request, 'prospectos/publicar.html', _ctx(request, 'Publicar cambios en Google Forms', bloques=bloques))
+
+
 # --------------------------------------------------------------------------- familias por unir
 def badge_familias(request):
     if not request.user.has_perm('prospectos.resolver_coincidencias'):

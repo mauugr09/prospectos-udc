@@ -20,6 +20,8 @@ from django.utils import timezone
 BASE = 'https://forms.googleapis.com/v1'
 SCOPES = ['https://www.googleapis.com/auth/forms.responses.readonly',
           'https://www.googleapis.com/auth/forms.body.readonly']
+# Solo al «Publicar en Google» (cambiar preguntas y opciones del Form). Importar sigue siendo de solo lectura.
+SCOPES_EDICION = ['https://www.googleapis.com/auth/forms.body']
 
 
 @dataclass
@@ -114,14 +116,14 @@ def credenciales_listas() -> bool:
     return ruta_token_oauth().exists() if modo_google() == 'oauth' else ruta_cuenta_servicio().exists()
 
 
-def credenciales_oauth():
+def credenciales_oauth(scopes=None):
     """Credenciales de una cuenta de Google de la universidad (modo OAuth). Renueva y guarda el token."""
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
     ruta = ruta_token_oauth()
     if not ruta.exists():
         raise ErrorFuente(f'Falta autorizar la cuenta de Google: ejecuta «{settings.COMANDO} conectar_google».')
-    cred = Credentials.from_authorized_user_file(str(ruta), SCOPES)
+    cred = Credentials.from_authorized_user_file(str(ruta), scopes or SCOPES)
     if not cred.valid:
         cred.refresh(Request())
         ruta.write_text(cred.to_json(), encoding='utf-8')
@@ -129,34 +131,54 @@ def credenciales_oauth():
 
 
 class FuenteGoogle:
-    def __init__(self, sesion: requests.Session | None = None, token: str | None = None):
+    def __init__(self, sesion: requests.Session | None = None, token: str | None = None, edicion: bool = False):
         self.sesion = sesion or requests.Session()
         self._token = token
+        self.edicion = edicion  # permiso para cambiar el Form (solo al publicar)
 
     def token(self) -> str:
         if self._token:
             return self._token
-        t = cache.get('google:token')
+        clave = 'google:token:edicion' if self.edicion else 'google:token'
+        t = cache.get(clave)
         if t:
             return t
         from google.auth.exceptions import GoogleAuthError
         from google.auth.transport.requests import Request
+        scopes = SCOPES_EDICION if self.edicion else SCOPES
         try:
             if modo_google() == 'oauth':
-                cred = credenciales_oauth()
+                cred = credenciales_oauth(scopes)
             else:
                 from google.oauth2 import service_account
                 ruta = ruta_cuenta_servicio()
                 try:
-                    cred = service_account.Credentials.from_service_account_file(str(ruta), scopes=SCOPES)
+                    cred = service_account.Credentials.from_service_account_file(str(ruta), scopes=scopes)
                 except FileNotFoundError as e:
                     raise ErrorFuente(f'No se encuentra el JSON de la cuenta de servicio en {ruta}. '
                                       'Revisa docs\\formularios.md, sección 1A (o usa el modo OAuth, sección 1B).') from e
                 cred.refresh(Request())
         except GoogleAuthError as e:
             raise ErrorFuente(f'Google rechazó las credenciales: {e}') from e
-        cache.set('google:token', cred.token, 50 * 60)
+        cache.set(clave, cred.token, 50 * 60)
         return cred.token
+
+    def actualizar_form(self, form_id: str, solicitudes: list[dict], revision: str | None) -> dict:
+        """forms.batchUpdate. Con `revision`, Google rechaza el cambio si alguien editó el Form mientras tanto."""
+        cuerpo = {'requests': solicitudes, 'includeFormInResponse': False}
+        if revision:
+            cuerpo['writeControl'] = {'requiredRevisionId': revision}
+        r = self.sesion.post(f'{BASE}/forms/{form_id}:batchUpdate', json=cuerpo, timeout=60,
+                             headers={'Authorization': f'Bearer {self.token()}', 'Accept': 'application/json'})
+        if r.status_code == 403 and 'scope' in r.text.lower():
+            raise ErrorFuente('La cuenta de Google conectada solo tiene permiso de lectura. En modo OAuth vuelve a ejecutar '
+                              f'«{settings.COMANDO} conectar_google» y acepta el permiso para editar los Forms.')
+        if r.status_code == 400 and 'revision' in r.text.lower():
+            raise ErrorFuente('Alguien cambió el Form en Google mientras revisabas. Vuelve a abrir «Publicar en Google» '
+                              'para ver los cambios actualizados.')
+        if r.status_code >= 400:
+            raise ErrorFuente(explicar_http(r.status_code, r.text[:300]))
+        return r.json()
 
     def info(self, formulario) -> dict:
         """Título, URL pública y preguntas del Form (para registrarlo y armar el mapeo)."""
@@ -262,6 +284,9 @@ class FuenteAutomatica:
 
     def estructura(self, formulario):
         return self._de(formulario).estructura(formulario)
+
+    def info(self, formulario):
+        return self.google.info(formulario)
 
 
 def fuente_por_defecto():

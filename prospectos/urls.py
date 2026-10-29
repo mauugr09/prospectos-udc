@@ -6,6 +6,7 @@ app_name = 'prospectos'
 urlpatterns = [
     path('cola/', views.cola, name='cola'),
     path('familias/', views.familias_por_unir, name='familias'),
+    path('publicar/', views.publicar_google, name='publicar'),
     path('respuestas/', views.respuestas, name='respuestas'),
     path('respuestas/<int:pk>/', views.respuesta, name='respuesta'),
     path('ayuda/', views.ayuda, name='ayuda'),

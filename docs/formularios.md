@@ -14,8 +14,9 @@ Google dice que no se puede compartir fuera de la organización, usa la **B**.
    `google-service-account.json.json`, el programa también lo encuentra.)
 5. Copia el correo de la cuenta (`algo@proyecto.iam.gserviceaccount.com`).
 6. En **cada** Form: botón **⋮ → Agregar colaboradores** → pega ese correo. Google Forms solo permite
-   colaboradores con permiso de **edición** (no existe «solo lectura»); el programa únicamente pide
-   permisos de lectura (`forms.body.readonly` y `forms.responses.readonly`), así que no puede modificar el Form.
+   colaboradores con permiso de **edición** (no existe «solo lectura»). Para importar, el programa pide solo
+   permisos de lectura; únicamente al usar **Publicar en Google** (y después de que una persona confirme los
+   cambios) pide el permiso para editar el Form (`forms.body`).
 
 > La llave JSON es una credencial: no la mandes por correo ni la subas a un repositorio.
 > Si se filtra, revócala en la consola y genera otra.
@@ -36,6 +37,8 @@ Workspace de universidades no dejan compartir con ellos. En ese caso:
    Se abre el navegador: entra con la cuenta **dueña o editora** de los Forms y acepta. El permiso se
    guarda en `datos\google-token.json` (trátalo como una contraseña) y `config.json` queda con
    `"GOOGLE_MODO": "oauth"`.
+   Si ya lo habías conectado antes de existir «Publicar en Google», vuelve a ejecutarlo una vez: ahora pide
+   también el permiso para editar los Forms (solo se usa al publicar).
 4. Si esa persona deja la universidad o le quitan acceso a los Forms, la importación se detiene:
    repite el paso 3 con otra cuenta. Por eso la opción A es preferible cuando se puede.
 
@@ -172,3 +175,26 @@ permiso». Por eso conviene revisar Familias por unir seguido.
 **Lo que más ayudaría (agregar a la encuesta de padres):** una pregunta **«Correo o teléfono del aspirante»**
 (respuesta corta, código `aspirante_contacto`). Con eso se une sola aunque el nombre venga mal escrito.
 Es dato de contacto del menor: se guarda cifrado y solo se usa para unir.
+
+## 6. Cambiar el Form desde el programa («Publicar en Google»)
+
+Las preguntas, sus opciones y las carreras se cambian **en el programa** (Configuración → *Preguntas y
+opciones* o *Carreras*). Luego, en **Configuración → Publicar en Google**, el programa compara con el Form y
+muestra la lista de cambios:
+
+| Cambio | Ejemplo | Viene marcado |
+|---|---|---|
+| Texto de una pregunta | «Nombre completo» → «Tu nombre completo (nombre y apellidos)» | Sí |
+| Renombrar una opción | «Semanal» → «Escolarizada (lunes a viernes)». El texto anterior queda como alias: las respuestas viejas se siguen reconociendo | Sí |
+| Agregar una opción | Carrera nueva: aparece solo en la sección del plantel donde se ofrece | Sí |
+| Quitar una opción | Carrera apagada, u opción que ya no está en el programa | **No** |
+| Pregunta nueva | Aviso de privacidad (va al inicio, obligatoria), Código de evento, CURP… (al final) | **No** |
+
+Al publicar: se guarda una copia del Form como estaba (`datos/respaldos/forms/`), se aplican los cambios
+marcados y el mapeo se actualiza solo. Si alguien editó el Form en Google mientras tanto, no se aplica nada
+(para no pisar su cambio) y hay que volver a abrir la pantalla.
+
+**Lo que se sigue haciendo en Google, a mano:** borrar preguntas (Google borraría también sus respuestas),
+validaciones (edad «número entre 12 y 99», formato de CURP), mover preguntas de lugar y la navegación entre
+secciones. La API de Google no permite configurar validaciones.
+

@@ -379,6 +379,13 @@ button.udc-btn.peligro, a.udc-btn.peligro { background-color: var(--c-rojo); }
   .fam-acciones { display: flex; gap: 8px; }
   @media (max-width: 640px) { .fam-par { grid-template-columns: 1fr; } .fam-flecha { display: none; } }
 
+  /* ============================================================ publicar en Google */
+  .pub-lista > li + li .pub-fila { border-top: .5px solid var(--c-separador); }
+  .pub-fila { display: flex; align-items: center; gap: 12px; padding: 10px 16px; cursor: pointer; }
+  .pub-fila:hover { background: var(--c-hover); }
+  .pub-tipo { flex: none; width: 112px; font-size: 12px; font-weight: 600; color: var(--c-texto-2); }
+  .pub-agregar, .pub-crear { color: var(--c-verde); } .pub-quitar { color: var(--c-rojo); } .pub-renombrar, .pub-titulo { color: var(--c-acento); }
+
   /* ============================================================ botones y campos */
   .udc-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 16px; min-height: 34px; border-radius: 9px;
     font-weight: 500; font-size: 14px; background: var(--c-boton-acento); color: #fff !important; border: 0; cursor: pointer;
