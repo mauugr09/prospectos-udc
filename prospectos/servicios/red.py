@@ -111,10 +111,16 @@ def _guardar_llave(ruta: Path, llave) -> None:
         pass
 
 
+def _corto(texto: str) -> str:
+    """El «nombre común» de un certificado admite máximo 64 caracteres; los nombres de Mac suelen ser largos
+    («MacBook-Pro-de-…»). El nombre completo sigue en la lista de nombres alternativos."""
+    return texto if len(texto) <= 64 else texto[:61] + '...'
+
+
 def _crear_ca(carpeta: Path):
     llave = ec.generate_private_key(ec.SECP256R1())
     ahora = dt.datetime.now(dt.timezone.utc)
-    nombre = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, f'Prospectos UDC ({nombre_equipo()})'),
+    nombre = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, _corto(f'Prospectos UDC ({nombre_equipo()})')),
                         x509.NameAttribute(NameOID.ORGANIZATION_NAME, 'Universidad de Cuautitlán · Admisiones')])
     cert = (x509.CertificateBuilder().subject_name(nombre).issuer_name(nombre).public_key(llave.public_key())
             .serial_number(x509.random_serial_number())
@@ -173,7 +179,7 @@ def asegurar_certificados(data_dir: Path) -> tuple[Path, Path, Path]:
         llave = ec.generate_private_key(ec.SECP256R1())
         ahora = dt.datetime.now(dt.timezone.utc)
         cert = (x509.CertificateBuilder()
-                .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, nombres[0])]))
+                .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, _corto(nombres[0]))]))
                 .issuer_name(ca_cert.subject).public_key(llave.public_key())
                 .serial_number(x509.random_serial_number())
                 .not_valid_before(ahora - dt.timedelta(minutes=5)).not_valid_after(ahora + _VIGENCIA_SERVIDOR)

@@ -86,3 +86,12 @@ def test_solo_el_administrador_cambia_el_acceso_por_red(client):
     u = User.objects.create_user('n@x.mx', 'n@x.mx', 'Clave-de-prueba-123', is_staff=True)
     client.force_login(u)
     assert client.get('/admin/herramientas/otras-computadoras/').status_code == 403
+
+
+def test_nombre_de_mac_largo(tmp_path, monkeypatch):
+    largo = 'MacBook-Pro-de-Maria-Guadalupe-Hernandez-Admisiones-Universidad-Cuautitlan'
+    monkeypatch.setattr(red, 'nombre_equipo', lambda: largo)
+    monkeypatch.setattr(red, 'nombres_servidor', lambda: [largo, f'{largo}.local', '192.168.1.5', '127.0.0.1'])
+    _, crt, _ = red.asegurar_certificados(tmp_path)
+    san = x509.load_pem_x509_certificate(crt.read_bytes()).extensions.get_extension_for_class(x509.SubjectAlternativeName).value
+    assert f'{largo}.local' in san.get_values_for_type(x509.DNSName)
