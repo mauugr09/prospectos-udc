@@ -11,7 +11,14 @@
 
 <div class="ub-rejilla">
   <section class="tb-card ub-lista">
-    <header><h2>Sin ubicar <small id="ub-cuenta" class="text-subtle">{{ lista|length }}</small></h2></header>
+    <header><h2>Sin ubicar <small id="ub-cuenta" class="text-subtle">{{ lista|length }}</small></h2>
+      {% if lista %}<button type="button" id="ub-todas" class="udc-btn chico">Buscar todas</button>{% endif %}</header>
+    <div id="ub-lote" class="ub-lote" hidden>
+      <p id="ub-lote-estado" class="text-sm"></p>
+      <ul id="ub-lote-lista"></ul>
+      <div class="flex gap-2 mt-2"><button type="button" id="ub-lote-guardar" class="udc-btn chico" disabled>Guardar las marcadas</button>
+        <button type="button" id="ub-lote-cerrar" class="udc-btn chico secundario">Cerrar</button></div>
+    </div>
     <ul id="ub-prepas">
       {% for p in lista %}
       <li><button type="button" data-id="{{ p.id }}" class="{% if p.id == elegida %}activo{% endif %}">

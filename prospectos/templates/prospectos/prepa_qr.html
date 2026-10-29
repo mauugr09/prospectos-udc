@@ -1,0 +1,18 @@
+{% extends "prospectos/base.html" %}
+{% block subtitulo %}<p class="subtitulo">Este QR no cambia: imprímelo en carteles o úsalo en todas las visitas a esta prepa. Las respuestas se asignan a la preparatoria y, si ese día hay un evento ahí, al evento.</p>{% endblock %}
+{% block pagina %}
+{% if qrs.0.1.url and not qrs.0.1.con_codigo %}
+<div class="aviso mb-4"><span class="material-symbols-outlined" style="color:var(--c-naranja)">info</span>
+  <div>El Form todavía no tiene la pregunta <b>«Código de evento»</b>, así que este QR abre el Form sin código. Sigue sirviendo: el alumno escribe su prepa
+  y se asigna por eso. Para que el QR identifique la prepa por sí solo, agrega esa pregunta (ver docs/formularios.md).</div></div>
+{% endif %}
+<div class="grid gap-5 md:grid-cols-2">
+  {% for titulo, q in qrs %}
+  <section class="grupo text-center"><header class="grupo-cabecera" style="justify-content:center"><h2>{{ titulo }}</h2></header>
+    <div class="grupo-cuerpo">{% if q.qr %}<span class="udc-qr"><img src="{{ q.qr }}" alt="QR {{ titulo }}" style="width:280px;max-width:100%"></span>
+      <p class="text-xs text-subtle mt-3 break-all">{{ q.url }}</p>{% else %}<p class="text-subtle">Configura un formulario activo de este tipo con su URL pública.</p>{% endif %}</div></section>
+  {% endfor %}
+</div>
+<p class="mt-4 text-center font-semibold">{{ prepa }}. Código permanente {{ prepa.codigo_qr }}</p>
+<p class="mt-2 text-center no-imprimir"><button type="button" class="udc-btn" onclick="window.print()"><span class="material-symbols-outlined">print</span>Imprimir</button></p>
+{% endblock %}

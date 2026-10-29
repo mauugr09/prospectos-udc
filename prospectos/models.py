@@ -8,7 +8,7 @@ from django.db import models
 from django.utils import timezone
 
 from .servicios import texto
-from .servicios.cifrado import CampoCifrado, JSONCifrado, indice_correo, indice_telefono
+from .servicios.cifrado import CampoCifrado, JSONCifrado, indice_correo, indice_curp, indice_telefono
 
 
 class Cuestionario(models.TextChoices):
@@ -113,6 +113,17 @@ class Preparatoria(models.Model):
         self.nombre_normalizado = texto.normalizar(self.nombre)
         super().save(*args, **kwargs)
 
+    @property
+    def codigo_qr(self) -> str:
+        """Código fijo del QR permanente de esta prepa (viaja en «Código de evento» igual que el de un evento)."""
+        return f'P{self.pk:04d}'
+
+    @classmethod
+    def por_codigo_qr(cls, codigo: str | None):
+        import re
+        m = re.fullmatch(r'P(\d{1,9})', (codigo or '').strip().upper())
+        return cls.objects.filter(pk=int(m.group(1))).first() if m else None
+
     @classmethod
     def resolver(cls, valor: str | None, crear: bool = False):
         """Busca la prepa por nombre, alias o parecido. Con `crear`, da de alta la que no exista (por revisar)."""
@@ -200,6 +211,21 @@ class Evento(models.Model):
     promotor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
                                  related_name='eventos')
     fecha = models.DateField(default=timezone.localdate, db_index=True)
+    hora_inicio = models.TimeField('hora de inicio', null=True, blank=True)
+    hora_fin = models.TimeField('hora de término', null=True, blank=True)
+    actividad = models.CharField(max_length=20, default='platica', choices=[
+        ('platica', 'Plática informativa'), ('feria', 'Feria profesiográfica'), ('stand', 'Stand informativo'),
+        ('taller', 'Taller u orientación vocacional'), ('visita', 'Visita guiada a la universidad')])
+    estado = models.CharField(max_length=16, default='por_solicitar', db_index=True, choices=[
+        ('por_solicitar', 'Por solicitar'), ('solicitado', 'Solicitado'), ('confirmado', 'Confirmado'),
+        ('realizado', 'Realizado'), ('cancelado', 'Cancelado')])
+    dirigido_a = models.CharField('dirigido a (nombre)', max_length=150, blank=True,
+                                  help_text='Director(a) u orientador(a) de la preparatoria, para la solicitud.')
+    dirigido_cargo = models.CharField('cargo', max_length=120, blank=True, default='Director(a)')
+    grupos = models.CharField('grupos o semestres', max_length=150, blank=True, help_text='P. ej. «6.° semestre, grupos A–D».')
+    alumnos_esperados = models.PositiveIntegerField('alumnos esperados', null=True, blank=True)
+    requerimientos = models.TextField('qué se pide a la prepa', blank=True,
+                                      help_text='Espacio, proyector, tiempo por grupo… Aparece en la solicitud.')
     alumnos_asistentes = models.PositiveIntegerField(null=True, blank=True)
     meta_registros = models.PositiveIntegerField('meta de registros', null=True, blank=True)
     costo = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -390,7 +416,7 @@ class ProspectoQuerySet(models.QuerySet):
 
 
 class Prospecto(models.Model):
-    CAMPOS_CONTACTO = ['correo', 'telefono', 'tutor_correo', 'tutor_telefono']
+    CAMPOS_CONTACTO = ['correo', 'telefono', 'tutor_correo', 'tutor_telefono', 'curp']
 
     nombre_aspirante = models.CharField('aspirante', max_length=255)
     nombre_normalizado = models.CharField(max_length=255, db_index=True, editable=False)
@@ -418,6 +444,9 @@ class Prospecto(models.Model):
     correo_bi = models.CharField(max_length=64, null=True, blank=True, db_index=True, editable=False)
     telefono = CampoCifrado('teléfono', null=True, blank=True)
     telefono_bi = models.CharField(max_length=64, null=True, blank=True, db_index=True, editable=False)
+    curp = CampoCifrado('CURP', null=True, blank=True)
+    curp_bi = models.CharField(max_length=64, null=True, blank=True, db_index=True, editable=False)
+    fecha_nacimiento = models.DateField('fecha de nacimiento (de la CURP)', null=True, blank=True)
     tutor_nombre = models.CharField('tutor', max_length=255, blank=True)
     tutor_correo = CampoCifrado('correo del tutor', null=True, blank=True)
     tutor_correo_bi = models.CharField(max_length=64, null=True, blank=True, db_index=True, editable=False)
@@ -475,6 +504,7 @@ class Prospecto(models.Model):
         self.telefono_bi = indice_telefono(self.telefono)
         self.tutor_correo_bi = indice_correo(self.tutor_correo)
         self.tutor_telefono_bi = indice_telefono(self.tutor_telefono)
+        self.curp_bi = indice_curp(self.curp)
         super().save(*args, **kwargs)
 
     def tiene_contacto(self) -> bool:

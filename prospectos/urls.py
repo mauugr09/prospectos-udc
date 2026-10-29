@@ -5,6 +5,7 @@ from . import views
 app_name = 'prospectos'
 urlpatterns = [
     path('cola/', views.cola, name='cola'),
+    path('familias/', views.familias_por_unir, name='familias'),
     path('respuestas/', views.respuestas, name='respuestas'),
     path('respuestas/<int:pk>/', views.respuesta, name='respuesta'),
     path('ayuda/', views.ayuda, name='ayuda'),
@@ -18,6 +19,9 @@ urlpatterns = [
     path('evento/<int:pk>/en-vivo/', views.evento_vivo, name='evento_vivo'),
     path('evento/<int:pk>/en-vivo/datos/', views.evento_vivo_datos, name='evento_vivo_datos'),
     path('evento/<int:pk>/qr/', views.evento_qr, name='evento_qr'),
+    path('evento/<int:pk>/solicitud/', views.evento_solicitud, name='evento_solicitud'),
+    path('evento/<int:pk>/reporte/', views.evento_reporte, name='evento_reporte'),
+    path('preparatoria/<int:pk>/qr/', views.prepa_qr, name='prepa_qr'),
     path('evento/<int:pk>/tarjetas/', views.tarjetas, name='tarjetas'),
     path('formulario/<int:pk>/mapeo/', views.mapeo, name='mapeo'),
 ]

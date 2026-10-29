@@ -39,12 +39,21 @@
 <div class="grid gap-4 xl:grid-cols-4 mb-4">
   <section class="rs-quien {% if c.alumno %}si{% endif %}">
     <span class="material-symbols-outlined">school</span>
-    <div><b>Alumno</b>{% if c.alumno %}<small>Contestó el {{ c.alumno.enviada_en|date:"j M Y, H:i" }}</small>{% else %}<small>Aún no contesta</small>{% endif %}</div>
+    <div><b>Alumno</b>{% if c.alumno %}<small>Contestó el {{ c.alumno.enviada_en|date:"j M Y, H:i" }}</small>
+      {% elif familia_posible %}<small>Solo contestó su familia. ¿Es alguno de estos alumnos? {% for f in familia_posible %}<a class="underline" href="{% url 'admin:prospectos_prospecto_change' f.prospecto.pk %}">{{ f.prospecto.nombre_aspirante }}</a> ({{ f.puntos }} pts){% if not forloop.last %}, {% endif %}{% endfor %}.
+        <a class="underline" href="{% url 'prospectos:familias' %}">Revisar</a></small>
+      {% else %}<small>Aún no contesta</small>{% endif %}
+      {% if original.fecha_nacimiento %}<small>Nació el {{ original.fecha_nacimiento|date:"j \d\e F \d\e Y" }} (según su CURP)</small>{% endif %}</div>
     {% if c.alumno %}<a class="rs-ver" href="{% url 'prospectos:respuesta' c.alumno.pk %}" title="Ver la respuesta completa"><span class="material-symbols-outlined">open_in_new</span></a>{% endif %}
   </section>
   <section class="rs-quien {% if c.tutor %}si{% endif %}">
     <span class="material-symbols-outlined">family_restroom</span>
-    <div><b>Mamá, papá o tutor</b>{% if c.tutor %}<small>Contestó el {{ c.tutor.enviada_en|date:"j M Y, H:i" }}</small>{% else %}<small>Aún no contesta: pídele que llene su cuestionario</small>{% endif %}</div>
+    <div><b>Mamá, papá o tutor</b>
+      {% if original.tutor_nombre %}<small style="color:var(--c-texto)">{{ original.tutor_nombre }}</small>{% endif %}
+      {% if c.tutor %}<small>Contestó el {{ c.tutor.enviada_en|date:"j M Y, H:i" }}</small>
+      {% elif familia_posible %}<small>¿Es su familia? {% for f in familia_posible %}<a class="underline" href="{% url 'admin:prospectos_prospecto_change' f.prospecto.pk %}">{{ f.prospecto.tutor_nombre|default:f.prospecto.nombre_aspirante }}</a> ({{ f.puntos }} pts){% if not forloop.last %}, {% endif %}{% endfor %}.
+        <a class="underline" href="{% url 'prospectos:familias' %}">Revisar en Familias por unir</a></small>
+      {% else %}<small>Aún no contesta: pídele que llene su cuestionario</small>{% endif %}</div>
     {% if c.tutor %}<a class="rs-ver" href="{% url 'prospectos:respuesta' c.tutor.pk %}" title="Ver la respuesta completa"><span class="material-symbols-outlined">open_in_new</span></a>{% endif %}
   </section>
   <section class="rs-quien {% if original.brechas or c.diferencias %}ojo{% elif c.comparables %}si{% endif %}">

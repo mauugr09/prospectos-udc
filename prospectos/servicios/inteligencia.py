@@ -172,10 +172,8 @@ def enlazar(r: Respuesta, datos, evento) -> Prospecto:
     empate = len(cands) > 1 and cands[1]['similitud'] >= auto
     if prepa_id and cands and cands[0]['similitud'] >= auto and not empate:
         return _asignar(r, cands[0]['prospecto'])
-    # Encuesta de padres (sin prepa) o alumno cuya familia contestó antes: se buscan pares posibles del otro lado,
-    # solo entre fichas a las que les falta esa mitad y del mismo plantel. Siempre a revisión, nunca automático.
-    vistos = {c['prospecto'].pk for c in cands}
-    cands += [c for c in _candidatos_cruzados(r.cuestionario, nombre, datos) if c['prospecto'].pk not in vistos]
+    # La pareja alumno ↔ familia (con nombres distintos) la busca familias.unir_o_proponer después de recalcular,
+    # cuando la ficha ya tiene teléfonos, plantel y fecha para comparar.
 
     nuevo = Prospecto.objects.create(
         nombre_aspirante=nombre or 'Sin nombre', preparatoria_id=prepa_id, evento=evento, promotor=r.promotor,
@@ -368,6 +366,16 @@ def recalcular(p: Prospecto) -> Prospecto:
             p.canal_informacion = tutor.valor('recibir_informacion') or p.canal_informacion or ''
         if not alumno and _primero(tutor, 'nombre_aspirante'):
             p.nombre_aspirante = _primero(tutor, 'nombre_aspirante')
+
+    # CURP (si el Form la pide): se valida y de ella sale la fecha de nacimiento → edad exacta (sin consultar a nadie).
+    from . import curp as _curp
+    for fuente, codigo in ((alumno, 'curp'), (tutor, 'curp_aspirante')):
+        datos_curp = _curp.analizar(_primero(fuente, codigo)) if fuente else None
+        if datos_curp:
+            p.curp, p.fecha_nacimiento = datos_curp['curp'], datos_curp['fecha_nacimiento']
+            break
+    if p.fecha_nacimiento:
+        p.edad = _curp.edad(p.fecha_nacimiento, timezone.localdate())
 
     con_evento = next((r for r in resp if r.evento_id), None)
     p.evento_id = p.evento_id or (con_evento.evento_id if con_evento else None)

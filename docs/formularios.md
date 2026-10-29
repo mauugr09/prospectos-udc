@@ -90,7 +90,8 @@ En ambos casos, después:
 | 1 | **Aviso de privacidad**: «He leído y acepto el aviso de privacidad» (Sí / No), con el enlace al aviso en la descripción | Sin esto **nadie** queda «Lista para usar» (salvo que un administrador active en *Reglas de permiso* que el aviso ya se muestra en el Form). | Opción múltiple, obligatoria, en DATOS PERSONALES. |
 | 2 | **Validación de la edad** | Hoy es texto libre: «diecisiete» o «17 y medio» obligan a revisar a mano. | ⋮ de la pregunta → *Validación de respuesta* → Número → entre 12 y 99. |
 | 3 | **Nombre y teléfono de mamá, papá o tutor** (opcionales) | La mayoría de 6.º semestre tiene 17 años: sin el permiso del tutor no se pueden usar. Con su teléfono, el asesor pide el permiso y lo registra en la respuesta. | Dos preguntas de respuesta corta. Códigos `tutor_nombre`, `tutor_telefono`. |
-| 4 | **Código de evento** (respuesta corta; se llena sola con el QR del evento) | Sin él no se sabe de qué visita vino cada registro: no hay costo por aspirante ni modo en vivo. | Sección final «Uso interno — no modificar». Código `evento`. |
+| 4 | **Código de evento** (respuesta corta; se llena sola con el QR del evento) | Sin ella el programa asigna cada respuesta al evento **por preparatoria y fecha** (funciona, pero si el alumno escribe mal su prepa o contesta otro día, se pierde). Con ella cuenta el QR exacto, y los **QR permanentes por prepa** la identifican aunque no haya evento. | Sección final «Uso interno — no modificar». Código `evento`. Después: en el Form, ⋮ → *Obtener vínculo prellenado*, escribe `EV000` en esa pregunta, copia el enlace y pégalo en Formularios → *Campos prellenados* para que el programa sepa su `entry.NNNN`. |
+| 5 | **CURP** (opcional): «Tu CURP» en el del alumno y «CURP del aspirante» en el de padres | De la CURP sale la **edad exacta** (la regla de menores ya no depende de lo que escriban) y une alumno y familia **con certeza**. No se consulta a RENAPO: solo se valida y se lee lo que la clave trae dentro. | Respuesta corta con validación *Expresión regular → Coincide con* `[A-Za-z]{4}\d{6}[HMXhmx][A-Za-z]{5}[A-Za-z0-9]\d`. Códigos `curp`, `curp_aspirante`. **Agrégala al aviso de privacidad** (es un dato que identifica a la persona). |
 
 Si agregas preguntas, en el panel ve a **Formularios → selecciona el Form → «Sincronizar con
 Google»**: re-mapea y **reacomoda las respuestas ya importadas** sin pedir nada nuevo a Google.
@@ -147,17 +148,26 @@ familia dice que entraría «dentro de dos años», la prioridad baja, y eso es 
 
 ### Cómo se une la encuesta de la familia con la del alumno
 
-La encuesta no trae código de familia, ni preparatoria, ni evento. Se une así:
+La encuesta no trae código de familia ni preparatoria, y los papás escriben el nombre del hijo distinto
+(«Juan Pérez» contra «Juan Carlos Pérez López»). El programa suma indicios:
 
-1. **Nombre del aspirante idéntico** (sin importar acentos, mayúsculas ni orden), con nombre y dos
-   apellidos, si hay **un solo** alumno así que todavía no tenga familia y el plantel no contradice →
-   se une sola. Funciona aunque la familia conteste antes que el alumno.
-2. Si el nombre viene incompleto («Ana López») o hay dos alumnos con el mismo nombre → **no adivina**:
-   queda como ficha aparte y aparece en **Posibles duplicados** para que alguien decida.
-3. Plantel distinto → no se une sola.
+| Indicio | Puntos |
+|---|---|
+| Misma CURP, o la familia dio el correo/teléfono del alumno | seguro |
+| El teléfono o correo del tutor es el que dio el alumno | +40 |
+| Mismo nombre / el de la familia está contenido en el del alumno / muy parecido / parecido | +50 / +35 / +30 / +15 |
+| Un apellido del tutor está en el nombre del alumno | +10 |
+| Mismo evento / mismo día | +20 / +12 |
+| Mismo plantel / misma carrera | +5 / +5 |
+| Planteles distintos | −30 |
+
+- **70 o más, y el segundo candidato al menos 20 abajo** → se unen solas al importar.
+- **30 a 69** → van a **Familias por unir** (menú *Día a día*): se confirman con un clic, «Son la misma
+  familia» o «No son». Ahí también se puede unir a mano buscando al alumno por nombre.
+- Sin ningún parecido en el nombre ni en los contactos, no se propone nada (apellido + mismo día no bastan).
 
 Mientras no se unan, **el permiso que dio la familia no llega al alumno**: el alumno menor sigue «Esperando
-permiso». Por eso conviene revisar Posibles duplicados seguido.
+permiso». Por eso conviene revisar Familias por unir seguido.
 
 **Lo que más ayudaría (agregar a la encuesta de padres):** una pregunta **«Correo o teléfono del aspirante»**
 (respuesta corta, código `aspirante_contacto`). Con eso se une sola aunque el nombre venga mal escrito.

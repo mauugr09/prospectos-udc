@@ -1,0 +1,74 @@
+{% extends "prospectos/impreso.html" %}
+{% block barra %}
+  <a href="{% url 'prospectos:evento_vivo' e.pk %}">En vivo</a>
+  <a href="{% url 'prospectos:evento_solicitud' e.pk %}">Solicitud</a>
+  {% if puede_nombres %}{% if con_nombres %}<a href="?">Quitar la lista de nombres</a>{% else %}<a href="?nombres=1">Incluir lista de nombres</a>{% endif %}{% endif %}
+  <form method="post" style="display:inline" title="Asigna a sus eventos las respuestas que llegaron sin código, por preparatoria y fecha">{% csrf_token %}<button name="accion" value="reatribuir">Volver a asignar respuestas</button></form>
+{% endblock %}
+{% block hoja %}
+<h1>Reporte del evento</h1>
+<p class="gris">{{ e.get_actividad_display }} en <b style="color:#111">{{ e.preparatoria }}</b>, {{ e.fecha|date:"l j \d\e F \d\e Y" }}{% if e.hora_inicio %}, {{ e.hora_inicio|time:"H:i" }}{% if e.hora_fin %}–{{ e.hora_fin|time:"H:i" }}{% endif %}{% endif %}.
+{% if e.promotor %}Promotor: {{ e.promotor.get_full_name|default:e.promotor.get_username }}.{% endif %} Código {{ e.codigo }}.</p>
+
+<div class="cifras">
+  <div><b>{{ d.alumnos }}</b><span>Alumnos registrados</span></div>
+  <div><b>{{ d.familias }}</b><span>Familias registradas</span></div>
+  <div><b>{% if d.tasa is not None %}{{ d.tasa }} %{% else %}—{% endif %}</b><span>{% if e.alumnos_asistentes %}De {{ e.alumnos_asistentes }} asistentes{% else %}Falta capturar asistentes{% endif %}</span></div>
+  <div><b>{% if d.meta_pct is not None %}{{ d.meta_pct }} %{% else %}—{% endif %}</b><span>{% if e.meta_registros %}De la meta ({{ e.meta_registros }}){% else %}Sin meta{% endif %}</span></div>
+</div>
+<div class="cifras">
+  <div><b>{{ d.con_permiso }}</b><span>Con permiso para contactar</span></div>
+  <div><b>{{ d.esperando }}</b><span>Esperando permiso del tutor</span></div>
+  <div><b>{{ d.unidas }}</b><span>Alumno y familia unidos</span></div>
+  <div><b>{% if d.pct_piden is not None %}{{ d.pct_piden }} %{% else %}—{% endif %}</b><span>Pidieron información</span></div>
+</div>
+{% if not d.alumnos and not d.familias %}
+<p class="gris" style="margin-top:10px">Sin registros. Si los alumnos contestaron pero no aparecen aquí: el Form no tiene la pregunta «Código de evento». Usa «Volver a asignar respuestas» (arriba): asigna por preparatoria y fecha.</p>
+{% endif %}
+
+<div class="dos">
+  <div>
+    <h2>Carreras de interés</h2>
+    <table>{% for c in d.carreras %}<tr><td>{{ c.etiqueta }}</td><td style="width:35%"><span class="barra-h"><i style="width:{{ c.pct }}%"></i></span></td><td class="n">{{ c.total }}</td></tr>
+      {% empty %}<tr><td class="gris">Sin datos.</td></tr>{% endfor %}</table>
+  </div>
+  <div>
+    <h2>Plantel y modalidad</h2>
+    <table>
+      {% for x in d.planteles %}<tr><td>Plantel {{ x.etiqueta }}</td><td class="n">{{ x.total }}</td></tr>{% endfor %}
+      {% for x in d.modalidades %}<tr><td>{{ x.etiqueta }}</td><td class="n">{{ x.total }}</td></tr>{% endfor %}
+      {% if not d.planteles and not d.modalidades %}<tr><td class="gris">Sin datos.</td></tr>{% endif %}
+    </table>
+  </div>
+</div>
+
+<div class="dos">
+  <div>
+    <h2>Registros por hora</h2>
+    <table>{% for h, n in d.por_hora %}<tr><td>{{ h }}</td><td class="n">{{ n }}</td></tr>{% empty %}<tr><td class="gris">Sin registros de alumnos.</td></tr>{% endfor %}</table>
+    {% if d.primero %}<p class="gris" style="font-size:9.5pt;margin-top:6px">Primer registro {{ d.primero|time:"H:i" }}, último {{ d.ultimo|time:"H:i" }}.</p>{% endif %}
+  </div>
+  <div>
+    <h2>Costo y promotores</h2>
+    <table>
+      <tr><td>Costo del evento</td><td class="n">{{ d.costo_txt }}</td></tr>
+      <tr><td>Costo por alumno registrado</td><td class="n">{{ d.costo_registro_txt }}</td></tr>
+      {% for nombre, n in d.promotores %}<tr><td>{{ nombre }}</td><td class="n">{{ n }}</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+
+{% if con_nombres %}
+<h2>Aspirantes con permiso ({{ d.nombres|length }})</h2>
+<table><tr><th>Aspirante</th><th>Carrera</th><th>Familia</th><th class="n">Prioridad</th></tr>
+  {% for p in d.nombres %}<tr><td>{{ p.nombre_aspirante }}</td><td>{{ p.carrera|default:"Aún no decide" }}</td><td>{% if p.tiene_tutor %}Sí{% else %}—{% endif %}</td><td class="n">{{ p.score }}</td></tr>{% endfor %}
+</table>
+<p class="gris" style="font-size:9pt">Documento interno con datos personales: no lo compartas fuera de Admisiones. Sin teléfonos ni correos.</p>
+{% endif %}
+
+<h2>Observaciones</h2>
+{% if e.notas %}<p>{{ e.notas|linebreaksbr }}</p>{% endif %}
+<div class="lineas"><div></div><div></div><div></div></div>
+
+<p class="gris" style="font-size:9pt;margin-top:20px">Generado el {{ hoy|date:"j \d\e F \d\e Y" }}. Cuenta solo las respuestas asignadas a este evento (por su QR o por la preparatoria y fecha).</p>
+{% endblock %}

@@ -173,6 +173,11 @@ html.con-titulo-grande:not(.titulo-arriba) #page #main > div:first-child h1 { op
 #content span.uppercase.rounded-default, #content a.uppercase.rounded-default { text-transform: none; font-size: 12px; font-weight: 500;
   letter-spacing: 0; border-radius: 6px; }
 
+/* Botones: el «reset» de unfold pone fondo transparente a los type="button" (fuera de capa, así que gana). */
+button.udc-btn, a.udc-btn { background-color: var(--c-boton-acento); }
+button.udc-btn.secundario, a.udc-btn.secundario { background-color: var(--c-relleno); }
+button.udc-btn.peligro, a.udc-btn.peligro { background-color: var(--c-rojo); }
+
 /* ---------------------------------------------------------------- barra lateral (lista de origen, como en macOS) */
 #nav-sidebar, #nav-sidebar-inner, #nav-sidebar > div, #nav-sidebar .bg-base-50 { background: var(--c-barra-lateral) !important; }
 #nav-sidebar { border-color: var(--c-separador) !important; color: var(--c-texto);
@@ -361,6 +366,19 @@ html.con-titulo-grande:not(.titulo-arriba) #page #main > div:first-child h1 { op
   .ay-pasos b { display: block; font-weight: 500; } .ay-pasos b a { color: var(--c-acento); }
   .ay-pasos small { display: block; color: var(--c-texto-2); font-size: 13px; line-height: 1.45; margin-top: 2px; }
 
+  /* ============================================================ familias por unir */
+  .fam-fila { padding: 14px 16px; }
+  .fam-fila + .fam-fila { border-top: .5px solid var(--c-separador); }
+  .fam-par { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: center; }
+  .fam-par > div { display: flex; flex-direction: column; min-width: 0; }
+  .fam-par small { font-size: 12px; color: var(--c-texto-2); }
+  .fam-par b { font-size: 15px; font-weight: 600; } .fam-par b a { color: var(--c-acento); }
+  .fam-par span { font-size: 13px; color: var(--c-texto-2); }
+  .fam-flecha { color: var(--c-texto-3); }
+  .fam-razones { font-size: 13px; color: var(--c-texto-2); margin: 8px 0 10px; }
+  .fam-acciones { display: flex; gap: 8px; }
+  @media (max-width: 640px) { .fam-par { grid-template-columns: 1fr; } .fam-flecha { display: none; } }
+
   /* ============================================================ botones y campos */
   .udc-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 16px; min-height: 34px; border-radius: 9px;
     font-weight: 500; font-size: 14px; background: var(--c-boton-acento); color: #fff !important; border: 0; cursor: pointer;
@@ -521,6 +539,17 @@ html.con-titulo-grande:not(.titulo-arriba) #page #main > div:first-child h1 { op
   .ub-lista button.activo b, .ub-lista button.activo small { color: #fff; }
   .ub-lista b { display: block; font-weight: 500; font-size: 14px; } .ub-lista small { color: var(--c-texto-2); font-size: 12.5px; }
   .ub-lista h2 small { font-weight: 500; margin-left: 6px; }
+  .ub-lista > header { display: flex; align-items: center; justify-content: space-between; }
+  .ub-lista > header h2 { white-space: nowrap; }
+  .udc-btn { white-space: nowrap; }
+  .ub-lote { margin: 0 -16px 10px; padding: 10px 16px; background: var(--c-relleno-2); }
+  .ub-lote ul { max-height: 40vh; overflow: auto; display: flex; flex-direction: column; }
+  .ub-lote li + li { border-top: .5px solid var(--c-separador); }
+  .ub-lote label { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; cursor: pointer; }
+  .ub-lote label input { margin-top: 3px; }
+  .ub-lote b { display: block; font-weight: 500; font-size: 14px; }
+  .ub-lote small { display: block; font-size: 12.5px; color: var(--c-texto-2); }
+  .ub-lote small.ub-dudosa { color: var(--c-naranja); }
   #ub-mapa { height: 62vh; min-height: 360px; border-radius: var(--r-medio); overflow: hidden; }
   .ub-resultados { display: flex; flex-direction: column; margin-bottom: 10px; font-size: 13.5px; color: var(--c-texto-2);
     border-radius: var(--r-medio); overflow: hidden; background: var(--c-relleno-2); }

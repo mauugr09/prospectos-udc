@@ -112,6 +112,7 @@ PREGUNTAS = {
         ('consentimiento_aviso_privacidad', 'He leído y acepto el aviso de privacidad', 'consentimiento', 'si_no', False, False),
         ('tutor_nombre', 'Nombre de tu mamá, papá o tutor', 'texto', None, False, False),
         ('tutor_telefono', 'Teléfono de tu mamá, papá o tutor', 'telefono', None, True, False),
+        ('curp', 'Tu CURP', 'texto', None, True, False),
         ('evento', 'Código de evento', 'oculto', None, False, False),
         ('promotor', 'Código de promotor', 'oculto', None, False, False),
         ('token_familia', 'Código de familia', 'oculto', None, False, False),
@@ -136,6 +137,7 @@ PREGUNTAS = {
         ('recibir_informacion', '¿Le gustaría recibir información personalizada sobre carreras, becas y procesos de inscripción?', 'opcion', 'canal_tutor', False, False),
         # Recomendadas, todavía NO están en la encuesta (ver docs/formularios.md):
         ('aspirante_contacto', 'Correo o teléfono del aspirante', 'texto', None, True, False),
+        ('curp_aspirante', 'CURP del aspirante', 'texto', None, True, False),
         ('evento', 'Código de evento', 'oculto', None, False, False),
         ('promotor', 'Código de promotor', 'oculto', None, False, False),
         ('token_familia', 'Código de familia', 'oculto', None, False, False),
@@ -146,7 +148,7 @@ PREGUNTAS = {
 REPETIBLES = {'carrera', 'modalidad'}
 # Preguntas del catálogo que hoy NO están en el Form de la universidad: no se reportan como «faltan» con alarma.
 RECOMENDADAS = {'consentimiento_aviso_privacidad', 'tutor_nombre', 'tutor_telefono', 'evento', 'promotor', 'token_familia',
-                'aspirante_contacto'}
+                'aspirante_contacto', 'curp', 'curp_aspirante'}
 # Se comparan alumno contra tutor (lo demás se muestra lado a lado sin marcar diferencias).
 COMPARABLES = {'plantel', 'carrera', 'modalidad'}
 
@@ -178,6 +180,7 @@ PRESENTACION = {
     'preocupacion': ('expectativas', 'Principal preocupación'), 'apoyo_economico': ('expectativas', 'Apoyo económico que más importa'),
     'cuando_ingresa': ('expectativas', 'Cuándo entraría'), 'motivo_ubicacion': ('expectativas', 'Por qué ese plantel'),
     'aspirante_contacto': ('generales', 'Contacto del aspirante'),
+    'curp': ('generales', 'CURP'), 'curp_aspirante': ('generales', 'CURP del aspirante'),
     'evento': ('otras', 'Código de evento'), 'promotor': ('otras', 'Código de promotor'), 'token_familia': ('otras', 'Código de familia'),
 }
 

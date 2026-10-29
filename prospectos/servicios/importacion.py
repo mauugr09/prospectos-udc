@@ -102,9 +102,8 @@ def procesar(formulario: Formulario, cruda) -> str:
             return OMITIDA
 
         datos = mapear(formulario, cruda)
-        evento = None
-        if datos.uno('evento'):
-            evento = Evento.objects.select_related('promotor').filter(codigo=datos.uno('evento').upper()).first()
+        from .eventos import atribuir
+        evento = atribuir(formulario.tipo, datos, cruda.enviada_en)  # código del QR, o prepa + fecha del evento
         from django.contrib.auth import get_user_model
         promotor = None
         if datos.uno('promotor'):
@@ -126,8 +125,10 @@ def procesar(formulario: Formulario, cruda) -> str:
         r.save()
 
         guardar_items(r, datos)
-        prospecto = enlazar(r, datos, evento)
-        recalcular(prospecto)
+        prospecto = recalcular(enlazar(r, datos, evento))
+        if prospecto.tiene_alumno != prospecto.tiene_tutor:  # le falta una mitad: ¿ya contestó su familia / su hijo?
+            from .familias import unir_o_proponer
+            unir_o_proponer(prospecto)
         return ACTUALIZADA if existente else NUEVA
 
 

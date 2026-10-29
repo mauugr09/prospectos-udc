@@ -20,7 +20,7 @@ from unfold.widgets import UnfoldAdminTextareaWidget
 from .formularios_panel import CarreraForm, NuevoUsuarioForm, OpcionesFormSet, PreguntaForm, PreparatoriaForm
 from .models import (etiqueta_segmento, Auditoria, Carrera, Cuestionario, Etiqueta, Evento, Formulario, Importacion, OpcionPregunta, Perfil,
                      PosibleCoincidencia, Pregunta, Preparatoria, Prospecto, Respaldo, Segmento, Seguimiento, TipoSeguimiento)
-from .servicios import auditoria, importacion, inteligencia, reportes, respaldos, seguimiento
+from .servicios import auditoria, familias, importacion, inteligencia, reportes, respaldos, seguimiento
 from .servicios.cifrado import enmascarar_correo, enmascarar_telefono
 
 admin.site.index_title = 'Inicio'
@@ -156,7 +156,7 @@ class UsuarioAdmin(UserAdmin, ModelAdmin):
 # --------------------------------------------------------------------------- catálogos
 @admin.register(Preparatoria)
 class PreparatoriaAdmin(ModelAdmin):
-    list_display = ['nombre', 'municipio', 'ubicada', 'por_revisar', 'prospectos', 'alumnos_estimados', 'activo']
+    list_display = ['nombre', 'municipio', 'ubicada', 'por_revisar', 'prospectos', 'alumnos_estimados', 'qr', 'activo']
     list_filter = ['por_revisar', 'activo', 'municipio']
     search_fields = ['nombre', 'municipio', 'alias']
     actions = ['unir_preparatorias']
@@ -170,6 +170,11 @@ class PreparatoriaAdmin(ModelAdmin):
     @display(description='Aspirantes', ordering='n')
     def prospectos(self, obj):
         return obj.n
+
+    @display(description='QR permanente')
+    def qr(self, obj):
+        return format_html('<a class="udc-mini" href="{}"><span class="material-symbols-outlined">qr_code_2</span>{}</a>',
+                           reverse('prospectos:prepa_qr', args=[obj.pk]), obj.codigo_qr)
 
     @display(description='En el mapa')
     def ubicada(self, obj):
@@ -323,13 +328,23 @@ class PreguntaAdmin(ModelAdmin):
 # --------------------------------------------------------------------------- eventos
 @admin.register(Evento)
 class EventoAdmin(ModelAdmin):
-    list_display = ['codigo', 'preparatoria', 'fecha', 'promotor', 'registros', 'meta_registros', 'herramientas']
+    list_display = ['preparatoria', 'fecha', 'estado_label', 'promotor', 'registros', 'herramientas']
     list_fullwidth = True
-    list_filter = ['fecha', 'promotor', 'preparatoria']
+    list_filter = ['estado', 'fecha', 'promotor', 'preparatoria']
     search_fields = ['codigo', 'preparatoria__nombre']
     date_hierarchy = 'fecha'
     autocomplete_fields = ['preparatoria']
     readonly_fields = ['codigo']
+    fieldsets = [
+        (None, {'fields': ['preparatoria', 'fecha', ('hora_inicio', 'hora_fin'), 'actividad', 'estado', 'promotor', 'codigo']}),
+        ('Para la solicitud a la preparatoria', {'fields': [('dirigido_a', 'dirigido_cargo'), 'grupos', 'alumnos_esperados', 'requerimientos']}),
+        ('Resultados', {'fields': ['alumnos_asistentes', 'meta_registros', 'costo', 'notas']}),
+    ]
+
+    @display(description='Estado', ordering='estado', label={'Por solicitar': 'warning', 'Solicitado': 'info', 'Confirmado': 'primary',
+                                                             'Realizado': 'success', 'Cancelado': 'danger'})
+    def estado_label(self, obj):
+        return obj.get_estado_display()
 
     def get_queryset(self, request):
         qs = super().get_queryset(request).select_related('preparatoria', 'promotor').annotate(
@@ -348,11 +363,14 @@ class EventoAdmin(ModelAdmin):
     @display(description='')
     def herramientas(self, obj):
         return format_html(
-            '<span class="udc-acciones"><a class="udc-mini udc-mini-vivo" href="{}"><span class="material-symbols-outlined">sensors</span>En vivo</a>'
+            '<span class="udc-acciones"><a class="udc-mini" href="{}"><span class="material-symbols-outlined">description</span>Solicitud</a>'
             '<a class="udc-mini" href="{}"><span class="material-symbols-outlined">qr_code_2</span>QR</a>'
-            '<a class="udc-mini" href="{}"><span class="material-symbols-outlined">style</span>Tarjetas</a></span>',
-            reverse('prospectos:evento_vivo', args=[obj.pk]), reverse('prospectos:evento_qr', args=[obj.pk]),
-            reverse('prospectos:tarjetas', args=[obj.pk]))
+            '<a class="udc-mini" href="{}"><span class="material-symbols-outlined">style</span>Tarjetas</a>'
+            '<a class="udc-mini udc-mini-vivo" href="{}"><span class="material-symbols-outlined">sensors</span>En vivo</a>'
+            '<a class="udc-mini" href="{}"><span class="material-symbols-outlined">summarize</span>Reporte</a></span>',
+            reverse('prospectos:evento_solicitud', args=[obj.pk]), reverse('prospectos:evento_qr', args=[obj.pk]),
+            reverse('prospectos:tarjetas', args=[obj.pk]), reverse('prospectos:evento_vivo', args=[obj.pk]),
+            reverse('prospectos:evento_reporte', args=[obj.pk]))
 
 
 def solo_propios(request, permiso: str) -> bool:
@@ -528,7 +546,7 @@ def iniciales(nombre: str) -> str:
 @admin.register(Prospecto)
 class ProspectoAdmin(ModelAdmin):
     change_form_template = 'admin/prospectos/prospecto/change_form.html'
-    list_display = ['aspirante', 'score_badge', 'segmentos_txt', 'plantel', 'carrera', 'canal', 'estatus_label',
+    list_display = ['aspirante', 'score_badge', 'familia', 'segmentos_txt', 'plantel', 'carrera', 'canal', 'estatus_label',
                     'ultimo_contacto_en', 'asesor']
     list_filter_submit = True
     list_fullwidth = True
@@ -569,6 +587,12 @@ class ProspectoAdmin(ModelAdmin):
     @display(description='Aspirante', header=True, ordering='nombre_aspirante')
     def aspirante(self, obj):
         return [obj.nombre_aspirante, obj.preparatoria.nombre if obj.preparatoria else 'Sin preparatoria', iniciales(obj.nombre_aspirante)]
+
+    @display(description='Quién contestó')
+    def familia(self, obj):
+        if obj.tiene_alumno and obj.tiene_tutor:
+            return format_html('Alumno y familia<br><small class="text-subtle">{}</small>', obj.tutor_nombre or '')
+        return 'Solo el alumno' if obj.tiene_alumno else format_html('Solo la familia<br><small class="text-subtle">{}</small>', obj.tutor_nombre or '')
 
     @display(description='Prioridad', ordering='score')
     def score_badge(self, obj):
@@ -642,8 +666,10 @@ class ProspectoAdmin(ModelAdmin):
                     ('Teléfono del alumno', obj.telefono if revelar else enmascarar_telefono(obj.telefono)),
                     ('Correo del tutor', obj.tutor_correo if revelar else enmascarar_correo(obj.tutor_correo)),
                     ('Teléfono del tutor', obj.tutor_telefono if revelar else enmascarar_telefono(obj.tutor_telefono)),
-                ],
+                ] + ([('CURP', obj.curp if revelar else obj.curp[:4] + '••••••••••••••')] if obj.curp else []),
+                'familia_posible': familias.candidatos(obj, maximo=2) if obj.tiene_alumno != obj.tiene_tutor else [],
                 'coincidencias': PosibleCoincidencia.objects.filter(Q(prospecto=obj) | Q(candidato=obj), estado='pendiente')
+                .exclude(motivo__startswith=familias.MOTIVO)
                 .select_related('prospecto', 'candidato'),
             })
         return super().change_view(request, object_id, form_url, extra)

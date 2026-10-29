@@ -1,0 +1,80 @@
+{% extends "prospectos/base.html" %}
+{% block subtitulo %}<p class="subtitulo">Une la encuesta de cada mamá, papá o tutor con el cuestionario de su hijo(a). Al unirlos, la ficha muestra a los dos y, si el alumno es menor, ya cuenta con el permiso de su familia.</p>{% endblock %}
+{% block pagina %}
+<div class="tb-hoy">
+  <div class="flex flex-col gap-5">
+    <section class="grupo">
+      <header class="grupo-cabecera"><h2>¿Son la misma familia?</h2><span class="text-subtle text-sm">{{ propuestas|length }}</span></header>
+      {% if propuestas %}
+      <ul class="lista fam-lista">
+        {% for c in propuestas %}
+        <li class="fam-fila">
+          <div class="fam-par">
+            <div><small>Encuesta de la familia</small>
+              <b>{{ c.familia.nombre_aspirante }}</b>
+              <span>{{ c.familia.tutor_nombre|default:"Tutor sin nombre" }}{% if c.familia.creado_en %}, {{ c.familia.creado_en|date:"j M" }}{% endif %}</span></div>
+            <span class="material-symbols-outlined fam-flecha">sync_alt</span>
+            <div><small>Cuestionario del alumno</small>
+              <b><a href="{% url 'admin:prospectos_prospecto_change' c.alumno.pk %}">{{ c.alumno.nombre_aspirante }}</a></b>
+              <span>{{ c.alumno.preparatoria|default:"Sin prepa" }}{% if c.alumno.creado_en %}, {{ c.alumno.creado_en|date:"j M" }}{% endif %}</span></div>
+          </div>
+          <p class="fam-razones"><b class="prioridad-{% if c.puntos >= 60 %}alta{% elif c.puntos >= 45 %}media{% else %}baja{% endif %}">{{ c.puntos }} puntos.</b> {{ c.razones|capfirst }}.</p>
+          <form method="post" class="fam-acciones">{% csrf_token %}<input type="hidden" name="propuesta" value="{{ c.pk }}">
+            <button class="udc-btn chico" name="accion" value="unir">Son la misma familia</button>
+            <button class="udc-btn chico secundario" name="accion" value="no">No son</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="lista-vacia">No hay propuestas pendientes. Las que el programa está seguro las une solo al importar.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <div class="flex flex-col gap-5">
+    <section class="grupo">
+      <header class="grupo-cabecera"><h2>Encuestas de familias sin alumno</h2><span class="text-subtle text-sm">{{ total_solas }}</span></header>
+      <div class="grupo-cuerpo text-sm">
+        <p class="text-subtle mb-2">Elige una y busca a su hijo(a) por nombre o un apellido. Si el alumno todavía no contesta, déjala: se unirá sola cuando conteste.</p>
+        {% if elegida %}
+        <form method="get" class="flex gap-2 mb-3"><input type="hidden" name="familia" value="{{ elegida }}">
+          <input class="udc-campo grow" name="q" value="{{ q }}" placeholder="Nombre o apellido del alumno" autofocus>
+          <button class="udc-btn chico">Buscar</button></form>
+          {% if q %}
+          <ul class="lista" style="margin:0 -16px">
+            {% for a in resultados %}
+            <li><div class="fila fila-compacta"><span class="fila-texto"><b>{{ a.nombre_aspirante }}</b><small>{{ a.preparatoria|default:"Sin prepa" }}, {{ a.creado_en|date:"j M" }}</small></span>
+              <form method="post">{% csrf_token %}<input type="hidden" name="accion" value="manual"><input type="hidden" name="familia" value="{{ elegida }}">
+                <input type="hidden" name="alumno" value="{{ a.pk }}"><button class="udc-btn chico">Unir</button></form></div></li>
+            {% empty %}<li class="lista-vacia">Ningún alumno sin familia se llama así.</li>{% endfor %}
+          </ul>
+          {% endif %}
+        {% endif %}
+      </div>
+      <ul class="lista">
+        {% for f in solas %}
+        <li><a class="fila fila-compacta" href="?familia={{ f.pk }}" {% if f.pk == elegida %}style="background:var(--c-acento-suave)"{% endif %}>
+          <span class="fila-texto"><b>{{ f.nombre_aspirante }}</b><small>{{ f.tutor_nombre|default:"Tutor sin nombre" }}, {{ f.creado_en|date:"j M" }}</small></span>
+          <span class="material-symbols-outlined fila-flecha">chevron_right</span></a></li>
+        {% empty %}<li class="lista-vacia">Todas las encuestas de familias tienen a su alumno o una propuesta.</li>{% endfor %}
+      </ul>
+    </section>
+    <section class="grupo">
+      <header class="grupo-cabecera"><h2>Volver a buscar</h2></header>
+      <div class="grupo-cuerpo text-sm">
+        <p class="text-subtle mb-3">{{ total_alumnos_solos }} alumnos aún sin familia. Revisa otra vez todas las fichas a medias con el criterio actual (útil después de importar muchas respuestas).</p>
+        <form method="post">{% csrf_token %}<button class="udc-btn chico secundario" name="accion" value="buscar_todo">Buscar parejas para todos</button></form>
+      </div>
+    </section>
+    <section class="grupo">
+      <header class="grupo-cabecera"><h2>Para que se unan solas</h2></header>
+      <div class="grupo-cuerpo text-sm text-subtle" style="line-height:1.5">
+        Agrega a la encuesta de padres <b style="color:var(--c-texto)">«Correo o teléfono del aspirante»</b> o <b style="color:var(--c-texto)">«CURP del aspirante»</b>,
+        y al cuestionario del alumno <b style="color:var(--c-texto)">«Tu CURP»</b>. Con cualquiera de esas, la unión es segura y automática.
+        Usar las <a class="underline" href="{% url 'admin:prospectos_evento_changelist' %}">tarjetas familiares</a> en los eventos también.
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

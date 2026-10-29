@@ -102,3 +102,10 @@ def enmascarar_telefono(telefono: str | None) -> str:
     if not telefono:
         return '—'
     return '•••• ••' + re.sub(r'\D+', '', telefono)[-2:]
+
+
+def indice_curp(curp: str | None) -> str | None:
+    """Índice ciego de la CURP (para unir alumno y familia sin guardarla en claro)."""
+    from .curp import analizar
+    datos = analizar(curp)
+    return _hmac('curp', datos['curp']) if datos else None

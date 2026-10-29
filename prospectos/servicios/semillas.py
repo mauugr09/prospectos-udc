@@ -139,6 +139,18 @@ def preparar() -> None:
     crear_catalogos()
     crear_roles()
     actualizar_por_catalogo()
+    mejoras_unicas()
+
+
+def mejoras_unicas() -> None:
+    """Una sola vez por versión: aplica a lo ya importado los criterios nuevos (eventos por prepa y fecha; familias)."""
+    from ..models import Configuracion
+    if Configuracion.obtener('mejoras.eventos_familias') == 1:
+        return
+    from . import eventos, familias
+    eventos.reatribuir()
+    familias.buscar_para_todos()
+    Configuracion.guardar('mejoras.eventos_familias', 1)
 
 
 def actualizar_por_catalogo() -> None:

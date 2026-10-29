@@ -252,7 +252,7 @@ def badge_tareas(request):
 def badge_coincidencias(request):
     if not request.user.has_perm('prospectos.resolver_coincidencias'):
         return None
-    return PosibleCoincidencia.objects.filter(estado='pendiente').count() or None
+    return PosibleCoincidencia.objects.filter(estado='pendiente').exclude(motivo__startswith='Familia').count() or None
 
 
 def badge_esperando(request):
@@ -406,6 +406,63 @@ def evento_vivo_datos(request, pk):
                          'ranking': ranking[:10]})
 
 
+FIRMA_OMISION = {'nombre': '', 'cargo': 'Coordinación de Admisiones', 'telefono': '', 'correo': '',
+                 'lugar': 'Cuautitlán Izcalli, Estado de México'}
+
+
+def _firma():
+    return {**FIRMA_OMISION, **(Configuracion.obtener('eventos.firma', {}) or {}), 'logo': settings.LOGO_ARCHIVO.exists()}
+
+
+@staff_member_required
+def evento_solicitud(request, pk):
+    """Carta para pedir a la preparatoria el permiso de la visita (imprimir o guardar como PDF)."""
+    e = _evento(request, pk)
+    if request.method == 'POST':
+        _permiso(request, 'change_evento')
+        if request.POST.get('accion') == 'firma':
+            Configuracion.guardar('eventos.firma', {k: (request.POST.get(k) or '').strip()[:150] for k in FIRMA_OMISION}, request.user)
+            auditoria.registrar('firma_solicitudes', None, {}, request=request)
+            messages.success(request, 'Datos de quien firma guardados para todas las solicitudes.')
+        elif request.POST.get('accion') == 'solicitado' and e.estado == 'por_solicitar':
+            e.estado = 'solicitado'
+            e.save(update_fields=['estado'])
+            messages.success(request, 'Evento marcado como solicitado.')
+        return redirect(request.path)
+    return render(request, 'prospectos/evento_solicitud.html', {
+        'e': e, 'firma': _firma(), 'hoy': timezone.localdate(), 'puede_editar': request.user.has_perm('prospectos.change_evento'),
+        'promotor': e.promotor, 'title': f'Solicitud · {e.preparatoria}'})
+
+
+@staff_member_required
+def evento_reporte(request, pk):
+    """Reporte final del evento, para imprimir o guardar como PDF."""
+    from .servicios import eventos
+    e = _evento(request, pk)
+    con_nombres = request.GET.get('nombres') == '1' and request.user.has_perm('prospectos.view_prospecto')
+    if request.method == 'POST' and request.POST.get('accion') == 'reatribuir':
+        _permiso(request, 'change_evento')
+        n = eventos.reatribuir(desde=e.fecha)
+        messages.success(request, f'Se asignaron {n} respuestas a sus eventos por preparatoria y fecha.')
+        return redirect(request.get_full_path())
+    d = eventos.reporte(e, con_nombres)
+    if con_nombres:
+        auditoria.registrar('reporte_evento_con_nombres', None, {'evento': e.codigo}, request=request)
+    return render(request, 'prospectos/evento_reporte.html', {
+        'e': e, 'd': d, 'firma': _firma(), 'hoy': timezone.localdate(), 'con_nombres': con_nombres,
+        'puede_nombres': request.user.has_perm('prospectos.view_prospecto'), 'title': f'Reporte · {e.preparatoria}'})
+
+
+@staff_member_required
+def prepa_qr(request, pk):
+    """QR permanente de una preparatoria (carteles y todas sus visitas)."""
+    _permiso(request, 'view_preparatoria')
+    prepa = get_object_or_404(Preparatoria, pk=pk)
+    qrs = [('Cuestionario del alumno', reportes.qr_permanente(prepa, Cuestionario.ALUMNO)),
+           ('Encuesta para mamá, papá o tutor', reportes.qr_permanente(prepa, Cuestionario.TUTOR))]
+    return render(request, 'prospectos/prepa_qr.html', _ctx(request, f'QR permanente · {prepa}', prepa=prepa, qrs=qrs))
+
+
 @staff_member_required
 def evento_qr(request, pk):
     e = _evento(request, pk)
@@ -494,6 +551,64 @@ def configurar_mapa(request):
     return render(request, 'prospectos/configurar_mapa.html', _ctx(
         request, 'Mapa: Google Maps u OpenStreetMap', g=g, tiles=TILES(),
         origen=request.build_absolute_uri('/').rstrip('/'), desde_config=bool(settings.CONFIG.get('GOOGLE_MAPS_API_KEY'))))
+
+
+# --------------------------------------------------------------------------- familias por unir
+def badge_familias(request):
+    if not request.user.has_perm('prospectos.resolver_coincidencias'):
+        return None
+    from .servicios import familias
+    return familias.pendientes().count() or None
+
+
+@staff_member_required
+def familias_por_unir(request):
+    """Encuestas de padres ↔ cuestionarios de alumnos: confirmar con un clic, o unir a mano buscando por nombre."""
+    _permiso(request, 'resolver_coincidencias')
+    from .servicios import familias
+    from .servicios.inteligencia import NoFusionable, fusionar, rechazar
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+        try:
+            if accion in ('unir', 'no'):
+                c = get_object_or_404(PosibleCoincidencia, pk=request.POST.get('propuesta'), estado='pendiente')
+                if accion == 'unir':
+                    a, f = (c.candidato, c.prospecto) if c.prospecto.tiene_tutor and not c.prospecto.tiene_alumno else (c.prospecto, c.candidato)
+                    fusionar(a, f, request.user)
+                    messages.success(request, f'Listo: {a.nombre_aspirante} ya tiene a su familia en la ficha.')
+                else:
+                    rechazar(c, request.user)
+            elif accion == 'manual':
+                f = get_object_or_404(Prospecto, pk=request.POST.get('familia'), tiene_tutor=True, tiene_alumno=False)
+                a = get_object_or_404(Prospecto, pk=request.POST.get('alumno'), tiene_alumno=True, tiene_tutor=False)
+                fusionar(a, f, request.user)
+                messages.success(request, f'Listo: {a.nombre_aspirante} ya tiene a su familia en la ficha.')
+            elif accion == 'buscar_todo':
+                r = familias.buscar_para_todos()
+                messages.success(request, f"Se unieron {r['unidas']} familias sin duda y quedaron {r['propuestas']} propuestas nuevas para revisar.")
+        except NoFusionable as e:
+            messages.error(request, str(e))
+        return redirect(request.get_full_path())
+
+    propuestas = list(familias.pendientes().order_by('-similitud')[:100])
+    for c in propuestas:  # mostrar siempre: izquierda la familia, derecha el alumno
+        c.familia, c.alumno = (c.prospecto, c.candidato) if c.prospecto.tiene_tutor and not c.prospecto.tiene_alumno else (c.candidato, c.prospecto)
+        c.puntos = round(c.similitud * 100)
+        c.razones = c.motivo.split(': ', 1)[-1]
+    con_propuesta = {x for c in propuestas for x in (c.prospecto_id, c.candidato_id)}
+    vivos = Prospecto.objects.filter(fusionado_en__isnull=True, anonimizado_en__isnull=True)
+    solas = vivos.filter(tiene_tutor=True, tiene_alumno=False).exclude(pk__in=con_propuesta).order_by('-creado_en')[:60]
+    elegida = request.GET.get('familia')
+    q = (request.GET.get('q') or '').strip()
+    resultados = []
+    if elegida and q:
+        resultados = list(vivos.filter(tiene_alumno=True, tiene_tutor=False, nombre_aspirante__icontains=q)
+                          .select_related('preparatoria').order_by('nombre_aspirante')[:20])
+    return render(request, 'prospectos/familias.html', _ctx(
+        request, 'Familias por unir', propuestas=propuestas, solas=solas, elegida=int(elegida) if (elegida or '').isdigit() else None,
+        q=q, resultados=resultados,
+        total_solas=vivos.filter(tiene_tutor=True, tiene_alumno=False).exclude(pk__in=con_propuesta).count(),
+        total_alumnos_solos=vivos.filter(tiene_alumno=True, tiene_tutor=False).count()))
 
 
 # --------------------------------------------------------------------------- uso desde otras computadoras

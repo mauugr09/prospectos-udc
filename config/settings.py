@@ -316,6 +316,8 @@ UNFOLD = {
                  'permission': _permiso('prospectos.view_prospecto'), 'badge': 'prospectos.views.badge_esperando'},
                 {'title': 'Prospectos', 'icon': 'groups', 'link': reverse_lazy('admin:prospectos_prospecto_changelist'),
                  'permission': _permiso('prospectos.view_prospecto')},
+                {'title': 'Familias por unir', 'icon': 'family_restroom', 'link': reverse_lazy('prospectos:familias'),
+                 'permission': _permiso('prospectos.resolver_coincidencias'), 'badge': 'prospectos.views.badge_familias'},
                 {'title': 'Posibles duplicados', 'icon': 'join_inner', 'link': reverse_lazy('admin:prospectos_posiblecoincidencia_changelist'),
                  'permission': _permiso('prospectos.resolver_coincidencias'), 'badge': 'prospectos.views.badge_coincidencias'},
             ]},

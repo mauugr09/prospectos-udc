@@ -384,6 +384,14 @@ def qr_general(evento: Evento, tipo: str) -> dict:
     return {'url': url, 'qr': qr_svg(url) if url else None}
 
 
+def qr_permanente(prepa: Preparatoria, tipo: str) -> dict:
+    """QR que no cambia: sirve para carteles y para todas las visitas a esa prepa."""
+    f = formulario_activo(tipo)
+    url = f.url_prellenada({'evento': prepa.codigo_qr}) if f else None
+    return {'url': url, 'qr': qr_svg(url) if url else None,
+            'con_codigo': bool(f and (f.campos_prellenado or {}).get('evento'))}
+
+
 def token_familia() -> str:
     return 'F' + ''.join(secrets.choice(ALFABETO) for _ in range(7))
 

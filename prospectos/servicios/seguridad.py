@@ -35,7 +35,8 @@ def anonimizar(p: Prospecto, motivo: str, descartar_respuestas: bool = False) ->
                 r.estado = EstadoRespuesta.DESCARTADA
             r.save()
         p.nombre_aspirante = f'Anónimo #{p.pk}'
-        p.correo = p.telefono = p.tutor_correo = p.tutor_telefono = None
+        p.correo = p.telefono = p.tutor_correo = p.tutor_telefono = p.curp = None
+        p.fecha_nacimiento = None
         p.tutor_nombre = ''
         p.token_familia = None
         p.edad = None

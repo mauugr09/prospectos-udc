@@ -1,0 +1,87 @@
+{% load static %}<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+<link rel="icon" href="{% static 'prospectos/marca/favicon.svg' %}">
+<style>
+  :root { --tinta: #111; --gris: #5b5b60; --linea: #d4d4d8; --azul: #172852; --fondo: #e9e9ee; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--tinta);
+         font: 11.5pt/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+  .barra { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 16px;
+           background: rgba(246,246,248,.86); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: .5px solid #ccc;
+           font-size: 14px; }
+  .barra a, .barra button { font: inherit; border: 0; border-radius: 8px; padding: 6px 14px; cursor: pointer; text-decoration: none;
+           background: rgba(118,118,128,.14); color: #2447b8; }
+  .barra .principal { background: #2447b8; color: #fff; }
+  .barra .espacio { flex: 1; }
+  .barra small { color: var(--gris); }
+  .hoja { width: 21.59cm; min-height: 27.94cm; margin: 24px auto 48px; background: #fff; padding: 2cm 2.2cm;
+          box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 12px 40px rgba(0,0,0,.10); }
+  .membrete { display: flex; align-items: center; gap: 14px; padding-bottom: 12px; border-bottom: 2px solid var(--azul); margin-bottom: 22px; }
+  .membrete img { height: 54px; width: auto; }
+  .membrete b { display: block; font-size: 15pt; color: var(--azul); letter-spacing: -.01em; }
+  .membrete span { font-size: 10pt; color: var(--gris); }
+  .franja { display: flex; height: 3px; width: 72px; margin-top: 6px; }
+  .franja i { flex: 1; } .franja i:nth-child(1) { background: #2E8B3E; } .franja i:nth-child(2) { background: #d9dbe2; } .franja i:nth-child(3) { background: #D32F2F; }
+  h1 { font-size: 16pt; margin: 0 0 4px; letter-spacing: -.01em; }
+  h2 { font-size: 12pt; margin: 22px 0 8px; color: var(--azul); }
+  p { margin: 0 0 10px; }
+  .derecha { text-align: right; }
+  .gris { color: var(--gris); }
+  table { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
+  th, td { text-align: left; padding: 5px 6px; border-bottom: .5px solid var(--linea); vertical-align: top; }
+  th { color: var(--gris); font-weight: 600; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .cifras { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: .5px solid var(--linea); border-radius: 8px; overflow: hidden; margin: 6px 0 4px; }
+  .cifras div { padding: 10px 12px; border-right: .5px solid var(--linea); }
+  .cifras div:last-child { border-right: 0; }
+  .cifras b { display: block; font-size: 18pt; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .cifras span { font-size: 9.5pt; color: var(--gris); }
+  .barra-h { display: block; height: 7px; border-radius: 4px; background: #eceef3; overflow: hidden; }
+  .barra-h i { display: block; height: 100%; background: var(--azul); }
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .firma { margin-top: 56px; width: 7.5cm; text-align: center; border-top: .8px solid var(--tinta); padding-top: 6px; font-size: 10.5pt; }
+  .acuse { margin-top: 36px; border: .8px dashed #999; border-radius: 6px; padding: 12px 14px; font-size: 10pt; }
+  .acuse .renglones { display: grid; grid-template-columns: 1fr 1fr; gap: 26px 24px; margin-top: 18px; }
+  .acuse .renglones div { border-top: .5px solid #999; padding-top: 4px; color: var(--gris); }
+  .lineas div { border-bottom: .5px solid #bbb; height: 26px; }
+  .config { width: 21.59cm; margin: 24px auto 0; background: #fff; border-radius: 12px; padding: 14px 18px; font-size: 13.5px;
+            box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .config summary { cursor: pointer; font-weight: 600; }
+  .config form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin-top: 12px; }
+  .config label { display: flex; flex-direction: column; gap: 3px; color: var(--gris); font-size: 12.5px; }
+  .config input { font: inherit; padding: 6px 10px; border: 0; border-radius: 8px; background: rgba(118,118,128,.12); color: var(--tinta); }
+  .config button { grid-column: 1 / -1; justify-self: start; font: inherit; border: 0; border-radius: 8px; padding: 6px 14px; background: #2447b8; color: #fff; cursor: pointer; }
+  .mensaje { width: 21.59cm; margin: 16px auto 0; padding: 10px 14px; border-radius: 10px; background: #e8f5ec; color: #1d6b34; font-size: 14px; }
+  @media (max-width: 860px) { .hoja, .config, .mensaje { width: auto; margin-left: 12px; margin-right: 12px; padding: 1.2cm; } .cifras { grid-template-columns: 1fr 1fr; } }
+  @page { size: letter; margin: 1.6cm 1.8cm; }
+  @media print {
+    body { background: #fff; font-size: 11pt; }
+    .barra, .config, .mensaje, .no-imprimir { display: none !important; }
+    .hoja { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+    h2 { break-after: avoid; } table, .cifras { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<nav class="barra">
+  <a href="{% url 'admin:prospectos_evento_changelist' %}">‹ Eventos</a>
+  {% block barra %}{% endblock %}
+  <span class="espacio"></span>
+  <small>Imprime o elige «Guardar como PDF» en el cuadro de impresión.</small>
+  <button class="principal" onclick="window.print()">Imprimir</button>
+</nav>
+{% for m in messages %}<div class="mensaje">{{ m }}</div>{% endfor %}
+{% block antes %}{% endblock %}
+<main class="hoja">
+  <header class="membrete">
+    {% if firma.logo %}<img src="/marca/logo.png" alt="" style="filter:brightness(0) saturate(100%) invert(14%) sepia(39%) saturate(2400%) hue-rotate(212deg)">{% else %}<img src="{% static 'prospectos/marca/favicon.svg' %}" alt="">{% endif %}
+    <div><b>Universidad de Cuautitlán</b><span>{{ firma.cargo|default:"Coordinación de Admisiones" }}</span>
+      <div class="franja"><i></i><i></i><i></i></div></div>
+  </header>
+  {% block hoja %}{% endblock %}
+</main>
+</body>
+</html>

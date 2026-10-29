@@ -180,6 +180,115 @@
     elegir(lista[Math.min(i, lista.length - 1)]?.id);
   }
 
+  // ------------------------------------------------------------------ búsqueda en lote
+  // Busca todas las prepas sin ubicar, una por una (OpenStreetMap pide máximo 1 consulta por segundo), propone el
+  // primer resultado DENTRO de la zona de los planteles y deja marcadas solo las que se parecen por nombre.
+  // Nada se guarda sin que la persona lo confirme.
+  const ZONA = { s: 19.30, n: 20.10, o: -99.60, e: -98.80 };
+  const ABREV = [[/\bepo\b/gi, 'Escuela Preparatoria Oficial'], [/\bepoem\b/gi, 'Escuela Preparatoria Oficial'],
+                 [/\bprepa\b/gi, 'Preparatoria'], [/\bcbt\b/gi, 'Centro de Bachillerato Tecnológico'],
+                 [/\bno\.?\s*/gi, ''], [/#/g, '']];
+  const enZona = (x) => x.lat >= ZONA.s && x.lat <= ZONA.n && x.lng >= ZONA.o && x.lng <= ZONA.e;
+  const palabras = (t) => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().match(/[a-z0-9]+/g) || [];
+  function parecido(a, b) {
+    const pa = new Set(palabras(a).filter((w) => w.length > 2 || /\d/.test(w)));
+    const pb = new Set(palabras(b));
+    if (!pa.size) return 0;
+    let n = 0; pa.forEach((w) => { if (pb.has(w)) n += 1; });
+    return n / pa.size;
+  }
+  let propuestas = [], capaLote = null, detener = false;
+
+  async function buscarUna(p) {
+    let q = p.nombre;
+    ABREV.forEach(([re, t]) => { q = q.replace(re, t); });
+    q = `${q.trim()}, ${p.municipio || 'Estado de México'}`;
+    if (conGoogle) {
+      try {
+        const r = (await buscarGoogle(q)).filter(enZona);
+        if (r.length) return r[0];
+      } catch (e) { conGoogle = false; }
+    }
+    await esperarTurno();
+    const r = await fetch(`${NOMINATIM}/search?format=jsonv2&countrycodes=mx&limit=5&accept-language=es&bounded=1&` +
+      `viewbox=${ZONA.o},${ZONA.n},${ZONA.e},${ZONA.s}&q=${encodeURIComponent(q)}`, OPC);
+    const res = (await r.json()).map((x) => ({ nombre: x.name || '', direccion: x.display_name, lat: +x.lat, lng: +x.lon,
+                                               escuela: ['school', 'college', 'university'].includes(x.type) }));
+    return res.filter(enZona).sort((a, b) => (b.escuela - a.escuela))[0] || null;
+  }
+
+  function filaLote(p, x) {
+    const li = document.createElement('li');
+    const etiqueta = document.createElement('label');
+    const cb = document.createElement('input'); cb.type = 'checkbox';
+    const t = document.createElement('div');
+    const b = document.createElement('b'); b.textContent = p.nombre;
+    const sm = document.createElement('small');
+    if (x) {
+      const sim = parecido(p.nombre, `${x.nombre} ${x.direccion}`);
+      const seguro = sim >= 0.5 || (x.escuela && sim >= 0.3);  // ser escuela no basta: puede ser otra escuela
+      cb.checked = seguro; cb.dataset.id = p.id;
+      sm.textContent = `${seguro ? '' : 'Revisa: '}${x.nombre ? x.nombre + ', ' : ''}${x.direccion || ''}`;
+      if (!seguro) sm.classList.add('ub-dudosa');
+      propuestas.push({ prepa: p, x, cb });
+      const m = L.circleMarker([x.lat, x.lng], { radius: 7, color: '#fff', weight: 2, fillColor: seguro ? '#ff9500' : '#8e8e93', fillOpacity: 1 })
+        .bindTooltip(p.nombre).addTo(capaLote);
+      li.addEventListener('mouseenter', () => m.openTooltip());
+      li.addEventListener('click', (e) => { if (e.target !== cb) mapa.setView([x.lat, x.lng], 15); });
+    } else {
+      cb.disabled = true;
+      sm.textContent = 'No se encontró: búscala a mano.';
+      sm.classList.add('ub-dudosa');
+    }
+    t.append(b, sm); etiqueta.append(cb, t); li.append(etiqueta);
+    return li;
+  }
+
+  async function buscarTodas() {
+    const panel = $('ub-lote'), ul = $('ub-lote-lista'), estado = $('ub-lote-estado');
+    panel.hidden = false; ul.innerHTML = ''; propuestas = []; detener = false;
+    if (capaLote) capaLote.remove();
+    capaLote = L.featureGroup().addTo(mapa);
+    $('ub-todas').disabled = true; $('ub-lote-guardar').disabled = true;
+    const pendientes = lista.slice();
+    for (let i = 0; i < pendientes.length && !detener; i += 1) {
+      estado.textContent = `Buscando ${i + 1} de ${pendientes.length}… (OpenStreetMap permite una búsqueda por segundo)`;
+      let x = null;
+      try { x = await buscarUna(pendientes[i]); } catch (e) { estado.textContent = 'Sin conexión: no se pudo seguir buscando.'; break; }
+      ul.append(filaLote(pendientes[i], x));
+    }
+    const marcadas = propuestas.filter((p) => p.cb.checked).length;
+    estado.textContent = `Se encontraron ${propuestas.length} de ${pendientes.length}. Marcadas ${marcadas}: las que se parecen por nombre. ` +
+      'Revisa en el mapa las grises antes de marcarlas.';
+    if (capaLote.getLayers().length) mapa.fitBounds(capaLote.getBounds().pad(.2));
+    $('ub-todas').disabled = false; $('ub-lote-guardar').disabled = !propuestas.length;
+  }
+
+  async function guardarLote() {
+    const elegidas = propuestas.filter((p) => p.cb.checked);
+    $('ub-lote-guardar').disabled = true;
+    let ok = 0;
+    for (const p of elegidas) {
+      const datos = new FormData();
+      datos.append('prepa', p.prepa.id); datos.append('lat', p.x.lat.toFixed(7)); datos.append('lng', p.x.lng.toFixed(7));
+      datos.append('municipio', p.x.municipio || p.prepa.municipio || '');
+      const r = await fetch(location.pathname, { method: 'POST', body: datos, headers: { 'X-CSRFToken': csrf } });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.ok) {
+        ok += 1;
+        p.cb.closest('li').remove();
+        lista.splice(lista.indexOf(p.prepa), 1);
+        document.querySelector(`#ub-prepas button[data-id="${p.prepa.id}"]`)?.closest('li')?.remove();
+        L.circleMarker([p.x.lat, p.x.lng], { radius: 6, color: '#fff', weight: 1, fillColor: '#34c759', fillOpacity: 1 })
+          .bindTooltip(p.prepa.nombre).addTo(mapa);
+      }
+    }
+    propuestas = propuestas.filter((p) => document.body.contains(p.cb));
+    texto($('ub-cuenta'), lista.length);
+    texto($('ub-lote-estado'), `Guardadas ${ok}. Las que quedan: revísalas una por una.`);
+    $('ub-lote-guardar').disabled = !propuestas.length;
+  }
+
   const caja = $('ub-mapa');
   MapaMX.cuandoTengaTamano(caja, () => {
     mapa = MapaMX.crear(caja, { tiles: fondo, rueda: true, googleFallo: () => { conGoogle = false; } });
@@ -189,6 +298,9 @@
     document.querySelectorAll('#ub-prepas button').forEach((b) => b.addEventListener('click', () => elegir(+b.dataset.id)));
     $('ub-buscar').addEventListener('submit', (e) => { e.preventDefault(); if ($('ub-q').value.trim()) buscar($('ub-q').value.trim()); });
     $('ub-guardar').addEventListener('click', guardar);
+    $('ub-todas')?.addEventListener('click', buscarTodas);
+    $('ub-lote-guardar').addEventListener('click', guardarLote);
+    $('ub-lote-cerrar').addEventListener('click', () => { detener = true; $('ub-lote').hidden = true; if (capaLote) capaLote.remove(); });
     const inicial = document.querySelector('#ub-prepas button.activo') || document.querySelector('#ub-prepas button');
     if (inicial) elegir(+inicial.dataset.id);
   });
