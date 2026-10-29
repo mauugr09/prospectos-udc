@@ -33,6 +33,7 @@ jobs:
       - name: Pruebas con SQLite
         shell: bash
         run: |
+          set +eo pipefail
           pytest 2>&1 | tee salida.txt; r=${PIPESTATUS[0]}
           [ $r -eq 0 ] || tail -10 salida.txt | sed 's/^/::error::/'
           exit $r
@@ -41,6 +42,7 @@ jobs:
         env:
           PROSPECTOS_BD_JSON: '{"MOTOR":"mariadb","HOST":"127.0.0.1","PUERTO":3307,"NOMBRE":"prospectos","USUARIO":"root","CLAVE":"raiz"}'
         run: |
+          set +eo pipefail
           pytest --ds=config.settings_pruebas_mariadb 2>&1 | tee salida.txt; r=${PIPESTATUS[0]}
           [ $r -eq 0 ] || tail -10 salida.txt | sed 's/^/::error::/'
           exit $r
