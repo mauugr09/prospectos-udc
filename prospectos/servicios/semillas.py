@@ -147,7 +147,12 @@ def mejoras_unicas() -> None:
     from ..models import Configuracion
     if Configuracion.obtener('mejoras.eventos_familias') == 1:
         return
+    from ..models import PosibleCoincidencia
     from . import eventos, familias
+    # Las propuestas alumno ↔ familia de antes vivían en «Posibles duplicados»: pasan a «Familias por unir».
+    for c in PosibleCoincidencia.objects.filter(estado='pendiente', motivo__icontains='encuesta de padres'):
+        c.motivo = f'{familias.MOTIVO}: nombre parecido ({c.similitud:.0%})'
+        c.save(update_fields=['motivo'])
     eventos.reatribuir()
     familias.buscar_para_todos()
     Configuracion.guardar('mejoras.eventos_familias', 1)
