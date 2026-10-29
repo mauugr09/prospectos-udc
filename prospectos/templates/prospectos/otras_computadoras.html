@@ -1,0 +1,71 @@
+{% extends "prospectos/base.html" %}
+{% block subtitulo %}<p class="subtitulo">Una sola computadora corre el programa. Las demás, Windows o Mac, entran con el navegador y ven los mismos datos.</p>{% endblock %}
+{% block pagina %}
+<div class="tb-hoy">
+  <div class="flex flex-col gap-5">
+    <section class="grupo">
+      <header class="grupo-cabecera"><h2>Acceso por red</h2>
+        {% if activa_ahora %}<span class="rs-badge tono-verde">Activo</span>{% else %}<span class="rs-badge tono-gris">Apagado</span>{% endif %}</header>
+      <div class="grupo-cuerpo text-sm" style="line-height:1.55">
+        {% if guardado != activa_ahora %}
+        <div class="aviso aviso-rojo mb-3" style="background:var(--c-relleno-2)"><span class="material-symbols-outlined" style="color:var(--c-naranja)">restart_alt</span>
+          <div>Cambio guardado. <b>Cierra la ventana del programa y vuélvelo a abrir</b> para que se {% if guardado %}active{% else %}apague{% endif %}.</div></div>
+        {% endif %}
+        {% if activa_ahora %}
+          <p class="mb-3">Las demás computadoras entran por cualquiera de estas direcciones:</p>
+          <ul class="lista" style="margin:0 -16px 8px">
+            {% for d in direcciones %}<li><div class="fila fila-compacta"><span class="fila-texto"><b style="font-variant-numeric:tabular-nums">{{ d }}</b></span></div></li>
+            {% empty %}<li class="lista-vacia">Esta computadora no tiene red local ahora mismo.</li>{% endfor %}
+          </ul>
+          <p class="text-subtle">Si una no abre en alguna computadora, usa la de números (la IP).</p>
+        {% else %}
+          <p>Ahora solo se puede entrar desde esta computadora. Al activarlo, el programa abre también el puerto <b>{{ puerto }}</b> con <b>HTTPS</b>
+          para la red de la oficina. En esta computadora se sigue entrando igual que siempre.</p>
+        {% endif %}
+        <form method="post" class="mt-4">{% csrf_token %}
+          {% if guardado %}<button class="udc-btn secundario" name="accion" value="apagar">Apagar el acceso por red</button>
+          {% else %}<button class="udc-btn" name="accion" value="activar"><span class="material-symbols-outlined">devices</span>Activar el acceso por red</button>{% endif %}
+        </form>
+      </div>
+    </section>
+
+    {% if huella %}
+    <section class="grupo">
+      <header class="grupo-cabecera"><h2>Certificado</h2></header>
+      <div class="grupo-cuerpo text-sm" style="line-height:1.55">
+        <p>Cada computadora instala una vez el certificado de este programa. Antes de confiar en él, comprueba que la huella sea exactamente esta:</p>
+        <p class="mt-2 mb-2" style="font-variant-numeric:tabular-nums;font-size:13px;word-spacing:4px;color:var(--c-texto)">{{ huella }}</p>
+        <p class="text-subtle">Si alguna vez ves otra huella, no la instales: alguien podría estar haciéndose pasar por el programa.</p>
+      </div>
+    </section>
+    {% endif %}
+  </div>
+
+  <div class="flex flex-col gap-5">
+    <section class="grupo">
+      <header class="grupo-cabecera"><h2>En cada computadora, una sola vez</h2></header>
+      <div class="grupo-cuerpo text-sm">
+        <ol class="ay-pasos">
+          <li><span class="material-symbols-outlined">counter_1</span><div><b>Abre en el navegador la dirección de arriba seguida de <code>conectar/</code></b>
+            <small>La primera vez el navegador dirá que la conexión no es privada. Es normal antes de instalar el certificado: elige «Configuración avanzada» y continúa.</small></div></li>
+          <li><span class="material-symbols-outlined">counter_2</span><div><b>Descarga e instala el certificado</b>
+            <small>La página explica los pasos para Windows o para Mac según la computadora. Compara la huella.</small></div></li>
+          <li><span class="material-symbols-outlined">counter_3</span><div><b>Cierra el navegador y vuelve a entrar</b>
+            <small>Ya no aparece el aviso. Guarda la dirección en favoritos.</small></div></li>
+        </ol>
+      </div>
+    </section>
+    <section class="grupo">
+      <header class="grupo-cabecera"><h2>Para que funcione siempre</h2></header>
+      <div class="grupo-cuerpo text-sm"><ul class="ay-pasos">
+        <li><span class="material-symbols-outlined">power</span><div><b>Esta computadora encendida y con el programa abierto</b>
+          <small>Mientras está abierto no se duerme sola. Conéctala a la corriente{% if sistema == 'mac' %} y, si es portátil, no cierres la tapa{% endif %}.</small></div></li>
+        <li><span class="material-symbols-outlined">shield</span><div><b>Permite la conexión la primera vez</b>
+          <small>{% if sistema == 'mac' %}macOS puede preguntar si Prospectos acepta conexiones entrantes: elige «Permitir».{% else %}El Firewall de Windows preguntará si permite a Prospectos en redes privadas: marca «Redes privadas» y Permitir. No marques redes públicas.{% endif %}</small></div></li>
+        <li><span class="material-symbols-outlined">lan</span><div><b>Una IP fija</b>
+          <small>Pide a sistemas que le reserven siempre la misma IP a esta computadora; si cambia, las demás tendrán que usar la dirección nueva.</small></div></li>
+      </ul></div>
+    </section>
+  </div>
+</div>
+{% endblock %}

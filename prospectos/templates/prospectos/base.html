@@ -1,0 +1,6 @@
+{% extends "admin/base.html" %}
+{% load unfold static %}
+{% block extrastyle %}{{ block.super }}<meta name="mx-estados" content="{% static 'prospectos/geo/mx-estados.geojson' %}">{% endblock %}
+{% block title %}{{ title }} | {{ site_title }}{% endblock %}
+{% block branding %}{% include "unfold/helpers/site_branding.html" %}{% endblock %}
+{% block content %}<div class="pagina">{% block encabezado %}<header class="pagina-cabecera"><h1 class="titulo-grande">{{ title }}</h1>{% block subtitulo %}{% endblock %}</header>{% endblock %}{% block pagina %}{% endblock %}</div>{% endblock %}

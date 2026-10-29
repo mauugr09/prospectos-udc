@@ -1,0 +1,57 @@
+{% extends "prospectos/base.html" %}
+{% block pagina %}
+<div class="udc-nota mb-6"><span class="material-symbols-outlined">tune</span>
+  <div>La prioridad va de 0 a 100: suma de los puntos de las reglas que cumple el aspirante ÷ suma de todos los puntos.
+  <b>Son una suposición inicial</b>: compáralos contra los inscritos reales cuando cierre el primer ciclo.</div></div>
+<form method="post">{% csrf_token %}
+<div class="grid gap-6 xl:grid-cols-2">
+  <section class="udc-panel"><header><span class="material-symbols-outlined">scoreboard</span>Puntos de cada regla</header>
+    <div class="udc-cuerpo flex flex-col gap-4">
+    {% for f in filas %}
+      <div x-data="{ v: {{ f.valor }} }">
+        <div class="flex justify-between text-sm mb-1"><label for="p-{{ f.clave }}" class="font-semibold">{{ f.nombre }}</label>
+          <span class="text-subtle">peso <b class="text-important" x-text="v">{{ f.valor }}</b> · ≈ {{ f.pct }} pts</span></div>
+        <input id="p-{{ f.clave }}" type="range" min="0" max="50" name="peso_{{ f.clave }}" value="{{ f.valor }}" x-model="v" class="w-full accent-primary-600">
+      </div>
+    {% endfor %}
+    </div></section>
+  <section class="udc-panel"><header><span class="material-symbols-outlined">category</span>Grupos</header>
+    <div class="udc-cuerpo flex flex-col gap-4">
+    {% for u in umbrales %}
+      <div class="flex justify-between items-center gap-4 text-sm"><label for="u-{{ u.clave }}" class="font-semibold">{{ u.nombre }}</label>
+        <input id="u-{{ u.clave }}" type="number" min="0" max="100" name="umbral_{{ u.clave }}" value="{{ u.valor }}" class="udc-campo w-24"></div>
+    {% endfor %}
+    <p class="text-xs text-subtle">Quien contesta «No, gracias» a recibir información queda en «No quiere información» y sale de la lista de llamadas, sin importar sus puntos.</p>
+    </div></section>
+</div>
+<div class="mt-6 flex justify-end"><button type="submit" class="udc-btn"><span class="material-symbols-outlined">save</span>Guardar y recalcular todos</button></div>
+</form>
+
+<section class="udc-panel mt-8" id="permisos"><header><span class="material-symbols-outlined">verified_user</span>Reglas de permiso (aviso de privacidad)</header>
+  <div class="udc-cuerpo flex flex-col gap-4 text-sm">
+    <p>Siempre se respeta: <b>menores de {{ mayoria }} años solo se usan con permiso de su mamá, papá o tutor</b> (cuestionario del tutor
+      o permiso registrado por un asesor en la respuesta). Quien escribe «No» al aviso nunca se usa.</p>
+    <p>Para <b>mayores de edad</b>, tu Form hoy <b>no tiene</b> la pregunta de aceptación del aviso. Dos caminos:</p>
+    <ol class="list-decimal ps-6 flex flex-col gap-1">
+      <li><b>Recomendado:</b> agregar al Form la pregunta «He leído y acepto el aviso de privacidad» (Sí / No), con el enlace al aviso.</li>
+      <li>Si el aviso <b>ya se muestra en el Form</b> (enlace en la descripción, antes de contestar), contar el envío como aceptación
+        (consentimiento tácito). <b>Es una decisión del área jurídica</b>, no del sistema: solo un administrador puede activarlo y queda en la bitácora.</li>
+    </ol>
+    {% if request.user.is_superuser %}
+    <form method="post" class="flex flex-col gap-3 mt-2" x-data="{ on: {{ aviso.activo|yesno:'true,false' }} }">{% csrf_token %}
+      <input type="hidden" name="accion" value="permisos">
+      <label class="flex items-center gap-2"><input type="checkbox" name="aviso_activo" value="1" x-model="on" {% if aviso.activo %}checked{% endif %}>
+        El Form muestra el aviso de privacidad: contar el envío como aceptación de los <b>mayores de edad</b></label>
+      <div x-show="on" class="flex flex-col gap-3">
+        <label>Enlace del aviso de privacidad<br><input type="url" name="aviso_url" value="{{ aviso.url }}" class="udc-campo w-full max-w-xl" placeholder="https://udcm.mx/aviso-de-privacidad"></label>
+        <label class="flex items-center gap-2"><input type="checkbox" name="confirmo" value="1"> Confirmo que el enlace aparece en el Form antes de contestar y que jurídico lo aprobó</label>
+      </div>
+      <div><button class="udc-btn secundario" type="submit"><span class="material-symbols-outlined">save</span>Guardar reglas de permiso</button></div>
+      {% if aviso.por %}<p class="text-xs text-subtle">Último cambio: {{ aviso.por }} · {{ aviso.en|slice:":16"|cut:"T" }}</p>{% endif %}
+    </form>
+    {% else %}
+    <p class="text-subtle">Estado actual: {% if aviso.activo %}activado por {{ aviso.por }}{% else %}desactivado{% endif %}. Solo un administrador puede cambiarlo.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

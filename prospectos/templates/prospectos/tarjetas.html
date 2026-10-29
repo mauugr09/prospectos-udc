@@ -1,0 +1,38 @@
+{% extends "prospectos/base.html" %}
+{% block extrastyle %}{{ block.super }}
+<style>
+  .hoja{display:grid;grid-template-columns:repeat(2,1fr);gap:8mm}
+  .tarjeta{border:1px dashed #9aa3b8;border-radius:12px;overflow:hidden;break-inside:avoid;page-break-inside:avoid;background:#fff;color:#0b0f1c}
+  .tarjeta .cab{background:linear-gradient(120deg,#254099,#172852);color:#fff;padding:3mm 4mm;display:flex;justify-content:space-between;align-items:center;font-family:Montserrat,sans-serif}
+  .tarjeta .tri{height:3px;background:linear-gradient(90deg,#2E8B3E 0 33.3%,#fff 33.3% 66.6%,#D32F2F 66.6%)}
+  .tarjeta .par{display:grid;grid-template-columns:1fr 1fr;gap:4mm;text-align:center;padding:3mm 4mm}
+  .tarjeta img{width:100%;max-width:42mm}
+  .tarjeta .tok{font:700 12pt monospace;letter-spacing:.12em}
+  .tarjeta small{font-size:8pt;color:#4b5571}
+  @media print{.hoja{gap:4mm}@page{margin:10mm}}
+  @media (max-width:767px){.hoja{grid-template-columns:1fr}}
+</style>{% endblock %}
+{% block pagina %}
+<div class="udc-panel mb-6 no-imprimir"><div class="udc-cuerpo flex flex-col gap-3">
+  <p>Cada tarjeta trae <b>dos QR con el mismo código de familia</b>: el alumno escanea uno en la visita y se lleva la tarjeta a casa para que su tutor escanee el otro.
+  Así el sistema une ambas respuestas sin adivinar por nombre. Imprime en papel tamaño carta y recorta.</p>
+  {% if faltan %}<div class="udc-nota alerta"><span class="material-symbols-outlined">error</span>Falta un formulario activo con URL pública de tipo: {{ faltan|join:", " }}.</div>{% endif %}
+  <form method="get" class="flex flex-wrap gap-3 items-center"><label class="text-sm font-semibold">Cantidad</label>
+    <input type="number" name="cantidad" min="1" max="200" value="{{ cantidad }}" class="udc-campo w-24">
+    <button type="submit" class="udc-btn"><span class="material-symbols-outlined">style</span>Generar</button>
+    {% if tarjetas %}<button type="button" class="udc-btn secundario" onclick="window.print()"><span class="material-symbols-outlined">print</span>Imprimir</button>{% endif %}</form>
+  <p class="text-xs text-subtle">Cada vez que generas, los códigos son nuevos. Imprime y usa solo un lote por evento.</p>
+</div></div>
+<div class="hoja">
+{% for t in tarjetas %}
+  <div class="tarjeta">
+    <div class="cab"><b>Universidad de Cuautitlán</b><span class="tok">{{ t.token }}</span></div><div class="tri"></div>
+    <div class="par">
+      <div><b>ALUMNO</b><br>{% if t.alumno.qr %}<img src="{{ t.alumno.qr }}" alt="QR alumno">{% endif %}<br><small>Escanéalo en la visita</small></div>
+      <div><b>MAMÁ, PAPÁ O TUTOR</b><br>{% if t.tutor.qr %}<img src="{{ t.tutor.qr }}" alt="QR tutor">{% endif %}<br><small>Escanéalo en casa</small></div>
+    </div>
+    <div style="text-align:center;font-size:8pt;padding:0 0 3mm">{{ evento.preparatoria }} · {{ evento.fecha|date:"d/m/Y" }}</div>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "prospectos/base.html" %}
+{% block pagina %}
+<a href="{% url 'prospectos:respuestas' %}" class="text-sm text-subtle inline-flex items-center gap-1 mb-3"><span class="material-symbols-outlined">arrow_back</span>Todas las respuestas</a>
+
+<section class="tb-card mb-5">
+  <div class="flex flex-wrap items-center gap-4">
+    <span class="tb-avatar av-{% if es_alumno %}5{% else %}1{% endif %}" style="width:56px;height:56px;font-size:18px;border-radius:16px">{{ nombre|slice:":1"|upper }}</span>
+    <div class="grow min-w-0">
+      <h2 class="text-xl">{{ nombre }}</h2>
+      <p class="text-sm text-subtle">{% if es_alumno %}Cuestionario del alumno{% else %}Cuestionario de mamá, papá o tutor{% endif %} · {{ r.formulario }} · enviado el {{ r.enviada_en|date:"j \d\e F Y, H:i" }}{% if r.version > 1 %} · editado {{ r.version|add:"-1" }} vez{{ r.version|add:"-1"|pluralize:"es" }}{% endif %}</p>
+    </div>
+    <span class="rs-badge tono-{{ tono }} grande">{{ estado }}</span>
+  </div>
+  <div class="ay-nota mt-4"><span class="material-symbols-outlined">info</span><div>{{ ayuda }}</div></div>
+  <div class="flex flex-wrap gap-3 mt-4">
+    {% if r.prospecto %}<a class="udc-btn" href="{% url 'admin:prospectos_prospecto_change' r.prospecto.pk %}"><span class="material-symbols-outlined">person</span>Abrir ficha del aspirante</a>{% endif %}
+    {% if r.evento %}<span class="rs-chip">Evento {{ r.evento.codigo }} · {{ r.evento.preparatoria }}</span>{% endif %}
+    {% if r.token_familia %}<span class="rs-chip" title="Une al alumno con su tutor">Código de familia {{ r.token_familia }}</span>{% endif %}
+  </div>
+</section>
+
+{% if puede_permiso %}
+<section class="tb-card mb-5 ay-permiso">
+  <header><h2><span class="material-symbols-outlined">verified_user</span>Pedir el permiso del tutor</h2></header>
+  <ol class="text-sm flex flex-col gap-1 list-decimal ps-5 mb-4">
+    <li>Comunícate con su mamá, papá o tutor <b>solo para pedir el permiso</b> (no para promover todavía).</li>
+    <li>Explícale el aviso de privacidad y pregúntale si acepta.</li>
+    <li>Si acepta, regístralo aquí. Queda tu nombre, la fecha y cómo lo diste, en el historial y en la bitácora.</li>
+  </ol>
+  {% if contacto %}<div class="flex flex-wrap gap-4 text-sm mb-4">{% for e, v in contacto %}<span><span class="text-subtle">{{ e }}:</span> <b>{{ v|default:"—" }}</b></span>{% endfor %}</div>
+  {% elif perms.prospectos.ver_datos_personales %}<a class="udc-btn secundario chico mb-4" href="?contacto=1"><span class="material-symbols-outlined">call</span>Ver teléfono para pedir el permiso</a>{% endif %}
+  <form method="post" class="grid gap-3 md:grid-cols-3 items-end">{% csrf_token %}<input type="hidden" name="accion" value="permiso">
+    <label class="text-sm">Nombre del tutor<br><input name="tutor_nombre" required class="udc-campo w-full" value="{{ r.prospecto.tutor_nombre }}"></label>
+    <label class="text-sm">¿Cómo dio el permiso?<br><select name="medio" class="udc-campo w-full">{% for k, v in medios %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></label>
+    <label class="text-sm">Nota (opcional)<br><input name="nota" maxlength="120" class="udc-campo w-full" placeholder="p. ej. habló la mamá"></label>
+    <label class="text-sm flex items-center gap-2 md:col-span-2"><input type="checkbox" name="confirmo" value="1" required> El tutor escuchó el aviso de privacidad y aceptó.</label>
+    <div class="md:text-right"><button class="udc-btn" type="submit"><span class="material-symbols-outlined">check</span>Registrar permiso</button></div>
+  </form>
+</section>
+{% endif %}
+{% include "prospectos/_respuestas_temas.html" with temas=temas mostrar_alumno=es_alumno mostrar_tutor=es_tutor %}
+<p class="text-xs text-subtle mt-4">Correo y teléfono no se muestran aquí: se guardan cifrados y solo se ven en la ficha, con permiso.</p>
+{% endblock %}

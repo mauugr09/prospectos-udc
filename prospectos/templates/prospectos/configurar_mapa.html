@@ -1,0 +1,71 @@
+{% extends "prospectos/base.html" %}
+{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'prospectos/vendor/leaflet/leaflet.css' %}">{% endblock %}
+{% block pagina %}
+<div class="ay-intro mb-5">
+  <span class="material-symbols-outlined">map</span>
+  <div><b>Sin llave el programa usa OpenStreetMap</b> (gratis, ya funciona). Con una llave de Google Maps, los mapas usan Google
+  y el buscador de «Ubicar preparatorias» encuentra escuelas por su nombre. Si la llave falla, se regresa solo a OpenStreetMap.</div>
+</div>
+
+<div class="grid gap-5 xl:grid-cols-2">
+  <section class="tb-card">
+    <header><h2>Llave de Google Maps</h2>
+      <span class="rs-badge {% if g.llave %}tono-verde{% else %}tono-gris{% endif %}">{% if g.llave %}Google Maps{% else %}OpenStreetMap{% endif %}</span></header>
+    <form method="post" class="flex flex-col gap-4 text-sm">{% csrf_token %}
+      <label>Llave (API key)<br>
+        <input name="llave" value="{{ g.llave }}" class="udc-campo w-full font-mono" placeholder="AIza…" autocomplete="off" spellcheck="false"></label>
+      <label>Tipo de mapa<br>
+        <select name="tipo" class="udc-campo">
+          <option value="roadmap" {% if g.tipo == 'roadmap' %}selected{% endif %}>Calles (sigue el tema claro u oscuro)</option>
+          <option value="hybrid" {% if g.tipo == 'hybrid' %}selected{% endif %}>Satélite con calles</option>
+        </select></label>
+      {% if desde_config %}<p class="text-xs text-subtle">También hay una llave en config.json (GOOGLE_MAPS_API_KEY); la de aquí tiene prioridad.</p>{% endif %}
+      <div class="flex gap-3">
+        <button class="udc-btn" type="submit"><span class="material-symbols-outlined">save</span>Guardar</button>
+        {% if g.llave %}<button class="udc-btn secundario" type="submit" name="llave" value="" onclick="return confirm('¿Quitar la llave y volver a OpenStreetMap?')">Quitar llave</button>{% endif %}
+      </div>
+    </form>
+    <h3 class="font-bold mt-6 mb-2" style="color:var(--g-texto-fuerte)">Mapa de prueba</h3>
+    <div id="mapa-prueba" style="height:280px;border-radius:12px;overflow:hidden"></div>
+    <p id="prueba-estado" class="text-sm mt-2 text-subtle">{% if g.llave %}Cargando Google Maps…{% else %}Sin llave: OpenStreetMap.{% endif %}</p>
+  </section>
+
+  <section class="tb-card text-sm">
+    <header><h2>Cómo sacar la llave (una sola vez, ~15 minutos)</h2></header>
+    <ol class="list-decimal ps-5 flex flex-col gap-2">
+      <li>Entra a <b>console.cloud.google.com</b> con la cuenta de la universidad y crea un proyecto (o usa el de los Forms).</li>
+      <li><b>Facturación:</b> Google exige ligar una cuenta de facturación (tarjeta) aunque no cobre. Tiene usos gratis cada mes
+        por servicio; lo que hace Admisiones queda muy por debajo. <b>Pon una alerta de presupuesto</b> (Facturación → Presupuestos y alertas), p. ej. de $100 MXN.</li>
+      <li><b>APIs y servicios → Biblioteca</b>, habilita: <b>Maps JavaScript API</b>, <b>Places API (New)</b> y <b>Geocoding API</b>.</li>
+      <li><b>APIs y servicios → Credenciales → Crear credenciales → Clave de API.</b></li>
+      <li>En la clave, <b>restríngela</b> (si no, cualquiera que la vea puede gastar a tu nombre):
+        <ul class="list-disc ps-5 mt-1">
+          <li><i>Restricciones de aplicación</i> → <b>Sitios web</b> → agrega <code>{{ origen }}/*</code> y <code>http://localhost:8000/*</code>.</li>
+          <li><i>Restricciones de API</i> → solo las tres de arriba.</li>
+        </ul></li>
+      <li>Copia la clave (empieza con <code>AIza</code>), pégala aquí y guarda.</li>
+    </ol>
+    <p class="mt-4 text-subtle">Si el mapa de prueba dice que Google rechazó la llave: revisa que la facturación esté activa, que estén
+      habilitadas las tres APIs y que la restricción de sitios web tenga exactamente <code>{{ origen }}/*</code>. Los cambios en la
+      consola de Google tardan unos minutos.</p>
+    <p class="mt-2 text-subtle">Qué se envía a Google: las coordenadas del mapa que estás viendo y lo que escribes en el buscador de
+      «Ubicar». Nunca datos de aspirantes.</p>
+  </section>
+</div>
+{{ tiles|json_script:"tiles" }}
+<script src="{% static 'prospectos/vendor/leaflet/leaflet.js' %}"></script>
+<script src="{% static 'prospectos/vendor/googlemutant/Leaflet.GoogleMutant.js' %}"></script>
+<script src="{% static 'prospectos/js/mapa-mx.js' %}"></script>
+<script>
+(function () {
+  const caja = document.getElementById('mapa-prueba'), estado = document.getElementById('prueba-estado');
+  const fondo = JSON.parse(document.getElementById('tiles').textContent);
+  MapaMX.cuandoTengaTamano(caja, () => {
+    MapaMX.crear(caja, { tiles: fondo, rueda: true,
+      googleFallo: () => { estado.textContent = 'Google rechazó la llave o no hay conexión: se usa OpenStreetMap. Revisa los pasos de la derecha.'; estado.className = 'text-sm mt-2'; estado.style.color = 'var(--g-rojo)'; } });
+    if (fondo.google) MapaMX.google(fondo.google.llave).then(() => { estado.textContent = 'Google Maps funciona con esta llave.'; estado.className = 'text-sm mt-2'; estado.style.color = 'var(--g-verde)'; }).catch(() => {});
+  });
+})();
+</script>
+{% endblock %}

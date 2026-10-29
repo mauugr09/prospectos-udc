@@ -1,0 +1,139 @@
+# Pruebas y versiones para Windows y Mac (chip Apple) en computadoras reales de GitHub.
+# Cada ejecución deja descargables: Prospectos-windows (.zip) y Prospectos-mac (.dmg).
+# Con una etiqueta v1.2.3 además crea un «Release» con los dos archivos.
+name: Compilar Windows y Mac
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+permissions:
+  contents: write   # solo para publicar el Release de una etiqueta
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-24.04
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: raiz
+          MARIADB_DATABASE: prospectos
+          MARIADB_USER: prospectos
+          MARIADB_PASSWORD: Clave-Prueba-123
+        ports: ['3307:3306']
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.13', cache: pip }
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Pruebas con SQLite
+        run: pytest
+      - name: Pruebas con MariaDB
+        run: |
+          mysql -h127.0.0.1 -P3307 -uroot -praiz -e "GRANT ALL ON *.* TO 'prospectos'@'%'; FLUSH PRIVILEGES;"
+          pytest --ds=config.settings_pruebas_mariadb
+
+  windows:
+    needs: pruebas
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.13', cache: pip }
+      - run: pip install -r requirements.txt pyinstaller==6.22.3
+      - name: Ejecutable
+        env: { PROSPECTOS_DATOS: '${{ runner.temp }}\construir' }
+        run: |
+          python manage.py collectstatic --noinput -v0
+          python -m PyInstaller --noconfirm prospectos.spec
+      - name: Prueba de humo (comandos, servidor local y HTTPS en red)
+        shell: pwsh
+        env: { PROSPECTOS_DATOS: '${{ runner.temp }}\humo' }
+        run: |
+          $exe = ".\dist\Prospectos\Prospectos.exe"
+          & $exe preparar; if ($LASTEXITCODE) { exit 1 }
+          & $exe demo --familias 20; if ($LASTEXITCODE) { exit 1 }
+          & $exe respaldo crear; if ($LASTEXITCODE) { exit 1 }
+          $cfg = Join-Path $env:PROSPECTOS_DATOS 'config.json'
+          $j = Get-Content $cfg -Raw | ConvertFrom-Json; $j | Add-Member EN_RED $true -Force
+          $j | ConvertTo-Json -Depth 10 | Set-Content $cfg -Encoding utf8
+          $p = Start-Process $exe -PassThru -RedirectStandardOutput "$env:RUNNER_TEMP\salida.txt" -RedirectStandardError "$env:RUNNER_TEMP\errores.txt"
+          $ok = $false
+          foreach ($i in 1..60) { Start-Sleep 2; try { $r = Invoke-WebRequest http://127.0.0.1:8000/salud/ -UseBasicParsing; if ($r.Content -like 'prospectos-ok*') { $ok = $true; break } } catch {} }
+          Get-Content "$env:RUNNER_TEMP\salida.txt"
+          if (-not $ok) { Get-Content "$env:RUNNER_TEMP\errores.txt"; Stop-Process $p -Force; exit 1 }
+          curl.exe --fail -sS --cacert (Join-Path $env:PROSPECTOS_DATOS 'red\ca.crt') https://localhost:8443/salud/
+          if ($LASTEXITCODE) { Stop-Process $p -Force; exit 1 }
+          curl.exe --fail -sS -o NUL -w "%{http_code} login`n" --cacert (Join-Path $env:PROSPECTOS_DATOS 'red\ca.crt') https://localhost:8443/admin/login/
+          if ($LASTEXITCODE) { Stop-Process $p -Force; exit 1 }
+          Stop-Process $p -Force
+      - name: Empaquetar
+        shell: pwsh
+        run: |
+          Copy-Item empaquetado\LEEME-windows.txt dist\Prospectos\LEEME.txt
+          Copy-Item README.md dist\Prospectos\
+          Copy-Item docs dist\Prospectos\docs -Recurse
+          (Get-FileHash dist\Prospectos\Prospectos.exe -Algorithm SHA256).Hash | Set-Content dist\Prospectos\SHA256-Prospectos.exe.txt
+          Compress-Archive dist\Prospectos dist\Prospectos-windows.zip
+      - uses: actions/upload-artifact@v5
+        with: { name: Prospectos-windows, path: dist/Prospectos-windows.zip, retention-days: 30 }
+
+  mac:
+    needs: pruebas
+    runs-on: macos-15   # chip Apple (arm64)
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.13', cache: pip }
+      - run: pip install -r requirements.txt pyinstaller==6.22.3
+      - name: Prospectos.app y .dmg
+        env:
+          VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('0.0.{0}', github.run_number) }}
+        run: bash empaquetado/mac/construir.sh "${VERSION#v}"
+      - name: Prueba de humo (comandos, servidor local y HTTPS en red)
+        env: { PROSPECTOS_DATOS: '${{ runner.temp }}/humo' }
+        run: |
+          set -e
+          APP=dist/Prospectos.app/Contents/MacOS/Prospectos
+          file dist/Prospectos.app/Contents/Resources/prospectos/Prospectos | grep -q arm64
+          "$APP" preparar
+          "$APP" demo --familias 20
+          "$APP" respaldo crear
+          python3 - <<'PY'
+          import json, os, pathlib
+          p = pathlib.Path(os.environ['PROSPECTOS_DATOS']) / 'config.json'
+          d = json.loads(p.read_text()); d['EN_RED'] = True; p.write_text(json.dumps(d))
+          PY
+          # Sin argumentos y sin terminal real: el lanzador abriría Terminal; se prueba el programa interno.
+          dist/Prospectos.app/Contents/Resources/prospectos/Prospectos < /dev/null > "$RUNNER_TEMP/salida.txt" 2>&1 &
+          PID=$!
+          for i in $(seq 1 60); do sleep 2; curl -fsS http://127.0.0.1:8000/salud/ 2>/dev/null | grep -q prospectos-ok && break; done
+          cat "$RUNNER_TEMP/salida.txt"
+          curl -fsS http://127.0.0.1:8000/salud/ | grep -q prospectos-ok
+          curl -fsS --cacert "$PROSPECTOS_DATOS/red/ca.crt" https://localhost:8443/salud/ | grep -q prospectos-ok
+          curl -fsS -o /dev/null -w "%{http_code} login\n" --cacert "$PROSPECTOS_DATOS/red/ca.crt" https://localhost:8443/admin/login/
+          pgrep -f "caffeinate -i -s -w $PID" > /dev/null && echo "caffeinate activo"
+          test -f "$HOME/Library/Application Support/Prospectos UDC/config.json" && { echo "No debe usar la carpeta por omisión con PROSPECTOS_DATOS"; exit 1; } || true
+          kill $PID
+      - name: Carpeta de datos por omisión (sin PROSPECTOS_DATOS)
+        run: |
+          dist/Prospectos.app/Contents/MacOS/Prospectos preparar
+          test -f "$HOME/Library/Application Support/Prospectos UDC/config.json"
+          test ! -e dist/Prospectos.app/Contents/Resources/prospectos/datos
+      - uses: actions/upload-artifact@v5
+        with: { name: Prospectos-mac, path: dist/Prospectos-mac.dmg, retention-days: 30 }
+
+  publicar:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, mac]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v5
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            Prospectos-windows/Prospectos-windows.zip
+            Prospectos-mac/Prospectos-mac.dmg

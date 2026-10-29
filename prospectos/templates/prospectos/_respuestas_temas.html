@@ -1,0 +1,42 @@
+{# Respuestas por tema. Variables: temas, mostrar_alumno, mostrar_tutor #}
+<div class="rs-temas">
+{% for t in temas %}
+  <section class="rs-tema">
+    <header>
+      <span class="rs-tema-icono material-symbols-outlined">{{ t.icono }}</span>
+      <h3>{{ t.titulo }}</h3>
+      {% if t.diferencias %}<span class="rs-aviso">{{ t.diferencias }} diferencia{{ t.diferencias|pluralize }}</span>{% endif %}
+    </header>
+    {% if mostrar_alumno and mostrar_tutor %}
+    <div class="rs-cabeza"><span></span><span><i class="rs-punto alumno"></i>Alumno</span><span><i class="rs-punto tutor"></i>Tutor</span></div>
+    {% endif %}
+    <ul class="rs-filas">
+    {% for f in t.filas %}
+      <li class="rs-fila {% if f.diferente %}difiere{% elif f.coinciden %}coincide{% endif %} {% if mostrar_alumno and mostrar_tutor %}doble{% endif %}">
+        <div class="rs-etiqueta" title="{{ f.pregunta }}">
+          {{ f.etiqueta }}
+          {% if f.diferente %}<span class="rs-marca difiere" title="El alumno y el tutor respondieron distinto"><span class="material-symbols-outlined">compare_arrows</span>No coinciden</span>
+          {% elif f.coinciden %}<span class="rs-marca coincide" title="Respondieron lo mismo"><span class="material-symbols-outlined">check</span></span>{% endif %}
+        </div>
+        {% if mostrar_alumno %}
+        <div class="rs-valor">
+          {% if not f.aplica_alumno %}<span class="rs-na">No se le pregunta</span>
+          {% elif f.alumno %}{% if f.abierta %}<q>{{ f.alumno|join:" · " }}</q>{% else %}{% for v in f.alumno %}<span class="rs-chip">{{ v }}</span>{% endfor %}{% endif %}
+          {% else %}<span class="rs-vacio">Sin respuesta</span>{% endif %}
+        </div>
+        {% endif %}
+        {% if mostrar_tutor %}
+        <div class="rs-valor">
+          {% if not f.aplica_tutor %}<span class="rs-na">No se le pregunta</span>
+          {% elif f.tutor %}{% if f.abierta %}<q>{{ f.tutor|join:" · " }}</q>{% else %}{% for v in f.tutor %}<span class="rs-chip tutor">{{ v }}</span>{% endfor %}{% endif %}
+          {% else %}<span class="rs-vacio">Sin respuesta</span>{% endif %}
+        </div>
+        {% endif %}
+      </li>
+    {% endfor %}
+    </ul>
+  </section>
+{% empty %}
+  <p class="rs-vacio">Todavía no hay respuestas con contenido para mostrar.</p>
+{% endfor %}
+</div>

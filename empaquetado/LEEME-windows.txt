@@ -1,0 +1,41 @@
+PROSPECTOS · ADMISIONES (Windows 10 u 11)
+=======================
+
+ANTES DE INSTALAR: ¿esta PC va a CORRER el programa o solo a USARLO?
+  - Solo una computadora de la oficina corre el programa (la que tiene los datos).
+  - Las demás, Windows o Mac, NO instalan nada: entran con el navegador a la dirección que
+    muestra esa computadora (Configuración > Otras computadoras). Así todos ven los mismos datos.
+  Si instalas el programa en varias computadoras, cada una tendrá datos distintos y separados.
+
+1. Copia esta carpeta "Prospectos" a C:\Prospectos
+   (NO la dejes en Descargas, Escritorio sincronizado ni OneDrive).
+
+2. Doble clic en Prospectos.exe
+   - Si aparece "Windows protegió su PC": Más información -> Ejecutar de todas formas.
+     (El programa no está firmado digitalmente; por eso Windows avisa.)
+
+3. La primera vez pregunta:
+   D = datos de DEMOSTRACIÓN (ficticios)
+       usuarios: admin@demo.local, admisiones@demo.local, directivo@demo.local, promotor1@demo.local
+       contraseña: Demo-Prospectos-2026!
+   A = crear el ADMINISTRADOR real
+
+4. Se abre el navegador. DEJA ABIERTA LA VENTANA NEGRA mientras usas el sistema:
+   ahí se importan las respuestas, se crean tareas y se hacen los respaldos.
+   Para apagarlo, cierra la ventana negra.
+
+LO ÚNICO QUE HAY QUE RESPALDAR: la carpeta "datos" que se crea junto a Prospectos.exe.
+  - datos\config.json  -> LLAVES DE CIFRADO. Si se pierde, los correos y teléfonos no se
+                          pueden recuperar. Guarda una copia en un USB, aparte.
+  - datos\respaldos\   -> un respaldo por noche. Cópialos a otro equipo.
+
+PARA USARLO CON TUS DATOS REALES: sigue docs\puesta-en-marcha.md (primero en una carpeta de
+pruebas, C:\ProspectosPrueba, y cuando cuadre en la definitiva).
+
+BASE DE DATOS: por omisión es un archivo (datos\prospectos.sqlite3) que HeidiSQL o DBeaver pueden
+abrir. Para MariaDB (10.11 o mayor; 10.3 NO funciona) lee docs\mariadb.md.
+
+LOGO: guarda el logotipo oficial (versión blanca, PNG con fondo transparente) como
+  datos\logo.png y aparece en el menú lateral.
+
+Manual completo: README.md y la carpeta docs.

@@ -1,0 +1,68 @@
+{% extends "prospectos/base.html" %}
+{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'prospectos/vendor/leaflet/leaflet.css' %}">{% endblock %}
+{% block pagina %}
+<div class="flex flex-wrap items-center gap-3 mb-4">
+  <div class="tb-periodos" role="tablist" aria-label="Plantel">
+    <a href="?" class="{% if not plantel %}activo{% endif %}">Ambos planteles</a>
+    {% for v, e in planteles %}<a href="?plantel={{ v }}" class="{% if plantel == v %}activo{% endif %}">{{ e }}</a>{% endfor %}
+  </div>
+  {% if sin_ubicar and puede_ubicar %}<a class="udc-btn secundario ml-auto" href="{% url 'prospectos:ubicar' %}"><span class="material-symbols-outlined">add_location_alt</span>Ubicar {{ sin_ubicar|length }} preparatoria{{ sin_ubicar|length|pluralize }}</a>{% endif %}
+</div>
+
+{% if sin_ubicar %}
+<div class="ay-nota mb-4"><span class="material-symbols-outlined">location_off</span>
+  <div><b>{{ sin_ubicar|length }} preparatoria{{ sin_ubicar|length|pluralize }} con aspirantes todavía no está{{ sin_ubicar|length|pluralize:"n" }} en el mapa</b>
+  (los alumnos escriben su prepa a mano; las nuevas se dan de alta solas, sin ubicación).
+  {% if puede_ubicar %}<a class="underline" href="{% url 'prospectos:ubicar' %}">Ubicarlas</a> toma unos segundos cada una.{% endif %}</div></div>
+{% endif %}
+
+<div class="grid gap-4 xl:grid-cols-4">
+  <section class="udc-panel xl:col-span-3"><header><span class="material-symbols-outlined">map</span>Cobertura por preparatoria</header>
+    <div class="relative">
+    <div id="mapa" style="height:68vh;min-height:380px"></div>
+    <div class="mapa-flotante mapa-leyenda" aria-label="Color según la tasa de respuesta">
+      <span><i style="background:#ff3b30"></i>Menos de 5 %</span><span><i style="background:#ff9500"></i>5 a 15 %</span>
+      <span><i style="background:#34c759"></i>15 % o más</span><span><i style="background:#8e8e93"></i>Sin estimado</span></div>
+    </div>
+    <p id="sin-internet" class="text-xs text-subtle px-4 py-2" hidden>Sin internet: se muestran solo los estados de México y las preparatorias.</p></section>
+  <section class="udc-panel"><header><span class="material-symbols-outlined">leaderboard</span>Preparatorias</header>
+    <div class="overflow-auto" style="max-height:68vh"><table class="udc-tabla">
+      <thead><tr><th>Prepa</th><th title="Cuautitlán y Tultepec">C / T</th><th>Tasa</th></tr></thead>
+      <tbody>{% for p in puntos %}<tr><td><b class="text-important">{{ p.nombre }}</b><br><small class="text-subtle">{{ p.municipio }}</small></td>
+        <td class="whitespace-nowrap"><b>{{ p.total }}</b><br><small class="text-subtle">{{ p.cuautitlan }} / {{ p.tultepec }}</small></td>
+        <td>{% if p.tasa is not None %}{{ p.tasa }}%{% else %}—{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="3" class="text-subtle">Aún no hay preparatorias ubicadas{% if puede_ubicar %}: <a class="underline" href="{% url 'prospectos:ubicar' %}">ubicar ahora</a>{% endif %}.</td></tr>{% endfor %}</tbody></table></div></section>
+</div>
+<p class="text-xs text-subtle mt-3">Tamaño del círculo = aspirantes con permiso. Color = tasa de respuesta (aspirantes ÷ alumnos estimados de la prepa).
+Los estados de México vienen dentro del programa; el detalle de calles viene de {% if tiles.google %}Google Maps{% else %}OpenStreetMap{% endif %} (solo se envían coordenadas del mapa, ningún dato de aspirantes).
+{% if request.user.is_superuser %}<a class="underline" href="{% url 'prospectos:configurar_mapa' %}">Cambiar el mapa</a>.{% endif %}</p>
+{{ puntos|json_script:"puntos" }}{{ tiles|json_script:"tiles" }}
+<script src="{% static 'prospectos/vendor/leaflet/leaflet.js' %}"></script>
+<script src="{% static 'prospectos/vendor/googlemutant/Leaflet.GoogleMutant.js' %}"></script>
+<script src="{% static 'prospectos/js/mapa-mx.js' %}"></script>
+<script>
+(function(){
+  const caja = document.getElementById('mapa');
+  MapaMX.cuandoTengaTamano(caja, function () {
+    const puntos = JSON.parse(document.getElementById('puntos').textContent);
+    const mapa = MapaMX.crear(caja, {tiles: JSON.parse(document.getElementById('tiles').textContent),
+                                     sinInternet: () => { document.getElementById('sin-internet').hidden = false; }});
+    if (!puntos.length) return;
+    const capa = [];
+    puntos.forEach(p => {
+      const tasa = p.estimados ? p.total / p.estimados : null;
+      const color = tasa === null ? '#8e8e93' : tasa < .05 ? '#ff3b30' : tasa < .15 ? '#ff9500' : '#34c759';
+      const c = L.circleMarker([p.lat, p.lng], {radius: 7 + Math.sqrt(p.total) * 3, color: '#fff', weight: 2, fillColor: color, fillOpacity: .9}).addTo(mapa);
+      const div = document.createElement('div');
+      const b = document.createElement('b'); b.textContent = p.nombre; div.append(b, document.createElement('br'));
+      div.append(`${p.total} aspirantes${p.municipio ? ', ' + p.municipio : ''}` + (tasa !== null ? `. Tasa ${(100 * tasa).toFixed(1)} %` : ''));
+      div.append(document.createElement('br'), `Cuautitlán ${p.cuautitlan}, Tultepec ${p.tultepec}`);
+      div.append(document.createElement('br'), MapaMX.enlaceGoogle(p.lat, p.lng));
+      c.bindPopup(div); capa.push(c);
+    });
+    mapa.fitBounds(L.featureGroup(capa).getBounds().pad(.25), {maxZoom: 13});
+  });
+})();
+</script>
+{% endblock %}

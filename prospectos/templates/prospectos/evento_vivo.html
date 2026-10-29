@@ -1,0 +1,66 @@
+{% extends "prospectos/base.html" %}
+{% block encabezado %}{% endblock %}
+{% block pagina %}
+<section class="udc-hero mb-6">
+  <div class="relative z-10 flex flex-col lg:flex-row gap-6 lg:items-center">
+    <div class="grow">
+      <div class="flex items-center gap-2 text-sm font-semibold" style="color:var(--c-rojo)"><span class="udc-pulso"></span>En vivo</div>
+      <h1 class="titulo-grande mt-1">{{ evento.preparatoria }}</h1>
+      <p class="subtitulo">{{ evento.fecha|date:"l j \d\e F"|capfirst }}. Código {{ evento.codigo }}. Se actualiza cada 10 segundos.</p>
+    </div>
+    <div class="flex gap-8 text-center">
+      <div><div class="udc-vivo-num" id="v-alumnos">—</div><div class="text-sm text-subtle">Alumnos</div></div>
+      <div><div class="udc-vivo-num" id="v-tutores">—</div><div class="text-sm text-subtle">Tutores</div></div>
+    </div>
+  </div>
+  {% if evento.meta_registros %}
+  <div class="relative z-10 mt-6">
+    <div class="flex justify-between text-sm mb-1"><span>Meta: {{ evento.meta_registros }} registros</span><span id="v-pct">0%</span></div>
+    <div class="udc-barra" style="height:8px;border-radius:4px"><i id="v-avance" style="width:0;background:var(--c-verde);transition:width .9s var(--resorte)"></i></div>
+  </div>
+  {% endif %}
+</section>
+
+<div class="grid gap-4 lg:grid-cols-3">
+  <section class="udc-panel text-center"><header><span class="material-symbols-outlined">school</span>Alumno: escanea aquí</header>
+    <div class="udc-cuerpo">{% if qr_alumno.qr %}<span class="udc-qr"><img src="{{ qr_alumno.qr }}" alt="QR alumno" style="width:240px;max-width:100%"></span>{% else %}<p class="text-subtle">Falta un formulario activo de tipo Alumno.</p>{% endif %}</div></section>
+  <section class="udc-panel text-center"><header><span class="material-symbols-outlined">family_restroom</span>Mamá, papá o tutor</header>
+    <div class="udc-cuerpo">{% if qr_tutor.qr %}<span class="udc-qr"><img src="{{ qr_tutor.qr }}" alt="QR tutor" style="width:240px;max-width:100%"></span>{% else %}<p class="text-subtle">Falta un formulario activo de tipo Tutor.</p>{% endif %}</div></section>
+  <section class="udc-panel"><header><span class="material-symbols-outlined">emoji_events</span>Promotores hoy</header>
+    <div class="udc-cuerpo flex flex-col gap-3" id="v-ranking"><p class="text-subtle">Cargando…</p></div>
+    <div class="px-5 pb-4 text-xs text-subtle">Último registro: <b id="v-ultima">—</b></div></section>
+</div>
+
+<script>
+(function(){
+  const url = "{% url 'prospectos:evento_vivo_datos' evento.pk %}";
+  const anima = (el, fin) => { const ini = parseInt(el.textContent) || 0; if (ini === fin) { el.textContent = fin; return; }
+    if (el.textContent !== '—' && fin > ini) { el.classList.remove('cambio'); void el.offsetWidth; el.classList.add('cambio'); }
+    const t0 = performance.now(); const paso = (t) => { const k = Math.min(1, (t - t0) / 700); el.textContent = Math.round(ini + (fin - ini) * k); if (k < 1) requestAnimationFrame(paso); }; requestAnimationFrame(paso); };
+  async function cargar(){
+    try {
+      const d = await (await fetch(url, {headers: {'Accept': 'application/json'}})).json();
+      anima(document.getElementById('v-alumnos'), d.alumnos);
+      anima(document.getElementById('v-tutores'), d.tutores);
+      document.getElementById('v-ultima').textContent = d.ultima || '—';
+      if (d.meta) { const pct = Math.min(100, Math.round(100 * d.alumnos / d.meta));
+        document.getElementById('v-avance').style.width = pct + '%'; document.getElementById('v-pct').textContent = pct + '%'; }
+      const caja = document.getElementById('v-ranking'); caja.replaceChildren();
+      const max = Math.max(1, ...d.ranking.map(r => r.total));
+      if (!d.ranking.length) { const p = document.createElement('p'); p.className = 'text-subtle'; p.textContent = 'Aún sin registros hoy.'; caja.append(p); }
+      d.ranking.forEach((r, i) => {
+        const fila = document.createElement('div'); fila.className = 'flex items-center gap-3';
+        const av = document.createElement('span'); av.className = 'udc-avatar'; av.textContent = i + 1;
+        const cuerpo = document.createElement('div'); cuerpo.className = 'grow';
+        const top = document.createElement('div'); top.className = 'flex justify-between text-sm';
+        const n = document.createElement('b'); n.textContent = r.etiqueta; const t = document.createElement('span'); t.className = 'font-bold'; t.textContent = r.total;
+        top.append(n, t);
+        const barra = document.createElement('div'); barra.className = 'udc-barra mt-1'; const i2 = document.createElement('i'); i2.style.width = (100 * r.total / max) + '%'; barra.append(i2);
+        cuerpo.append(top, barra); fila.append(av, cuerpo); caja.append(fila);
+      });
+    } catch (e) { /* sin conexión: se reintenta */ }
+  }
+  cargar(); setInterval(cargar, 10000);
+})();
+</script>
+{% endblock %}

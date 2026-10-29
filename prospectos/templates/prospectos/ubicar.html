@@ -1,0 +1,46 @@
+{% extends "prospectos/base.html" %}
+{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'prospectos/vendor/leaflet/leaflet.css' %}">{% endblock %}
+{% block pagina %}
+<div class="ay-intro mb-4">
+  <span class="material-symbols-outlined">add_location_alt</span>
+  <div><b>Elige una preparatoria, búscala o haz clic donde está, y guarda.</b> Las que tienen más aspirantes van primero.
+  Si dos nombres son la misma escuela, <a class="underline" href="{% url 'admin:prospectos_preparatoria_changelist' %}?por_revisar__exact=1">únelas en Preparatorias</a>
+  (acción «Unir») antes de ubicarlas.</div>
+</div>
+
+<div class="ub-rejilla">
+  <section class="tb-card ub-lista">
+    <header><h2>Sin ubicar <small id="ub-cuenta" class="text-subtle">{{ lista|length }}</small></h2></header>
+    <ul id="ub-prepas">
+      {% for p in lista %}
+      <li><button type="button" data-id="{{ p.id }}" class="{% if p.id == elegida %}activo{% endif %}">
+        <b>{{ p.nombre }}</b><small>{{ p.total }} aspirante{{ p.total|pluralize }}{% if p.municipio %} · {{ p.municipio }}{% endif %}{% if p.por_revisar %} · <i>nueva</i>{% endif %}</small>
+      </button></li>
+      {% empty %}<li class="tb-vacio">Todas las preparatorias están en el mapa.</li>{% endfor %}
+    </ul>
+  </section>
+
+  <section class="tb-card ub-mapa">
+    <form id="ub-buscar" class="flex gap-2 mb-3" autocomplete="off">
+      <input id="ub-q" type="search" class="udc-campo grow" placeholder="Nombre, dirección, coordenadas o enlace de Google Maps (p. ej. «EPO 45 Cuautitlán» o «19.685, -99.128»)">
+      <button class="udc-btn" type="submit"><span class="material-symbols-outlined">search</span>Buscar</button>
+    </form>
+    <ul id="ub-resultados" class="ub-resultados" hidden></ul>
+    <div id="ub-mapa"></div>
+    <div class="flex flex-wrap items-center gap-3 mt-3">
+      <div class="text-sm grow"><b id="ub-nombre">—</b><br><span id="ub-estado" class="text-subtle">Haz clic en el mapa para poner el pin.</span></div>
+      <label class="text-sm">Municipio<br><input id="ub-municipio" class="udc-campo" style="width:16rem"></label>
+      <button id="ub-guardar" class="udc-btn" type="button" disabled><span class="material-symbols-outlined">save</span>Guardar ubicación</button>
+    </div>
+    <p class="text-xs text-subtle mt-2">{% if tiles.google %}La búsqueda usa Google Maps{% else %}La búsqueda usa OpenStreetMap; si no encuentra la escuela,
+      búscala en Google Maps, haz clic derecho sobre ella, copia las coordenadas y pégalas aquí{% endif %}. Solo se envía lo que escribes, nunca datos de aspirantes.
+      Sin internet puedes ubicar con clic sobre el mapa de estados.</p>
+  </section>
+</div>
+{% csrf_token %}{{ lista|json_script:"ub-lista" }}{{ ubicadas|json_script:"ub-ubicadas" }}{{ tiles|json_script:"tiles" }}
+<script src="{% static 'prospectos/vendor/leaflet/leaflet.js' %}"></script>
+<script src="{% static 'prospectos/vendor/googlemutant/Leaflet.GoogleMutant.js' %}"></script>
+<script src="{% static 'prospectos/js/mapa-mx.js' %}"></script>
+<script src="{% static 'prospectos/js/ubicar.js' %}"></script>
+{% endblock %}

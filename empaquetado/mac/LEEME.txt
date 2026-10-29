@@ -1,0 +1,43 @@
+PROSPECTOS · ADMISIONES (Mac con chip Apple: M1, M2, M3, M4 o más nuevo)
+========================================================================
+
+ANTES DE INSTALAR: ¿esta Mac va a CORRER el programa o solo a USARLO?
+  - Solo una computadora de la oficina corre el programa (la que tiene los datos).
+  - Las demás, Windows o Mac, NO instalan nada: entran con el navegador a la dirección que
+    muestra esa computadora (Configuración > Otras computadoras). Así todos ven los mismos datos.
+  Si instalas el programa en varias computadoras, cada una tendrá datos distintos y separados.
+
+INSTALAR (solo en la computadora que corre el programa)
+1. Arrastra Prospectos a la carpeta Aplicaciones (en esta misma ventana).
+2. Abre Prospectos desde Aplicaciones. macOS dirá que no puede verificarlo, porque no está
+   firmado con un certificado de pago de Apple. Elige "Listo" (NO "Mover a la papelera").
+3. Ve a  Ajustes del Sistema > Privacidad y seguridad, baja hasta "Seguridad" y en
+   "Se bloqueó Prospectos" elige  Abrir igualmente. Pon tu contraseña.
+   Esto se hace una sola vez.
+4. Se abre una ventana de Terminal con el programa. La primera vez pregunta:
+     D = datos de DEMOSTRACIÓN (ficticios)
+         usuarios: admin@demo.local, admisiones@demo.local, directivo@demo.local
+         contraseña: Demo-Prospectos-2026!
+     A = crear el ADMINISTRADOR real
+5. Se abre el navegador. DEJA ABIERTA LA VENTANA DE TERMINAL mientras se use el sistema:
+   ahí se importan las respuestas y se hacen los respaldos. Mientras está abierta, la Mac
+   no se duerme sola. Para apagar el programa, cierra esa ventana.
+
+DÓNDE QUEDAN LOS DATOS
+  En tu carpeta de usuario: Librería > Application Support > Prospectos UDC
+  (en Finder: menú Ir > Ir a la carpeta… y escribe  ~/Library/Application Support/Prospectos UDC )
+  - config.json   -> LLAVES DE CIFRADO. Si se pierde, los correos y teléfonos no se pueden
+                     recuperar. Guarda una copia en un USB, aparte.
+  - respaldos/    -> un respaldo por noche. Cópialos a otro equipo.
+  Time Machine también la respalda si está activo.
+
+PASAR DE UNA PC WINDOWS A ESTA MAC
+  Cierra el programa en las dos. Copia TODO el contenido de la carpeta "datos" de la PC
+  (junto a Prospectos.exe) a  ~/Library/Application Support/Prospectos UDC  y abre Prospectos.
+  Sin el config.json original, los datos cifrados no se pueden leer.
+
+COMANDOS (en Terminal)
+  /Applications/Prospectos.app/Contents/MacOS/Prospectos respaldo crear
+  /Applications/Prospectos.app/Contents/MacOS/Prospectos crear_admin
+
+Manual completo: README.md y la carpeta docs del código fuente.

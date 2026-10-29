@@ -1,0 +1,92 @@
+{% extends "prospectos/base.html" %}
+{% block pagina %}
+<div class="ay-intro mb-6">
+  <span class="material-symbols-outlined">help</span>
+  <div><b>El programa en una frase:</b> junta lo que contestan el alumno y su mamá, papá o tutor en los Google Forms,
+  los pone en una sola ficha y te dice a quién conviene llamar primero.</div>
+</div>
+
+{# ---------------------------------------------------------------- flujo #}
+<h2 class="ay-h2">Cómo viaja una respuesta</h2>
+<ol class="ay-flujo mb-8">
+  <li><span class="material-symbols-outlined">edit_note</span><b>1. Contestan el Form</b><small>En la visita a la prepa, con el QR del Cuestionario Vocacional. Eligen plantel (Cuautitlán o Tultepec), carreras y cómo quieren que los contactemos.</small></li>
+  <li><span class="material-symbols-outlined">sync</span><b>2. Llega aquí sola</b><small>Cada minuto, mientras la ventana negra esté abierta. Aparece en <a href="{% url 'prospectos:respuestas' %}">Respuestas de los Forms</a>.</small></li>
+  <li><span class="material-symbols-outlined">verified_user</span><b>3. Se revisa el permiso</b><small>Mayor de edad que aceptó el aviso → lista. Menor → espera el permiso de su tutor.</small></li>
+  <li><span class="material-symbols-outlined">support_agent</span><b>4. Se le da seguimiento</b><small>Entra a <a href="{% url 'prospectos:cola' %}">A quién llamar hoy</a>, ordenada por prioridad.</small></li>
+</ol>
+
+{# ---------------------------------------------------------------- estados #}
+<h2 class="ay-h2">¿Contestaron y no aparece? Revisa el estado</h2>
+<div class="ay-estados mb-8">
+  <div class="tono-verde"><span class="rs-badge tono-verde">Lista para usar</span><p>Aceptó el aviso y es mayor de edad, o es menor y su tutor ya dio permiso. Aparece en prospectos, cola y reportes.</p></div>
+  <div class="tono-ambar"><span class="rs-badge tono-ambar">Esperando permiso</span><p>Es menor de edad (o su edad no se entiende) y falta el permiso de su tutor;
+    o es mayor pero el Form no le pidió aceptar el aviso de privacidad. Al abrir la respuesta dice exactamente qué falta y deja <b>registrar el permiso del tutor</b>.
+    Se guarda {{ cuarentena }} días; si el permiso no llega, se borra. <b>Es lo más común cuando “no aparece nada”.</b></p></div>
+  <div class="tono-rojo"><span class="rs-badge tono-rojo">Sin permiso</span><p>No aceptó el aviso de privacidad. No se usa para nada.</p></div>
+  <div class="tono-gris"><span class="rs-badge tono-gris">Borrada</span><p>Venció la espera o se pidió borrar los datos (derechos ARCO). Solo queda el registro de que existió.</p></div>
+</div>
+
+{# ---------------------------------------------------------------- prioridad #}
+<h2 class="ay-h2">La prioridad (0 a 100)</h2>
+<div class="grid gap-5 md:grid-cols-2 mb-8">
+  <div class="tb-card">
+    <p class="text-sm mb-3">Es una suma de puntos. No predice si se inscribe: solo ordena a quién llamar primero con lo que contestó.</p>
+    <ul class="ay-reglas">
+      {% for nombre, puntos in reglas %}<li><span>{{ nombre }}</span><b>+{{ puntos }}</b></li>{% endfor %}
+    </ul>
+    {% if perms.prospectos.configurar_scoring %}<a class="text-sm mt-3 inline-block" href="{% url 'prospectos:configuracion' %}">Cambiar los puntos en Reglas de prioridad →</a>{% endif %}
+  </div>
+  <div class="tb-card">
+    <p class="text-sm mb-3"><b>Grupos (etiquetas automáticas)</b></p>
+    <dl class="ay-glosario">
+      <dt>Listo para inscribirse</dt><dd>Prioridad {{ listo }} o más <i>y</i> pidió información por WhatsApp o correo.</dd>
+      <dt>Busca beca o precio</dt><dd>Marcó colegiaturas o becas como lo más importante, o quiere conocer costos o becas.</dd>
+      <dt>Necesita horario flexible</dt><dd>Marcó horarios flexibles, o eligió sabatino o dominical.</dd>
+      <dt>Aún no decide carrera</dt><dd>Contestó «Aún no lo sé» o marcó {{ indeciso }} carreras o más.</dd>
+      <dt>Entraría en un año o más</dt><dd>La familia contestó que entraría dentro de un año o más. No es «no»: es «todavía no».</dd>
+      <dt>No quiere información</dt><dd>Contestó «No, gracias» (y su familia no pidió información). Sale de la lista de llamadas y no recibe correos.</dd>
+    </dl>
+  </div>
+</div>
+
+{# ---------------------------------------------------------------- glosario #}
+<h2 class="ay-h2">Cambiar las opciones del programa</h2>
+<div class="tb-card mb-8 text-sm flex flex-col gap-2">
+  <p>En <b>Configuración</b>: <b>Carreras</b> (agregar, renombrar, apagar), <b>Preguntas y opciones</b> (textos, opciones y preguntas nuevas)
+    y <b>Usuarios</b>. Lo que cambies ahí se respeta siempre; el programa no lo regresa al abrirse.</p>
+  <p>Para una <b>pregunta nueva</b>: agrégala primero en el Google Form, luego aquí con el mismo texto, y después «Sincronizar con Google» en Formularios.
+    Se ve en fichas y reportes, pero no suma prioridad.</p>
+  <p>Quién puede editar depende de su <b>rol</b>. Solo un administrador cambia roles o crea administradores.</p>
+</div>
+
+<h2 class="ay-h2">Palabras que vas a ver</h2>
+<dl class="ay-glosario tb-card mb-8">
+  <dt>Aspirante / prospecto</dt><dd>Una persona interesada. Puede tener una respuesta de alumno, una de tutor o ambas.</dd>
+  <dt>Diferencias alumno–tutor</dt><dd>Cuando contestan distinto (otra carrera, otra modalidad, quién paga). Es lo primero que conviene aclarar en la llamada.</dd>
+  <dt>Preparatoria «nueva»</dt><dd>Los alumnos escriben su prepa a mano. Si no se parece a ninguna, se da de alta sola «por revisar». Si es la misma escrita distinto, se <b>unen</b> en Preparatorias; luego se <b>ubica</b> en el mapa.</dd>
+  <dt>Permiso del tutor</dt><dd>Para menores de edad. Llega con el cuestionario del tutor (si existe) o lo registra un asesor tras hablar con el tutor; queda quién, cuándo y cómo.</dd>
+  <dt>Posibles duplicados</dt><dd>Dos fichas que parecen la misma persona (mismo nombre y prepa, o mismo teléfono). El programa <i>no</i> las une solo: alguien decide.</dd>
+  <dt>Evento</dt><dd>Una visita a una preparatoria. Genera el QR y las tarjetas, y permite ver los registros en vivo.</dd>
+  <dt>Llamadas pendientes</dt><dd>Tareas de los asesores. Se crean solas si un aspirante activo pasa {{ sin_contacto }} días sin contacto.</dd>
+  <dt>Datos cifrados</dt><dd>Correo y teléfono se guardan cifrados; solo los ven los roles con permiso, y cada consulta queda en la bitácora.</dd>
+  <dt>Retención</dt><dd>Tras {{ retencion }} meses sin actividad, los datos personales se borran solos (se conservan los números para reportes).</dd>
+  <dt>Respaldos</dt><dd>Una copia diaria en <code>datos\respaldos</code>. Cópialos a otro equipo: si el disco falla, se pierden junto con la base.</dd>
+</dl>
+
+{% if pasos %}
+<h2 class="ay-h2" id="google">Para empezar con datos reales</h2>
+<ul class="ay-pasos tb-card mb-4">
+  {% for p in pasos %}
+  <li class="{% if p.hecho %}hecho{% endif %}">
+    <span class="material-symbols-outlined">{% if p.hecho %}check_circle{% else %}radio_button_unchecked{% endif %}</span>
+    <div><b>{% if p.url and not p.hecho %}<a href="{{ p.url }}">{{ p.titulo }}</a>{% else %}{{ p.titulo }}{% endif %}</b><small>{{ p.como }}</small></div>
+  </li>
+  {% endfor %}
+</ul>
+{% if pasos_ocultos %}
+<form method="post" action="{% url 'prospectos:pasos' %}">{% csrf_token %}<input type="hidden" name="accion" value="mostrar"><input type="hidden" name="siguiente" value="{% url 'admin:index' %}">
+  <button class="text-sm underline">Volver a mostrar esta lista en el Inicio</button></form>
+{% endif %}
+<p class="text-sm text-subtle">Guía completa: <code>docs\puesta-en-marcha.md</code> (Google: <code>docs\formularios.md</code>).</p>
+{% endif %}
+{% endblock %}

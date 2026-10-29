@@ -1,0 +1,11 @@
+{% extends "admin/change_list.html" %}
+{% block content %}
+<div class="udc-nota mb-4"><span class="material-symbols-outlined">backup</span>
+  <div class="grow">Carpeta: <code>{{ carpeta_respaldos }}</code>. Se crea un respaldo cada noche y se verifica (prueba de restauración) cada semana.
+  Cópialos a otro equipo o USB con frecuencia, y guarda <code>datos\config.json</code> por separado: sin sus llaves los correos y teléfonos no se pueden leer.</div>
+  {% if user.is_superuser %}
+  <form method="post">{% csrf_token %}<button type="submit" name="crear_respaldo" value="1" class="udc-btn"><span class="material-symbols-outlined">add</span>Crear respaldo ahora</button></form>
+  {% endif %}
+</div>
+{{ block.super }}
+{% endblock %}

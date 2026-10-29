@@ -1,0 +1,15 @@
+{% extends "prospectos/base.html" %}
+{% block pagina %}
+<div class="udc-nota mb-4 no-imprimir"><span class="material-symbols-outlined">info</span>
+  <div class="grow">QR general del evento para proyectar o imprimir. Lleva el código del evento y del promotor, <b>no</b> el código de familia:
+  para unir alumno y tutor con certeza usa las <a class="underline font-semibold" href="{% url 'prospectos:tarjetas' evento.pk %}">tarjetas familiares</a>.</div>
+  <button type="button" class="udc-btn" onclick="window.print()"><span class="material-symbols-outlined">print</span>Imprimir</button></div>
+<div class="grid gap-6 md:grid-cols-2">
+  {% for titulo, icono, q in qrs %}
+  <section class="udc-panel text-center"><header class="justify-center"><span class="material-symbols-outlined">{{ icono }}</span>{{ titulo }}</header>
+    <div class="udc-cuerpo">{% if q.qr %}<span class="udc-qr"><img src="{{ q.qr }}" alt="QR {{ titulo }}" style="width:300px;max-width:100%"></span>
+      <p class="text-xs text-subtle mt-3 break-all">{{ q.url }}</p>{% else %}<p class="text-subtle">Configura un formulario activo de este tipo con su URL pública.</p>{% endif %}</div></section>
+  {% endfor %}
+</div>
+<p class="mt-4 text-center font-semibold">{{ evento.preparatoria }} · {{ evento.fecha|date:"d/m/Y" }} · código {{ evento.codigo }}</p>
+{% endblock %}

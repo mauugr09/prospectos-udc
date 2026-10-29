@@ -1,0 +1,41 @@
+{% extends "prospectos/base.html" %}
+{% block pagina %}
+<form method="get" class="udc-panel mb-4"><div class="udc-cuerpo flex flex-wrap gap-3 items-center">
+  <div class="relative grow max-w-sm"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-subtle">search</span>
+    <input type="search" name="q" value="{{ f.q }}" placeholder="Buscar aspirante" class="udc-campo w-full ps-10"></div>
+  <select name="plantel" class="udc-campo"><option value="">Ambos planteles</option>{% for v, e in planteles %}<option value="{{ v }}" {% if f.plantel == v %}selected{% endif %}>{{ e }}</option>{% endfor %}</select>
+  <select name="canal" class="udc-campo"><option value="">WhatsApp o correo</option><option value="whatsapp" {% if f.canal == 'whatsapp' %}selected{% endif %}>Prefiere WhatsApp</option><option value="correo" {% if f.canal == 'correo' %}selected{% endif %}>Prefiere correo</option></select>
+  <select name="segmento" class="udc-campo"><option value="">Todos los grupos</option>{% for v, e in segmentos %}<option value="{{ v }}" {% if f.segmento == v %}selected{% endif %}>{{ e }}</option>{% endfor %}</select>
+  <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="mios" value="1" {% if f.mios %}checked{% endif %}> Asignados a mí</label>
+  <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="tareas" value="1" {% if f.tareas %}checked{% endif %}> Con tareas abiertas</label>
+  {% if hay_tutor %}<label class="flex items-center gap-2 text-sm"><input type="checkbox" name="brecha" value="1" {% if f.brecha %}checked{% endif %}> Alumno y tutor difieren</label>{% endif %}
+  <button class="udc-btn" type="submit"><span class="material-symbols-outlined">filter_alt</span>Filtrar</button>
+  <a class="udc-btn secundario" href="?">Limpiar</a>
+</div></form>
+
+<div class="udc-nota mb-4"><span class="material-symbols-outlined">info</span>
+  <div>Aspirantes con permiso que pidieron información, ordenados por <b>prioridad</b> y luego por quien lleva <b>más tiempo sin contacto</b>. {{ total }} en total{% if total > 200 %} (se muestran 200){% endif %}.
+  {% if no_quieren %}<br><span class="text-subtle">{{ no_quieren }} contestaron «No, gracias» a recibir información: no aparecen aquí y no se les debe llamar.</span>{% endif %}</div></div>
+
+<div class="udc-panel overflow-x-auto">
+<table class="udc-tabla">
+<thead><tr><th title="Suma de puntos: más alto, llamar antes">Prioridad</th><th>Aspirante</th><th>Carrera</th><th>Prefiere</th><th>Grupos</th><th>Estatus</th>{% if hay_tutor %}<th title="Alumno y tutor contestaron distinto">Diferencias</th>{% endif %}<th>Tareas</th><th>Último contacto</th><th>Asesor</th></tr></thead>
+<tbody>
+{% for p in filas %}
+<tr>
+  <td><span class="udc-score udc-score-{% if p.score >= 70 %}alto{% elif p.score >= 40 %}medio{% else %}bajo{% endif %}">{{ p.score }}</span></td>
+  <td style="min-width:250px"><a class="flex items-center gap-3" href="{% url 'admin:prospectos_prospecto_change' p.pk %}">
+      <span class="udc-avatar">{{ p.iniciales }}</span>
+      <span><b class="text-link">{{ p.nombre_aspirante }}</b><br><small class="text-subtle">{{ p.preparatoria|default:"Sin preparatoria" }}</small></span></a></td>
+  <td><small class="text-subtle">{{ p.get_plantel_display|default:"—" }}</small><br>{{ p.carrera|default:"Aún no decide" }}</td>
+  <td class="whitespace-nowrap">{% if p.canal_informacion == 'whatsapp' %}<span class="udc-chip udc-seg-listo_para_convertir">WhatsApp</span>{% elif p.canal_informacion == 'correo' %}<span class="udc-chip udc-seg-horario_flexible">Correo</span>{% elif p.canal_informacion == 'si' %}<span class="udc-chip udc-seg-indeciso_carrera" title="La familia pidió información; no dijo por dónde">Familia</span>{% else %}—{% endif %}</td>
+  <td style="min-width:220px"><span class="udc-chips">{% for s in p.segmentos_det %}<span class="udc-chip udc-seg-{{ s.0 }}">{{ s.1 }}</span>{% empty %}—{% endfor %}{% if p.segmentos_mas %}<span class="udc-chip udc-seg-mas">+{{ p.segmentos_mas }}</span>{% endif %}</span></td>
+  <td class="whitespace-nowrap">{{ p.get_estatus_display }}</td>
+  {% if hay_tutor %}<td>{% if p.tiene_brecha %}<span class="udc-chip udc-seg-no_contactar">Sí</span>{% else %}<span class="text-subtle">—</span>{% endif %}</td>{% endif %}
+  <td>{% if p.tareas %}<span class="udc-chip udc-seg-sensible_beca">{{ p.tareas }}</span>{% else %}<span class="text-subtle">0</span>{% endif %}</td>
+  <td class="whitespace-nowrap">{% if p.ultimo_contacto_en %}hace {{ p.ultimo_contacto_en|timesince }}{% else %}<span class="udc-chip udc-seg-no_contactar">Nunca</span>{% endif %}</td>
+  <td class="text-subtle">{{ p.asesor|default:"Sin asignar" }}</td>
+</tr>
+{% empty %}<tr><td colspan="10" class="text-center text-subtle py-10">No hay prospectos con estos filtros.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "prospectos/base.html" %}
+{% load unfold %}
+{% block encabezado %}<header class="pagina-cabecera">
+  <h1 class="titulo-grande">Reporte ejecutivo</h1>
+  <p class="subtitulo">Del {{ desde|date:"j \d\e F" }} al {{ hasta|date:"j \d\e F \d\e Y" }}. Solo aspirantes con permiso, en cifras agregadas, sin datos personales.</p>
+</header>{% endblock %}
+{% block pagina %}
+<form method="get" class="udc-panel mb-6 no-imprimir"><div class="udc-cuerpo flex flex-wrap gap-3 items-end">
+  <label class="text-sm font-semibold">Desde<br><input type="date" name="desde" value="{{ desde|date:'Y-m-d' }}" class="udc-campo"></label>
+  <label class="text-sm font-semibold">Hasta<br><input type="date" name="hasta" value="{{ hasta|date:'Y-m-d' }}" class="udc-campo"></label>
+  <button type="submit" class="udc-btn"><span class="material-symbols-outlined">refresh</span>Actualizar</button>
+  <button type="submit" name="excel" value="1" class="udc-btn secundario"><span class="material-symbols-outlined">table_view</span>Excel</button>
+  <button type="button" class="udc-btn secundario" onclick="window.print()"><span class="material-symbols-outlined">picture_as_pdf</span>Imprimir / PDF</button>
+</div></form>
+
+
+
+<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4 mb-6">
+  <div class="udc-kpi"><div class="flex justify-between"><div><div class="udc-kpi-etiqueta">Aspirantes con permiso</div><div class="udc-kpi-valor">{{ d.total }}</div>
+    <div class="text-xs text-subtle">{% for p in d.planteles %}{{ p.etiqueta }} {{ p.total }}{% if not forloop.last %}, {% endif %}{% endfor %}</div></div><span class="udc-kpi-icono material-symbols-outlined">groups</span></div></div>
+  <div class="udc-kpi"><div class="flex justify-between"><div><div class="udc-kpi-etiqueta">Pidieron información</div><div class="udc-kpi-valor">{{ d.pide_info }}%</div>
+    <div class="text-xs text-subtle">{% for c in d.canales %}{% if c.clave != 'no' %}{{ c.etiqueta|cut:"Sí, por " }} {{ c.total }}, {% endif %}{% endfor %}«No, gracias» {% for c in d.canales %}{% if c.clave == 'no' %}{{ c.total }}{% endif %}{% endfor %}</div></div><span class="udc-kpi-icono verde material-symbols-outlined">chat</span></div></div>
+  <div class="udc-kpi"><div class="flex justify-between"><div><div class="udc-kpi-etiqueta">Aún no deciden carrera</div><div class="udc-kpi-valor">{{ d.indecisos }}%</div></div><span class="udc-kpi-icono lavanda material-symbols-outlined">help</span></div></div>
+  <div class="udc-kpi"><div class="flex justify-between"><div><div class="udc-kpi-etiqueta">Costo por aspirante</div>
+    <div class="udc-kpi-valor">{% if d.costo.costo_por_prospecto is not None %}${{ d.costo.costo_por_prospecto|floatformat:0 }}{% else %}—{% endif %}</div>
+    <div class="text-xs text-subtle">Eventos: ${{ d.costo.costo_total|floatformat:0 }}{% if d.costo.costo_por_prospecto is None %}. Para calcularlo, el Form necesita el código de evento.{% endif %}</div></div><span class="udc-kpi-icono ambar material-symbols-outlined">payments</span></div></div>
+</div>
+
+<div class="grid gap-4 xl:grid-cols-2 mb-6">
+  <section class="udc-panel"><header><span class="material-symbols-outlined">filter_alt</span>De la respuesta a la inscripción</header><div class="udc-cuerpo">
+    {% for e in d.embudo %}<div class="udc-embudo-fila"><span class="text-subtle font-semibold">{{ e.etapa }}</span>
+      <div><div class="udc-embudo-barra" style="width:{{ e.pct|stringformat:'s' }}%">{{ e.total }}</div></div><span class="text-right font-bold">{{ e.pct }}%</span></div>{% endfor %}
+  </div></section>
+  <section class="udc-panel"><header><span class="material-symbols-outlined">menu_book</span>Carreras más pedidas <small class="text-subtle font-normal ms-2">cada carrera marcada cuenta</small></header>
+    <div class="udc-cuerpo" style="height:320px">{% component "unfold/components/chart/bar.html" with data=g_carreras options=o_horizontal %}{% endcomponent %}</div></section>
+</div>
+
+<div class="grid gap-4 xl:grid-cols-3 mb-6">
+  <section class="udc-panel"><header><span class="material-symbols-outlined">school</span>Carreras en Cuautitlán</header>
+    <table class="udc-tabla"><tbody>{% for r in d.carreras_c %}<tr><td>{{ r.etiqueta }}</td><td class="font-bold text-right">{{ r.total }}</td></tr>{% empty %}<tr><td class="text-subtle">Sin datos.</td></tr>{% endfor %}</tbody></table></section>
+  <section class="udc-panel"><header><span class="material-symbols-outlined">school</span>Carreras en Tultepec</header>
+    <table class="udc-tabla"><tbody>{% for r in d.carreras_t %}<tr><td>{{ r.etiqueta }}</td><td class="font-bold text-right">{{ r.total }}</td></tr>{% empty %}<tr><td class="text-subtle">Sin datos.</td></tr>{% endfor %}</tbody></table></section>
+  <section class="udc-panel"><header><span class="material-symbols-outlined">donut_large</span>Grupos</header>
+    <div class="udc-cuerpo"><div class="relative w-full" style="height:260px"><canvas class="chart" data-type="doughnut" data-value="{{ g_segmentos }}" height="240"
+      data-options="{{ o_dona }}"></canvas></div></div></section>
+</div>
+
+<div class="grid gap-4 xl:grid-cols-3 mb-6">
+  <section class="udc-panel"><header><span class="material-symbols-outlined">apartment</span>De qué prepas vienen</header>
+    <table class="udc-tabla"><thead><tr><th>Prepa</th><th>Total</th><th title="Cuautitlán">C</th><th title="Tultepec">T</th></tr></thead>
+      <tbody>{% for r in d.prepas %}<tr><td>{{ r.etiqueta }}</td><td class="font-bold">{{ r.total }}</td><td>{{ r.cuautitlan }}</td><td>{{ r.tultepec }}</td></tr>{% endfor %}</tbody></table></section>
+  <section class="udc-panel"><header><span class="material-symbols-outlined">favorite</span>Lo más importante al elegir</header>
+    <table class="udc-tabla"><tbody>{% for r in d.factores %}<tr><td>{{ r.etiqueta }}</td><td class="font-bold text-right">{{ r.total }}</td></tr>{% endfor %}</tbody></table></section>
+  <section class="udc-panel"><header><span class="material-symbols-outlined">travel_explore</span>Qué quieren conocer</header>
+    <table class="udc-tabla"><tbody>{% for r in d.conocer %}<tr><td>{{ r.etiqueta }}</td><td class="font-bold text-right">{{ r.total }}</td></tr>{% endfor %}</tbody></table></section>
+</div>
+
+<div class="grid gap-4 xl:grid-cols-3">
+  <section class="udc-panel"><header><span class="material-symbols-outlined">calendar_month</span>Modalidad preferida</header>
+    <table class="udc-tabla"><tbody>{% for r in d.modalidad %}<tr><td>{{ r.etiqueta }}</td><td class="font-bold text-right">{{ r.total }}</td></tr>{% endfor %}</tbody></table></section>
+  <section class="udc-panel"><header><span class="material-symbols-outlined">percent</span>Tasa de respuesta por prepa</header>
+    <table class="udc-tabla"><tbody>{% for r in d.tasa %}<tr><td>{{ r.etiqueta }}</td><td class="font-bold">{{ r.total }}</td>
+      <td style="width:40%"><span class="udc-meta"><b>{{ r.tasa }}%</b><span class="udc-barra"><i style="width:{{ r.tasa_barra|stringformat:'s' }}%"></i></span></span></td></tr>
+      {% empty %}<tr><td class="text-subtle">Captura «alumnos estimados» en las preparatorias.</td></tr>{% endfor %}</tbody></table></section>
+  <section class="udc-panel"><header><span class="material-symbols-outlined">badge</span>Promotores</header>
+    <table class="udc-tabla"><tbody>{% for r in d.promotores %}<tr><td>{{ r.etiqueta }}</td><td class="font-bold text-right">{{ r.total }}</td></tr>{% endfor %}</tbody></table></section>
+  {% for a in d.agregadas %}<section class="udc-panel"><header><span class="material-symbols-outlined">add_comment</span>{{ a.titulo }}</header>
+    <table class="udc-tabla"><tbody>{% for r in a.filas %}<tr><td>{{ r.etiqueta }}</td><td class="font-bold text-right">{{ r.total }}</td></tr>{% endfor %}</tbody></table></section>{% endfor %}
+  {% if d.temas %}<section class="udc-panel xl:col-span-3"><header><span class="material-symbols-outlined">psychology</span>Temas de duda (IA)</header>
+    <div class="udc-cuerpo udc-chips">{% for r in d.temas %}<span class="udc-chip udc-seg-horario_flexible">{{ r.etiqueta }} ({{ r.total }})</span>{% endfor %}</div></section>{% endif %}
+</div>
+{% endblock %}

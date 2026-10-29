@@ -1,0 +1,22 @@
+{% extends "prospectos/base.html" %}
+{% block pagina %}
+{% if error %}<div class="udc-nota alerta mb-4"><span class="material-symbols-outlined">cloud_off</span><div><b>No se pudo leer el Form.</b> {{ error }} <br>Mientras tanto se muestra el mapeo guardado.</div></div>{% endif %}
+<div class="udc-nota mb-4"><span class="material-symbols-outlined">account_tree</span>
+  <div>Asigna a cada pregunta del Form el código interno que le corresponde. La propuesta compara los títulos; <b>revísala siempre</b>:
+  un mapeo equivocado guarda respuestas en el campo que no es.</div></div>
+{% if faltan %}<div class="udc-nota alerta mb-4"><span class="material-symbols-outlined">warning</span><div>Códigos sin pregunta asignada: {{ faltan|join:", " }}</div></div>{% endif %}
+{% if recomendadas %}<div class="udc-nota mb-4"><span class="material-symbols-outlined">lightbulb</span><div><b>Preguntas recomendadas que tu Form todavía no tiene:</b> {{ recomendadas|join:", " }}.
+  La más importante es la del <b>aviso de privacidad</b>; sin ella nadie queda «Lista para usar» salvo que lo marques en Reglas de permiso. Ver docs\formularios.md.</div></div>{% endif %}
+<p class="text-sm text-subtle mb-3">«Carrera» y «Modalidad» pueden asignarse dos veces: tu Form las pregunta una vez por plantel.</p>
+<form method="post">{% csrf_token %}
+<div class="udc-panel overflow-x-auto"><table class="udc-tabla"><thead><tr><th>Pregunta del Form</th><th>Similitud</th><th>Código interno</th></tr></thead><tbody>
+{% for p in propuesta %}
+<tr><td><b class="text-important">{{ p.titulo }}</b><br><small class="text-subtle">{{ p.question_id }}</small><input type="hidden" name="qid" value="{{ p.question_id }}"></td>
+<td>{% if p.similitud is not None %}<span class="udc-chip {% if p.similitud >= 0.9 %}udc-seg-listo_para_convertir{% elif p.similitud >= 0.75 %}udc-seg-sensible_beca{% else %}udc-seg-no_contactar{% endif %}">{{ p.similitud }}</span>{% endif %}</td>
+<td><select name="q_{{ p.question_id }}" class="udc-campo w-full"><option value="">— ignorar —</option>
+{% for c, t in codigos %}<option value="{{ c }}" {% if p.codigo == c %}selected{% endif %}>{{ c }} · {{ t|truncatechars:60 }}</option>{% endfor %}</select></td></tr>
+{% endfor %}
+</tbody></table></div>
+<div class="mt-6 flex justify-end"><button type="submit" class="udc-btn"><span class="material-symbols-outlined">save</span>Guardar mapeo</button></div>
+</form>
+{% endblock %}

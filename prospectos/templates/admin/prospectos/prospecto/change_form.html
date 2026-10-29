@@ -1,0 +1,99 @@
+{% extends "admin/change_form.html" %}
+{% block form_before %}
+{% if original %}
+<section class="udc-hero ficha mb-6">
+  <span class="udc-avatar ficha-avatar">{{ iniciales }}</span>
+  <div class="grow min-w-0">
+    <h1 class="titulo-grande truncate">{{ original.nombre_aspirante }}</h1>
+    <p class="ficha-datos">
+      <span>{{ original.preparatoria|default:"Sin preparatoria" }}</span>
+      {% if original.plantel %}<span>Plantel {{ original.get_plantel_display }}</span>{% endif %}
+      <span>{% if original.carrera %}Quiere {{ original.carrera }}{% else %}Aún no decide carrera{% endif %}</span>
+      {% if original.edad %}<span>{{ original.edad }} años</span>{% endif %}
+    </p>
+    <div class="ficha-etiquetas">
+      <span class="rs-badge tono-gris">{{ original.get_estatus_display }}</span>
+      {% if original.canal_informacion == 'whatsapp' %}<span class="rs-badge tono-verde">Prefiere WhatsApp</span>{% elif original.canal_informacion == 'correo' %}<span class="rs-badge tono-verde">Prefiere correo</span>{% endif %}
+      {% if not original.consentimiento %}<span class="rs-badge tono-ambar">Esperando permiso</span>{% endif %}
+      {% for s in segmentos_detalle %}<span class="udc-chip udc-seg-{{ s.0 }}">{{ s.1 }}</span>{% endfor %}
+      {% if original.tiene_brecha %}<span class="udc-chip udc-seg-no_contactar">Alumno y tutor difieren</span>{% endif %}
+    </div>
+  </div>
+  <div class="ficha-prioridad" title="Suma de puntos para decidir a quién llamar primero. Ver ¿Cómo funciona?">
+    <b class="udc-score-{% if original.score >= 70 %}alto{% elif original.score >= 40 %}medio{% else %}bajo{% endif %}">{{ original.score }}</b>
+    <span>Prioridad de 100</span>
+  </div>
+</section>
+{% endif %}
+{% if coincidencias %}
+<div class="udc-nota alerta mb-6"><span class="material-symbols-outlined">join_inner</span>
+  <div><b>Posible duplicado pendiente de revisión</b>
+  {% for c in coincidencias %}
+    <div class="text-sm"><a class="underline" href="{% url 'admin:prospectos_prospecto_change' c.prospecto.pk %}">{{ c.prospecto }}</a> ↔
+      <a class="underline" href="{% url 'admin:prospectos_prospecto_change' c.candidato.pk %}">{{ c.candidato }}</a>. Similitud {{ c.similitud|floatformat:2 }}: {{ c.motivo }}</div>
+  {% endfor %}
+  <a class="font-semibold underline" href="{% url 'admin:prospectos_posiblecoincidencia_changelist' %}">Resolver en Coincidencias</a></div>
+</div>
+{% endif %}
+{% with c=comparativo %}
+<div class="grid gap-4 xl:grid-cols-4 mb-4">
+  <section class="rs-quien {% if c.alumno %}si{% endif %}">
+    <span class="material-symbols-outlined">school</span>
+    <div><b>Alumno</b>{% if c.alumno %}<small>Contestó el {{ c.alumno.enviada_en|date:"j M Y, H:i" }}</small>{% else %}<small>Aún no contesta</small>{% endif %}</div>
+    {% if c.alumno %}<a class="rs-ver" href="{% url 'prospectos:respuesta' c.alumno.pk %}" title="Ver la respuesta completa"><span class="material-symbols-outlined">open_in_new</span></a>{% endif %}
+  </section>
+  <section class="rs-quien {% if c.tutor %}si{% endif %}">
+    <span class="material-symbols-outlined">family_restroom</span>
+    <div><b>Mamá, papá o tutor</b>{% if c.tutor %}<small>Contestó el {{ c.tutor.enviada_en|date:"j M Y, H:i" }}</small>{% else %}<small>Aún no contesta: pídele que llene su cuestionario</small>{% endif %}</div>
+    {% if c.tutor %}<a class="rs-ver" href="{% url 'prospectos:respuesta' c.tutor.pk %}" title="Ver la respuesta completa"><span class="material-symbols-outlined">open_in_new</span></a>{% endif %}
+  </section>
+  <section class="rs-quien {% if original.brechas or c.diferencias %}ojo{% elif c.comparables %}si{% endif %}">
+    <span class="material-symbols-outlined">compare_arrows</span>
+    <div>
+    {% if c.comparables %}<b>{{ c.coinciden }} de {{ c.comparables }} respuestas iguales</b>{% else %}<b>Sin comparación</b>{% endif %}
+    {% if original.brechas %}{% for b in original.brechas %}<small>⚠ {{ b.mensaje }}</small>{% endfor %}<small>Acláralo en la llamada.</small>
+    {% elif c.diferencias %}<small>{{ c.diferencias }} respuesta{{ c.diferencias|pluralize }} distinta{{ c.diferencias|pluralize }}: úsalas en la llamada.</small>
+    {% elif c.comparables %}<small>Alumno y tutor dicen lo mismo.</small>
+    {% else %}<small>Se compara cuando contestan los dos.</small>{% endif %}
+    </div>
+  </section>
+  <section class="udc-panel">
+    <header><span class="material-symbols-outlined">contact_phone</span>Contacto</header>
+    <div class="udc-cuerpo flex flex-col gap-2">
+      {% for etiqueta, valor in contacto %}
+      <div class="flex justify-between gap-3 text-sm"><span class="text-subtle">{{ etiqueta }}</span><b class="text-important {% if not contacto_revelado %}tracking-widest{% endif %}">{{ valor|default:"—" }}</b></div>
+      {% endfor %}
+      {% if puede_ver_contacto and not contacto_revelado %}
+        <a class="udc-btn mt-1 justify-center" href="?contacto=1"><span class="material-symbols-outlined">visibility</span>Mostrar</a>
+        <p class="text-xs text-subtle">Queda registrado quién lo consultó.</p>
+      {% elif not puede_ver_contacto %}
+        <p class="text-xs text-subtle">Tu rol no permite ver datos de contacto.</p>
+      {% endif %}
+    </div>
+  </section>
+</div>
+{% include "prospectos/_respuestas_temas.html" with temas=c.temas mostrar_alumno=True mostrar_tutor=True %}
+{% endwith %}
+{% endblock %}
+
+{% block after_related_objects %}
+<section class="udc-panel mt-6"><header><span class="material-symbols-outlined">history</span>Historial de seguimiento</header>
+  <div class="udc-cuerpo">
+    <ol class="udc-linea">
+    {% for h in historial %}
+      <li class="udc-linea-{{ h.tipo }}">
+        <span class="udc-linea-punto material-symbols-outlined">{% if h.tipo == 'llamada' %}call{% elif h.tipo == 'whatsapp' %}chat{% elif h.tipo == 'correo' %}mail{% elif h.tipo == 'visita' %}directions_walk{% elif h.tipo == 'cambio_estatus' %}trending_up{% elif h.tipo == 'tarea' %}task_alt{% elif h.tipo == 'nota' %}sticky_note_2{% else %}smart_toy{% endif %}</span>
+        <div class="grow">
+          <div class="flex flex-wrap gap-x-3 items-baseline"><b class="text-important">{% if h.tipo == 'cambio_estatus' %}Estatus → {{ h.get_estatus_nuevo_display }}{% else %}{{ h.get_tipo_display }}{% endif %}</b>
+            <span class="text-xs text-subtle">{{ h.fecha|date:"j M Y, H:i" }}{% if h.usuario %} · {{ h.usuario }}{% endif %}</span>
+            {% if h.tipo == 'tarea' %}{% if h.completada_en %}<span class="udc-chip udc-seg-listo_para_convertir">Completada</span>{% else %}<span class="udc-chip udc-seg-sensible_beca">Pendiente{% if h.vence_en %} · vence {{ h.vence_en|date:"j M" }}{% endif %}</span>{% endif %}{% endif %}</div>
+          {% if h.notas %}<p class="text-sm mt-1">{{ h.notas }}</p>{% endif %}
+        </div>
+      </li>
+    {% empty %}
+      <li><p class="text-subtle">Aún no hay seguimiento. Registra la primera llamada o mensaje arriba.</p></li>
+    {% endfor %}
+    </ol>
+  </div>
+</section>
+{% endblock %}

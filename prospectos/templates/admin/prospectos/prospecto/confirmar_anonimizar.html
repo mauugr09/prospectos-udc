@@ -1,0 +1,18 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<div class="max-w-3xl flex flex-col gap-4 udc-aparece">
+  <div class="udc-nota alerta"><span class="material-symbols-outlined">delete_forever</span>
+    <div><b>Esto es irreversible.</b> Se borran nombres, correos, teléfonos, respuestas abiertas y la respuesta original de los prospectos de abajo.
+      Solo se conservan datos agregables (preparatoria, carrera, estatus) para las estadísticas.</div></div>
+  <section class="udc-panel"><header><span class="material-symbols-outlined">group</span>{{ prospectos|length }} prospecto(s)</header>
+    <div class="udc-cuerpo"><ul class="list-disc ps-5">{% for p in prospectos %}<li>{{ p }}</li>{% endfor %}</ul></div></section>
+  <form method="post" class="udc-panel"><div class="udc-cuerpo flex flex-col gap-3">{% csrf_token %}
+    {% for p in prospectos %}<input type="hidden" name="_selected_action" value="{{ p.pk }}">{% endfor %}
+    <input type="hidden" name="action" value="anonimizar_arco">
+    <label class="text-sm">Escribe <b>ANONIMIZAR</b> para confirmar</label>
+    <input name="confirmar" autocomplete="off" class="udc-campo max-w-xs">
+    <div class="flex gap-3"><button type="submit" class="udc-btn peligro"><span class="material-symbols-outlined">delete_forever</span>Anonimizar</button>
+      <a class="udc-btn secundario" href="{% url 'admin:prospectos_prospecto_changelist' %}">Cancelar</a></div>
+  </div></form>
+</div>
+{% endblock %}

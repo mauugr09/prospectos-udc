@@ -1,0 +1,178 @@
+{% extends 'admin/base.html' %}
+{% load i18n static unfold %}
+
+{% block title %}Inicio | {{ site_title }}{% endblock %}
+{% block branding %}{% include "unfold/helpers/site_branding.html" %}{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'prospectos/vendor/leaflet/leaflet.css' %}"><meta name="mx-estados" content="{% static 'prospectos/geo/mx-estados.geojson' %}">{% endblock %}
+
+{% block content %}
+<div class="tb">
+
+  <header class="tb-cabecera">
+    <h1 class="titulo-grande">Inicio</h1>
+    <p class="subtitulo">{{ hoy|date:"l j \d\e F"|capfirst }}</p>
+  </header>
+
+  {% if formularios_error %}
+  <div class="aviso aviso-rojo"><span class="material-symbols-outlined">error</span>
+    <div><b>Un formulario no se está importando.</b>
+      {% for f in formularios_error %}<div>{{ f }}: {{ f.ultimo_error|truncatechars:140 }}</div>{% endfor %}
+      <a href="{% url 'admin:prospectos_formulario_changelist' %}">Revisar formularios</a></div>
+  </div>
+  {% endif %}
+
+  {% if respaldo_error %}
+  <div class="aviso aviso-rojo"><span class="material-symbols-outlined">backup</span>
+    <div><b>El último respaldo falló</b> ({{ respaldo_error.creado_en|date:"d/m H:i" }}): {{ respaldo_error.mensaje|truncatechars:200 }}
+      <a href="{% url 'admin:prospectos_respaldo_changelist' %}">Ver respaldos</a></div>
+  </div>
+  {% endif %}
+
+  {% for e in eventos_hoy %}
+  <a class="aviso aviso-vivo" href="{% url 'prospectos:evento_vivo' e.pk %}">
+    <span class="udc-pulso"></span><div><b>Evento en curso en {{ e.preparatoria }}</b> <span class="text-subtle">({{ e.codigo }})</span></div>
+    <span class="aviso-accion">Abrir en vivo<span class="material-symbols-outlined">chevron_right</span></span>
+  </a>
+  {% endfor %}
+
+  <div class="tb-hoy">
+    {% if llamar is not None %}
+    <section class="grupo tb-llamar">
+      <header class="grupo-cabecera"><h2>A quién llamar hoy</h2>
+        <a href="{% url 'prospectos:cola' %}">Ver los {{ llamar_total }}</a></header>
+      <ul class="lista">
+        {% for p in llamar %}
+        <li><a class="fila" href="{% url 'admin:prospectos_prospecto_change' p.pk %}">
+          <span class="prioridad prioridad-{% if p.score >= 70 %}alta{% elif p.score >= 40 %}media{% else %}baja{% endif %}" title="Prioridad: más alto, llamar antes">{{ p.score }}</span>
+          <span class="udc-avatar">{{ p.iniciales }}</span>
+          <span class="fila-texto"><b>{{ p.nombre_aspirante }}</b><small>{{ p.carrera|default:"Aún no decide carrera" }}</small></span>
+          <span class="fila-dato ocultar-chico">{% if p.canal_informacion == 'whatsapp' %}WhatsApp{% elif p.canal_informacion == 'correo' %}Correo{% elif p.canal_informacion == 'si' %}La familia pidió{% endif %}</span>
+          <span class="fila-dato {% if not p.ultimo_contacto_en %}dato-alerta{% else %}ocultar-chico{% endif %}">{% if p.ultimo_contacto_en %}Último contacto {{ p.ultimo_contacto_en|date:"j M" }}{% else %}Sin contactar{% endif %}</span>
+          <span class="material-symbols-outlined fila-flecha">chevron_right</span>
+        </a></li>
+        {% empty %}
+        <li class="lista-vacia">Nadie por llamar. Cuando lleguen respuestas con permiso y pidan información, aparecen aquí en orden de prioridad.</li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
+    <div class="tb-lado">
+      {% with pendientes=tarjetas %}
+      {% if pendientes %}
+      <section class="grupo">
+        <header class="grupo-cabecera"><h2>Pendientes</h2></header>
+        <ul class="lista">
+          {% for t in pendientes %}{% if not t.resumen %}
+          <li><a class="fila fila-compacta" href="{{ t.url }}" title="{{ t.ayuda }}">
+            <span class="fila-texto"><b>{{ t.etiqueta }}</b></span>
+            <span class="contador {% if t.valor %}contador-{{ t.tono }}{% endif %}">{{ t.valor }}</span>
+            <span class="material-symbols-outlined fila-flecha">chevron_right</span></a></li>
+          {% endif %}{% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+      {% endwith %}
+
+      {% if ranking_hoy %}
+      <section class="grupo">
+        <header class="grupo-cabecera"><h2>Promotores hoy</h2></header>
+        <ul class="lista">
+          {% for r in ranking_hoy %}<li><div class="fila fila-compacta"><span class="fila-texto"><b>{{ r.etiqueta }}</b></span>
+            <span class="contador">{{ r.total }}</span></div></li>{% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+
+      {% if primeros_pasos %}
+      <section class="grupo ay-arranque">
+        <header class="grupo-cabecera"><h2>Primeros pasos</h2>
+          <form method="post" action="{% url 'prospectos:pasos' %}">{% csrf_token %}<input type="hidden" name="accion" value="ocultar">
+            <button class="enlace" title="Se puede volver a mostrar desde ¿Cómo funciona?">Ocultar</button></form></header>
+        <div class="grupo-cuerpo">
+          <div class="progreso"><span class="progreso-texto">{{ pasos_hechos }} de {{ primeros_pasos|length }} listos</span>
+            <span class="tb-barra"><i style="width:{% widthratio pasos_hechos primeros_pasos|length 100 %}%"></i></span></div>
+          <ul class="ay-pasos">
+            {% for p in primeros_pasos %}{% if not p.hecho %}
+            <li><span class="material-symbols-outlined">radio_button_unchecked</span>
+              <details><summary>{{ p.titulo }}</summary>
+                <p>{{ p.como }}</p>
+                {% if p.url %}<a class="udc-btn chico secundario" href="{{ p.url }}">Abrir</a>{% endif %}
+                {% if p.marcable %}<form method="post" action="{% url 'prospectos:pasos' %}">{% csrf_token %}
+                  <input type="hidden" name="accion" value="{{ p.marcable }}"><button class="udc-btn chico">Ya la guardé</button></form>{% endif %}
+              </details></li>
+            {% endif %}{% endfor %}
+          </ul>
+          {% if pasos_listos %}<p class="nota-pie">Ya está: {{ pasos_listos }}.</p>{% endif %}
+        </div>
+      </section>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if puede_reportes %}
+  <header class="tb-seccion">
+    <h2>Resumen {% if dias == 365 %}del último año{% else %}de los últimos {{ periodo_txt }}{% endif %}</h2>
+    <nav class="seg" aria-label="Periodo">
+      {% for d, etiqueta in periodos %}
+        <a href="?dias={{ d }}" class="{% if d == dias %}activo{% endif %}" {% if d == dias %}aria-current="true"{% endif %}>{{ etiqueta }}</a>
+      {% endfor %}
+    </nav>
+  </header>
+
+  <div class="tb-rejilla">
+    <section class="grupo tb-actividad">
+      <header class="grupo-cabecera"><h2>Aspirantes por día</h2>
+        {% if actividad.crecimiento is not None %}<span class="variacion {% if actividad.crecimiento >= 0 %}sube{% else %}baja{% endif %}">{% if actividad.crecimiento >= 0 %}+{% endif %}{{ actividad.crecimiento }} % contra el periodo anterior</span>{% endif %}</header>
+      <div class="grupo-cuerpo">
+        <div class="cifras">
+          {% for t in tarjetas %}{% if t.resumen %}<div><b>{{ t.valor }}</b><span>{{ t.etiqueta|lower|capfirst }}</span></div>{% endif %}{% endfor %}
+          <div><b>{{ info_pct }} %</b><span>Pidió información</span></div>
+          {% for a in anillos|slice:":1" %}<div><b>{{ a.pct }} %</b><span>{{ a.etiqueta }}</span></div>{% endfor %}
+        </div>
+        <div class="tb-lienzo"><canvas id="g-actividad" aria-label="Aspirantes registrados por día"></canvas><div id="g-actividad-tip" class="tb-tip" hidden></div></div>
+      </div>
+    </section>
+
+    <section class="grupo tb-mapa">
+      <header class="grupo-cabecera"><h2>De dónde vienen</h2>
+        {% if sin_ubicar %}<a href="{% url 'prospectos:ubicar' %}" class="dato-alerta">{{ sin_ubicar }} prepa{{ sin_ubicar|pluralize }} sin ubicar</a>{% else %}<a href="{% url 'prospectos:mapa' %}">Mapa completo</a>{% endif %}</header>
+      <div id="tb-mapa"></div>
+    </section>
+
+    <section class="grupo">
+      <header class="grupo-cabecera"><h2>De la respuesta a la inscripción</h2></header>
+      <div class="grupo-cuerpo"><div class="tb-embudo">
+        {% for e in embudo %}
+        <div><span>{{ e.etapa }}</span><span class="tb-embudo-barra"><i style="width:{{ e.pct|stringformat:'s' }}%"></i></span><b>{{ e.total }}</b></div>
+        {% endfor %}
+      </div></div>
+    </section>
+
+    <section class="grupo">
+      <header class="grupo-cabecera"><h2>Carreras más pedidas</h2></header>
+      <div class="grupo-cuerpo"><ul class="tb-barras">
+        {% for c in carreras %}<li><span class="truncate">{{ c.etiqueta }}</span><span class="tb-barra"><i style="width:{{ c.pct }}%"></i></span><b>{{ c.total }}</b></li>
+        {% empty %}<li class="tb-vacio">Sin datos en el periodo.</li>{% endfor %}
+      </ul></div>
+    </section>
+
+    <section class="grupo">
+      <header class="grupo-cabecera"><h2>Grupos</h2><a href="{% url 'prospectos:ayuda' %}">Qué significa cada uno</a></header>
+      <div class="grupo-cuerpo"><ul class="tb-barras">
+        {% for a in anillos %}<li><span class="truncate">{{ a.etiqueta }}</span><span class="tb-barra"><i style="width:{{ a.pct }}%;background:{{ a.color }}"></i></span><b>{{ a.pct }} %</b></li>{% endfor %}
+      </ul></div>
+    </section>
+
+  </div>
+  {{ datos_tablero|json_script:"datos-tablero" }}
+  {% endif %}
+</div>
+
+{% if puede_reportes %}
+<script src="{% static 'prospectos/vendor/leaflet/leaflet.js' %}"></script>
+<script src="{% static 'prospectos/vendor/googlemutant/Leaflet.GoogleMutant.js' %}"></script>
+<script src="{% static 'prospectos/js/mapa-mx.js' %}"></script>
+<script src="{% static 'prospectos/js/tablero.js' %}"></script>
+{% endif %}
+{% endblock %}

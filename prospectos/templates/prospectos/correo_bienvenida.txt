@@ -1,0 +1,12 @@
+¡Hola, {{ nombre }}!
+
+Gracias por compartir con nosotros tus intereses durante nuestra visita.
+{% if carrera %}
+Nos dio gusto saber que te interesa {{ carrera }}. Pronto un asesor académico podrá resolver tus dudas sobre el plan de estudios, becas y el proceso de inscripción.
+{% else %}
+Pronto un asesor académico podrá resolver tus dudas sobre nuestra oferta, becas y el proceso de inscripción.
+{% endif %}
+Si no solicitaste este correo o ya no deseas recibir información, responde a este mensaje con la palabra BAJA y eliminaremos tus datos conforme a nuestro aviso de privacidad.
+
+Saludos,
+Admisiones · {{ institucion }}

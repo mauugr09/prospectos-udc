@@ -1,0 +1,12 @@
+{"nota": "Cabeceras municipales aproximadas (±1 km), solo para orientarse cuando no hay internet.",
+ "lugares": [
+  ["Cuautitlán", 19.6706, -99.1786], ["Cuautitlán Izcalli", 19.6467, -99.2108], ["Tultepec", 19.6850, -99.1283],
+  ["Tultitlán", 19.6450, -99.1694], ["Teoloyucan", 19.7442, -99.1811], ["Zumpango", 19.7969, -99.0994],
+  ["Coyotepec", 19.7767, -99.2058], ["Huehuetoca", 19.8344, -99.2036], ["Tepotzotlán", 19.7167, -99.2236],
+  ["Melchor Ocampo", 19.7083, -99.1442], ["Nextlalpan", 19.7375, -99.0767], ["Jaltenco", 19.7517, -99.0928],
+  ["Tecámac", 19.7131, -98.9683], ["Coacalco", 19.6297, -99.1100], ["Ecatepec", 19.6011, -99.0500],
+  ["Tlalnepantla", 19.5400, -99.1950], ["Atizapán de Zaragoza", 19.5594, -99.2683], ["Nicolás Romero", 19.6217, -99.3125],
+  ["Naucalpan", 19.4786, -99.2397], ["Tequixquiac", 19.9094, -99.1453], ["Apaxco", 19.9750, -99.1700],
+  ["Hueypoxtla", 19.9128, -99.0786], ["Villa del Carbón", 19.7275, -99.4636], ["Ciudad de México", 19.4326, -99.1332],
+  ["Toluca", 19.2826, -99.6557], ["Pachuca", 20.1011, -98.7591]
+ ]}

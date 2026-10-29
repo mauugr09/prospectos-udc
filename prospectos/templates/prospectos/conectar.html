@@ -1,0 +1,95 @@
+{% load static %}<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conectar con Prospectos</title>
+<link rel="icon" href="{% static 'prospectos/marca/favicon.svg' %}">
+<link rel="stylesheet" href="{% static 'prospectos/css/udc.css' %}">
+<script>try { if (matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark'); } catch (e) {}</script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; }
+  h1, h2, p, ol { margin: 0; } a { text-decoration: none; color: inherit; } b { font-weight: 600; }
+  .grupo-cuerpo > * + * { margin-top: 10px; }
+  main { max-width: 640px; margin: 0 auto; padding: 48px 16px 64px; display: flex; flex-direction: column; gap: 20px; }
+  .encabezado { text-align: center; } .encabezado img { margin: 0 auto 14px; border-radius: 13px; }
+  .pestanas { align-self: center; }
+  .pasos { counter-reset: paso; list-style: none; margin: 0; padding: 0; }
+  .pasos li { counter-increment: paso; position: relative; padding: 12px 16px 12px 52px; font-size: 15px; line-height: 1.5; }
+  .pasos li + li { border-top: .5px solid var(--c-separador); }
+  .pasos li::before { content: counter(paso); position: absolute; left: 16px; top: 12px; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--c-acento-suave); color: var(--c-acento); font-size: 13px; font-weight: 600; display: grid; place-items: center; }
+  .pasos small { display: block; color: var(--c-texto-2); font-size: 13px; }
+  .huella { font-variant-numeric: tabular-nums; font-size: 13px; word-spacing: 4px; }
+  [hidden] { display: none !important; }
+  code { font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <header class="encabezado">
+    <img src="{% static 'prospectos/marca/favicon.svg' %}" alt="" width="56" height="56">
+    <h1 class="titulo-grande" style="view-transition-name:none">Conectar con Prospectos</h1>
+    <p class="subtitulo">Una sola vez en esta computadora, para entrar de forma segura al programa que corre en {{ equipo }}.</p>
+  </header>
+
+  <nav class="seg pestanas" aria-label="Sistema">
+    <a href="#windows" data-so="windows" class="{% if so != 'mac' %}activo{% endif %}">Windows</a>
+    <a href="#mac" data-so="mac" class="{% if so == 'mac' %}activo{% endif %}">Mac</a>
+  </nav>
+
+  {% if so == 'movil' %}<div class="aviso"><span class="material-symbols-outlined">smartphone</span><div>Desde teléfono o tableta no está contemplado. Usa una computadora Windows o Mac.</div></div>{% endif %}
+
+  <section class="grupo">
+    <header class="grupo-cabecera"><h2>1. Descarga el certificado</h2></header>
+    <div class="grupo-cuerpo">
+      <a class="udc-btn" href="{% url 'certificado' %}">Descargar certificado</a>
+      <p class="nota-pie">Antes de instalarlo, compara su huella con la que aparece en la computadora del programa (Configuración → Otras computadoras):</p>
+      <p class="huella">{{ huella }}</p>
+    </div>
+  </section>
+
+  <section class="grupo" data-para="windows" {% if so == 'mac' %}hidden{% endif %}>
+    <header class="grupo-cabecera"><h2>2. Instálalo en Windows</h2></header>
+    <ol class="pasos">
+      <li>Abre el archivo descargado <b>Prospectos-UDC.crt</b> y elige <b>Instalar certificado…</b></li>
+      <li>Elige <b>Usuario actual</b> y Siguiente.</li>
+      <li>Marca <b>Colocar todos los certificados en el siguiente almacén</b> → Examinar → <b>Entidades de certificación raíz de confianza</b> → Aceptar → Siguiente → Finalizar.</li>
+      <li>Windows muestra una advertencia con una «huella digital» (SHA-1). Elige <b>Sí</b>.<small>Esa huella es distinta a la de arriba (es otro cálculo del mismo certificado); la comparación importante es la del paso 1.</small></li>
+      <li>Cierra <b>todas</b> las ventanas del navegador y vuelve a abrirlo.<small>Chrome y Edge usan el certificado de Windows. Firefox: Ajustes → Privacidad y seguridad → Certificados → Ver certificados → Autoridades → Importar.</small></li>
+    </ol>
+  </section>
+
+  <section class="grupo" data-para="mac" {% if so != 'mac' %}hidden{% endif %}>
+    <header class="grupo-cabecera"><h2>2. Instálalo en Mac</h2></header>
+    <ol class="pasos">
+      <li>Abre el archivo descargado <b>Prospectos-UDC.crt</b> (en Descargas). Se abre <b>Acceso a Llaveros</b>; si pregunta, agrégalo al llavero <b>Inicio de sesión</b>.</li>
+      <li>En Acceso a Llaveros busca <b>Prospectos UDC</b> y ábrelo con doble clic.</li>
+      <li>Despliega <b>Confiar</b> y en «Al utilizar este certificado» elige <b>Confiar siempre</b>.</li>
+      <li>Cierra la ventana y escribe tu contraseña de la Mac para confirmar.</li>
+      <li>Cierra Safari o Chrome por completo (⌘Q) y vuelve a abrirlo.</li>
+    </ol>
+  </section>
+
+  <section class="grupo">
+    <header class="grupo-cabecera"><h2>3. Entra al programa</h2></header>
+    <div class="grupo-cuerpo">
+      <p style="font-size:15px">Guarda esta dirección en favoritos:</p>
+      <p style="font-size:17px;font-weight:600;margin:6px 0 12px">{{ admin }}</p>
+      <a class="udc-btn secundario" href="{{ admin }}">Entrar</a>
+    </div>
+  </section>
+</main>
+<script>
+(function () {
+  const nav = document.querySelector('.pestanas');
+  const mostrar = (so) => {
+    nav.querySelectorAll('a').forEach((a) => a.classList.toggle('activo', a.dataset.so === so));
+    document.querySelectorAll('[data-para]').forEach((s) => { s.hidden = s.dataset.para !== so; });
+  };
+  nav.addEventListener('click', (e) => { const a = e.target.closest('a'); if (!a) return; e.preventDefault(); mostrar(a.dataset.so); });
+  if (location.hash === '#mac' || location.hash === '#windows') mostrar(location.hash.slice(1));
+})();
+</script>
+</body>
+</html>
