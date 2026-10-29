@@ -29,12 +29,21 @@ jobs:
       - uses: actions/setup-python@v6
         with: { python-version: '3.13', cache: pip }
       - run: pip install -r requirements.txt -r requirements-dev.txt
+      # Los errores se repiten como «anotaciones» (::error::) para leerlos sin abrir el registro completo.
       - name: Pruebas con SQLite
-        run: pytest
-      - name: Pruebas con MariaDB
+        shell: bash
         run: |
-          mysql -h127.0.0.1 -P3307 -uroot -praiz -e "GRANT ALL ON *.* TO 'prospectos'@'%'; FLUSH PRIVILEGES;"
-          pytest --ds=config.settings_pruebas_mariadb
+          pytest 2>&1 | tee salida.txt; r=${PIPESTATUS[0]}
+          [ $r -eq 0 ] || grep -E "FAILED|ERROR|Error|assert" salida.txt | tail -25 | sed 's/^/::error::/'
+          exit $r
+      - name: Pruebas con MariaDB
+        shell: bash
+        env:
+          PROSPECTOS_BD_JSON: '{"MOTOR":"mariadb","HOST":"127.0.0.1","PUERTO":3307,"NOMBRE":"prospectos","USUARIO":"root","CLAVE":"raiz"}'
+        run: |
+          pytest --ds=config.settings_pruebas_mariadb 2>&1 | tee salida.txt; r=${PIPESTATUS[0]}
+          [ $r -eq 0 ] || grep -E "FAILED|ERROR|Error|assert" salida.txt | tail -25 | sed 's/^/::error::/'
+          exit $r
 
   windows:
     needs: pruebas
@@ -64,7 +73,7 @@ jobs:
           $ok = $false
           foreach ($i in 1..60) { Start-Sleep 2; try { $r = Invoke-WebRequest http://127.0.0.1:8000/salud/ -UseBasicParsing; if ($r.Content -like 'prospectos-ok*') { $ok = $true; break } } catch {} }
           Get-Content "$env:RUNNER_TEMP\salida.txt"
-          if (-not $ok) { Get-Content "$env:RUNNER_TEMP\errores.txt"; Stop-Process $p -Force; exit 1 }
+          if (-not $ok) { Get-Content "$env:RUNNER_TEMP\errores.txt" | Select-Object -Last 30 | ForEach-Object { "::error::$_" }; Stop-Process $p -Force; exit 1 }
           curl.exe --fail -sS --cacert (Join-Path $env:PROSPECTOS_DATOS 'red\ca.crt') https://localhost:8443/salud/
           if ($LASTEXITCODE) { Stop-Process $p -Force; exit 1 }
           curl.exe --fail -sS -o NUL -w "%{http_code} login`n" --cacert (Join-Path $env:PROSPECTOS_DATOS 'red\ca.crt') https://localhost:8443/admin/login/
@@ -97,6 +106,7 @@ jobs:
         env: { PROSPECTOS_DATOS: '${{ runner.temp }}/humo' }
         run: |
           set -e
+          trap 'tail -40 "$RUNNER_TEMP/salida.txt" 2>/dev/null | sed "s/^/::error::/"' ERR
           APP=dist/Prospectos.app/Contents/MacOS/Prospectos
           file dist/Prospectos.app/Contents/Resources/prospectos/Prospectos | grep -q arm64
           "$APP" preparar
