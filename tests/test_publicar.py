@@ -36,20 +36,34 @@ class GoogleFalso:
     def estructura(self, formulario):
         return {i['questionItem']['question']['questionId']: i['title'] for i in self.form['items'] if 'questionItem' in i}
 
+    def respuestas(self, formulario, desde):
+        return iter(())
+
     def actualizar_form(self, form_id, reqs, revision):
         if revision != self.revision:
             raise ErrorFuente('Alguien cambió el Form en Google mientras revisabas.')
         self.llamadas.append(reqs)
+        respuestas = []
         for r in reqs:
             if 'updateItem' in r:
                 self.form['items'][r['updateItem']['location']['index']] = r['updateItem']['item']
+                respuestas.append({})
+            elif 'deleteItem' in r:
+                del self.form['items'][r['deleteItem']['location']['index']]
+                respuestas.append({})
+            elif 'moveItem' in r:
+                item = self.form['items'].pop(r['moveItem']['originalLocation']['index'])
+                self.form['items'].insert(r['moveItem']['newLocation']['index'], item)
+                respuestas.append({})
             else:
                 item = copy.deepcopy(r['createItem']['item'])
                 n = str(next(_ids))
                 item['itemId'] = 'i' + n
                 item['questionItem']['question']['questionId'] = 'q' + n
                 self.form['items'].insert(r['createItem']['location']['index'], item)
+                respuestas.append({'createItem': {'itemId': 'i' + n, 'questionId': ['q' + n]}})
         self.revision = 'r' + str(len(self.llamadas) + 1)
+        return {'replies': respuestas}
 
 
 def texto_de(codigo):
@@ -162,5 +176,6 @@ def test_pantalla_y_aviso_de_pendiente(client, google, monkeypatch):
     client.post(f'/admin/prospectos/carrera/{c.pk}/change/', {'nombre': 'Derecho', 'area': c.area, 'planteles': c.planteles,
                                                               'alias': '', 'activo': 'on'}, follow=True)
     assert Configuracion.obtener('publicar.pendiente.ALUMNO') is True
-    html = client.get('/admin/herramientas/publicar/').content.decode()
-    assert 'Vocacional' in html and 'Publicar lo marcado' in html
+    Carrera.objects.create(nombre='Enfermería', planteles=['tultepec'])
+    html = client.get('/admin/herramientas/encuestas/').content.decode()
+    assert 'Cambios del programa que el Form aún no tiene' in html and 'Agregar «Enfermería»' in html

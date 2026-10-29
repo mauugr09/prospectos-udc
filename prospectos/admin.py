@@ -206,8 +206,8 @@ class AvisaPublicar:
             Configuracion.guardar(f'publicar.pendiente.{t}', True, request.user)
         if Formulario.objects.filter(activo=True).exclude(google_form_id__startswith='demo-').exists():
             self.message_user(request, mark_safe(
-                f'El Google Form todavía no tiene este cambio. <a class="underline" href="{reverse("prospectos:publicar")}">'
-                'Revisar y publicar en Google</a>.'), messages.INFO)
+                f'El Google Form todavía no tiene este cambio. <a class="underline" href="{reverse("prospectos:encuestas")}">'
+                'Pásalo al Form en Encuestas</a>.'), messages.INFO)
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)

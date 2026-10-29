@@ -10,7 +10,7 @@ Reglas de seguridad:
   - Antes de publicar se guarda una copia del Form tal como estaba (datos/respaldos/forms/).
   - Google rechaza el cambio si alguien editó el Form mientras tanto (writeControl.requiredRevisionId).
   - Quitar opciones o agregar preguntas viene desmarcado: hay que marcarlo a propósito.
-  - Nunca se borran preguntas del Form (Google borraría también sus respuestas en la hoja del Form).
+  - Este módulo nunca borra preguntas; quitar una se hace en el editor (editor_form.quitar), que importa antes lo pendiente.
   - La API de Google no permite configurar validaciones (p. ej. «número entre 12 y 99»): esas siguen a mano.
 """
 
@@ -123,7 +123,7 @@ TIPO_GOOGLE = {'opcion': 'RADIO', 'multiple': 'CHECKBOX', 'consentimiento': 'RAD
 def plan(formulario: Formulario, form: dict) -> list[Cambio]:
     """Lista de cambios para que el Form diga lo mismo que el programa."""
     mapeo = formulario.mapeo_campos or {}
-    preguntas = {p.codigo: p for p in Pregunta.objects.filter(cuestionario=formulario.tipo).prefetch_related('opciones_lista')}
+    preguntas = {p.codigo: p for p in Pregunta.objects.filter(cuestionario=formulario.tipo, retirada=False).prefetch_related('opciones_lista')}
     cambios, presentes = [], set()
     for i, item, seccion in _items_con_seccion(form):
         q = _pregunta(item)

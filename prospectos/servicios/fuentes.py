@@ -20,7 +20,7 @@ from django.utils import timezone
 BASE = 'https://forms.googleapis.com/v1'
 SCOPES = ['https://www.googleapis.com/auth/forms.responses.readonly',
           'https://www.googleapis.com/auth/forms.body.readonly']
-# Solo al «Publicar en Google» (cambiar preguntas y opciones del Form). Importar sigue siendo de solo lectura.
+# Solo en «Encuestas» (cambiar preguntas y opciones del Form). Importar sigue siendo de solo lectura.
 SCOPES_EDICION = ['https://www.googleapis.com/auth/forms.body']
 
 
@@ -174,7 +174,7 @@ class FuenteGoogle:
             raise ErrorFuente('La cuenta de Google conectada solo tiene permiso de lectura. En modo OAuth vuelve a ejecutar '
                               f'«{settings.COMANDO} conectar_google» y acepta el permiso para editar los Forms.')
         if r.status_code == 400 and 'revision' in r.text.lower():
-            raise ErrorFuente('Alguien cambió el Form en Google mientras revisabas. Vuelve a abrir «Publicar en Google» '
+            raise ErrorFuente('Alguien cambió el Form en Google mientras revisabas. Vuelve a abrir «Encuestas» '
                               'para ver los cambios actualizados.')
         if r.status_code >= 400:
             raise ErrorFuente(explicar_http(r.status_code, r.text[:300]))

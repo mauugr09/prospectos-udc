@@ -147,7 +147,7 @@ Requiere Python 3.13.
 
 ```bash
 python -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-dev.txt
-.venv/bin/pytest                          # 135 pruebas (SQLite)
+.venv/bin/pytest                          # 148 pruebas (SQLite)
 .venv/bin/pytest --ds=config.settings_pruebas_mariadb   # las mismas contra MariaDB 10.11+
 .venv/bin/python lanzador.py              # igual que el .exe (datos en ./datos)
 .venv/bin/python manage.py demo           # datos ficticios

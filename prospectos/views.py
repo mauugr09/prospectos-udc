@@ -4,6 +4,7 @@ import json
 from datetime import date, datetime, time, timedelta
 from io import BytesIO
 
+from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin.views.decorators import staff_member_required
@@ -15,7 +16,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from . import catalogos
-from .models import (etiqueta_segmento, ACTIVOS, Preparatoria, Configuracion, Cuestionario, Evento, Formulario, PosibleCoincidencia, Pregunta, Prospecto,
+from .models import (Actividad, etiqueta_segmento, ACTIVOS, Preparatoria, Configuracion, Cuestionario, Evento, Formulario, PosibleCoincidencia, Pregunta, Prospecto,
                      Segmento, Seguimiento, TipoSeguimiento)
 from .servicios import auditoria, importacion, inteligencia, reportes
 
@@ -565,32 +566,58 @@ def badge_publicar(request):
 
 @staff_member_required
 def publicar_google(request):
-    """Aplicar al Google Form lo que se cambió en el programa (textos, opciones, carreras), con confirmación."""
+    return redirect('prospectos:encuestas')
+
+
+@staff_member_required
+def encuestas(request):
+    """Editor de encuestas: las preguntas del Google Form se agregan, editan, mueven y quitan desde aquí."""
     _permiso(request, 'change_formulario')
-    from .servicios import publicar
+    from .servicios import editor_form, publicar
     from .servicios.fuentes import ErrorFuente, FuenteGoogle
-    formularios = list(Formulario.objects.filter(activo=True).exclude(google_form_id__startswith='demo-').order_by('tipo'))
-    if request.method == 'POST':
-        f = get_object_or_404(Formulario, pk=request.POST.get('formulario'), activo=True)
+    formularios = {f.tipo: f for f in Formulario.objects.filter(activo=True).exclude(google_form_id__startswith='demo-').order_by('-id')}
+    tipo = request.GET.get('tipo') if request.GET.get('tipo') in formularios else next(iter(sorted(formularios)), None)
+    f = formularios.get(tipo)
+    if request.method == 'POST' and f:
+        fuente = FuenteGoogle(edicion=True)
+        x = request.POST
+        accion = x.get('accion')
         try:
-            r = publicar.publicar(f, set(request.POST.getlist('cambio')), request.user)
-            if r['aplicados']:
-                messages.success(request, f'{f}: se aplicaron {r["aplicados"]} cambios en Google. El Form anterior quedó guardado en {r["respaldo"]}.')
-            else:
-                messages.info(request, f'{f}: no elegiste ningún cambio.')
-        except ErrorFuente as e:
-            messages.error(request, f'{f}: {e}')
-        return redirect(request.path)
-    lectura = FuenteGoogle()
-    bloques = []
-    for f in formularios:
-        b = {'formulario': f, 'cambios': [], 'error': None, 'url': f'https://docs.google.com/forms/d/{f.google_form_id}/edit'}
+            if accion == 'agregar':
+                p = editor_form.agregar(f, fuente, x.get('seccion') or None, x.get('texto'), x.get('tipo'),
+                                        (x.get('opciones') or '').splitlines(), x.get('requerida') == 'on', request.user)
+                messages.success(request, f'Pregunta agregada al Form: «{p.texto}».')
+            elif accion == 'editar':
+                n = int(x.get('n') or 0)
+                opciones = [(int(x[f'op_{i}']) if x.get(f'op_{i}', '').isdigit() else None, x.get(f'antes_{i}', ''),
+                             x.get(f'despues_{i}', ''), x.get(f'quitar_{i}') == 'on') for i in range(n)]
+                editor_form.editar(f, fuente, x.get('item'), x.get('texto'), x.get('requerida') == 'on', opciones,
+                                   (x.get('nuevas') or '').splitlines(), request.user)
+                messages.success(request, 'Cambios guardados en el Form.')
+            elif accion == 'quitar':
+                editor_form.quitar(f, fuente, x.get('item'), request.user)
+                messages.success(request, 'Pregunta quitada del Form. Las respuestas que ya llegaron se conservan en el programa.')
+            elif accion in ('arriba', 'abajo'):
+                editor_form.mover(f, fuente, x.get('item'), accion, request.user)
+            elif accion == 'adoptar':
+                p = editor_form.adoptar(f, fuente, x.get('item'), request.user)
+                messages.success(request, f'«{p.texto}» ya se muestra en las fichas y reportes.')
+            elif accion == 'pendientes':
+                r = publicar.publicar(f, set(x.getlist('cambio')), request.user, fuente=fuente)
+                messages.success(request, f'Se aplicaron {r["aplicados"]} cambios en el Form.')
+        except (ErrorFuente, ValueError) as e:
+            messages.error(request, str(e))
+        return redirect(f'{request.path}?tipo={tipo}')
+    ctx = {'formularios': formularios, 'tipo': tipo, 'f': f, 'tipos': editor_form.TIPOS, 'secciones': [], 'pendientes': [], 'error': None}
+    if f:
         try:
-            b['cambios'] = publicar.plan(f, lectura.info(f))
+            form = FuenteGoogle().info(f)
+            ctx['secciones'] = editor_form.leer(f, form)
+            ctx['pendientes'] = [c for c in publicar.plan(f, form) if c.tipo != 'crear']
+            ctx['url'] = form.get('responderUri') or f.url_publica
         except ErrorFuente as e:
-            b['error'] = str(e)
-        bloques.append(b)
-    return render(request, 'prospectos/publicar.html', _ctx(request, 'Publicar cambios en Google Forms', bloques=bloques))
+            ctx['error'] = str(e)
+    return render(request, 'prospectos/encuestas.html', _ctx(request, 'Encuestas', **ctx))
 
 
 # --------------------------------------------------------------------------- familias por unir
@@ -649,6 +676,95 @@ def familias_por_unir(request):
         q=q, resultados=resultados,
         total_solas=vivos.filter(tiene_tutor=True, tiene_alumno=False).exclude(pk__in=con_propuesta).count(),
         total_alumnos_solos=vivos.filter(tiene_alumno=True, tiene_tutor=False).count()))
+
+
+# --------------------------------------------------------------------------- calendario de admisiones
+class _FormActividad(forms.ModelForm):
+    class Meta:
+        model = Actividad
+        fields = ['titulo', 'tipo', 'fecha', 'fecha_fin', 'hora_inicio', 'hora_fin', 'lugar', 'plantel', 'responsable', 'notas']
+        widgets = {
+            'fecha': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'fecha_fin': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'hora_inicio': forms.TimeInput(attrs={'type': 'time'}, format='%H:%M'),
+            'hora_fin': forms.TimeInput(attrs={'type': 'time'}, format='%H:%M'),
+            'notas': forms.Textarea(attrs={'rows': 2}),
+        }
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        for f in self.fields.values():
+            f.widget.attrs.setdefault('class', 'udc-campo')
+        self.fields['titulo'].widget.attrs['placeholder'] = 'Por ejemplo: Open house Cuautitlán'
+
+    def clean(self):
+        d = super().clean()
+        if d.get('fecha_fin') and d.get('fecha') and d['fecha_fin'] < d['fecha']:
+            self.add_error('fecha_fin', 'Termina antes de empezar.')
+        if d.get('hora_fin') and d.get('hora_inicio') and d['hora_fin'] <= d['hora_inicio']:
+            self.add_error('hora_fin', 'La hora de término va después de la de inicio.')
+        if d.get('hora_fin') and not d.get('hora_inicio'):
+            self.add_error('hora_inicio', 'Falta la hora de inicio.')
+        return d
+
+
+@staff_member_required
+def calendario(request):
+    """Mes de Admisiones: visitas a prepas, actividades internas y llamadas que vencen cada día."""
+    _permiso(request, 'view_evento')
+    from django.contrib.auth import get_user_model
+    from .servicios import calendario as cal
+    from .admin import solo_propios
+    puede = request.user.has_perm('prospectos.change_evento')
+    promotor = request.user if solo_propios(request, 'ver_eventos_propios') else None
+    hoy = timezone.localdate()
+    try:
+        anio, num = (int(x) for x in (request.GET.get('mes') or hoy.strftime('%Y-%m')).split('-')[:2])
+        date(anio, num, 1)
+    except ValueError:
+        anio, num = hoy.year, hoy.month
+
+    if request.GET.get('ics'):
+        desde = date(anio, num, 1) - timedelta(days=31)
+        texto = cal.ics(desde, desde + timedelta(days=400), request.get_host().split(':')[0] or 'prospectos.udc', promotor)
+        r = HttpResponse(texto, content_type='text/calendar; charset=utf-8')
+        r['Content-Disposition'] = f'attachment; filename="admisiones-{anio}-{num:02d}.ics"'
+        return r
+
+    editar = None
+    if request.method == 'POST':
+        if not puede:
+            raise PermissionDenied
+        accion = request.POST.get('accion')
+        a = get_object_or_404(Actividad, pk=request.POST['pk']) if request.POST.get('pk') else None
+        if accion == 'borrar' and a:
+            auditoria.registrar('borrar_actividad', None, {'actividad': a.pk, 'titulo': a.titulo, 'fecha': str(a.fecha)}, request.user)
+            a.delete()
+            messages.success(request, f'Se quitó «{a.titulo}» del calendario.')
+            return redirect(f"{reverse('prospectos:calendario')}?mes={anio}-{num:02d}")
+        form = _FormActividad(request.POST, instance=a)
+        if form.is_valid():
+            nueva = form.instance.pk is None
+            obj = form.save(commit=False)
+            if nueva:
+                obj.creado_por = request.user
+            obj.save()
+            auditoria.registrar('crear_actividad' if nueva else 'editar_actividad', None,
+                                {'actividad': obj.pk, 'titulo': obj.titulo, 'fecha': str(obj.fecha)}, request.user)
+            messages.success(request, f'«{obj.titulo}» quedó el {obj.fecha:%d/%m/%Y}.')
+            return redirect(f"{reverse('prospectos:calendario')}?mes={obj.fecha:%Y-%m}")
+        editar = form
+    elif puede and request.GET.get('editar'):
+        editar = _FormActividad(instance=get_object_or_404(Actividad, pk=request.GET['editar']))
+    elif puede and request.GET.get('dia'):
+        editar = _FormActividad(initial={'fecha': _fecha(request.GET['dia'], hoy), 'responsable': request.user.pk})
+    if editar is not None:
+        editar.fields['responsable'].queryset = get_user_model().objects.filter(is_active=True, is_staff=True).order_by('first_name', 'username')
+        editar.fields['responsable'].label_from_instance = lambda u: u.get_full_name() or u.get_username()
+
+    return render(request, 'prospectos/calendario.html', _ctx(
+        request, 'Calendario', m=cal.mes(anio, num, promotor), agenda=cal.agenda(14, promotor), vencidas=cal.vencidas(),
+        puede=puede, editar=editar, hoy=hoy, puede_tareas=request.user.has_perm('prospectos.change_prospecto')))
 
 
 # --------------------------------------------------------------------------- uso desde otras computadoras

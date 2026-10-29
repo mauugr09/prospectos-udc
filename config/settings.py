@@ -322,6 +322,8 @@ UNFOLD = {
                  'permission': _permiso('prospectos.resolver_coincidencias'), 'badge': 'prospectos.views.badge_coincidencias'},
             ]},
             {'title': 'Visitas a preparatorias', 'separator': True, 'items': [
+                {'title': 'Calendario', 'icon': 'calendar_month', 'link': reverse_lazy('prospectos:calendario'),
+                 'permission': _permiso('prospectos.view_evento')},
                 {'title': 'Eventos y QR', 'icon': 'qr_code_2', 'link': reverse_lazy('admin:prospectos_evento_changelist'),
                  'permission': _permiso('prospectos.view_evento')},
                 {'title': 'Preparatorias', 'icon': 'apartment', 'link': reverse_lazy('admin:prospectos_preparatoria_changelist'),
@@ -340,7 +342,7 @@ UNFOLD = {
                  'permission': _permiso('prospectos.view_formulario')},
                 {'title': 'Preguntas y opciones', 'icon': 'quiz', 'link': reverse_lazy('admin:prospectos_pregunta_changelist'),
                  'permission': _permiso('prospectos.view_pregunta')},
-                {'title': 'Publicar en Google', 'icon': 'cloud_upload', 'link': reverse_lazy('prospectos:publicar'),
+                {'title': 'Encuestas', 'icon': 'edit_note', 'link': reverse_lazy('prospectos:encuestas'),
                  'permission': _permiso('prospectos.change_formulario'), 'badge': 'prospectos.views.badge_publicar'},
                 {'title': 'Carreras', 'icon': 'menu_book', 'link': reverse_lazy('admin:prospectos_carrera_changelist'),
                  'permission': _permiso('prospectos.view_carrera')},

@@ -89,6 +89,15 @@ sobre ella, haz clic en las coordenadas (se copian) y pégalas en el buscador de
 funciona pegar el enlace largo de Google Maps; los enlaces cortos (maps.app.goo.gl) no.
 Cada círculo dice cuántos aspirantes vienen de esa prepa y cuántos eligieron Cuautitlán o Tultepec.
 
+## Calendario
+
+**Visitas a preparatorias → Calendario** junta en un mes las visitas (punto de color según su estado: por
+solicitar, solicitada, confirmada, realizada), las actividades del equipo (punto morado) y, en naranja, cuántas
+llamadas vencen ese día (las vencidas se suman a hoy). Con **+** en un día se agrega una actividad (open house,
+examen, inscripciones, junta…); clic sobre ella para cambiarla o quitarla. Las visitas se crean y cambian en
+**Eventos y QR**. **Descargar .ics** sirve para pasarlo a Google Calendar u Outlook (es una copia: si algo cambia,
+descárgalo otra vez).
+
 ## Antes de la visita (promotor / admisiones)
 
 1. **Eventos y QR → Agregar evento**: preparatoria, fecha, promotor, meta de registros y costo. El código del

@@ -238,6 +238,37 @@ class Evento(models.Model):
         return f'{self.codigo} · {self.preparatoria} · {self.fecha:%d/%m/%Y}'
 
 
+class Actividad(models.Model):
+    """Algo en el calendario de Admisiones que no es una visita a una prepa (esas son Eventos)."""
+    TIPOS = [('open_house', 'Open house'), ('examen', 'Examen de admisión'), ('inscripciones', 'Inscripciones'),
+             ('curso', 'Curso propedéutico'), ('junta', 'Junta del equipo'), ('feria', 'Feria o expo'), ('otro', 'Otro')]
+    titulo = models.CharField('qué', max_length=150)
+    tipo = models.CharField(max_length=20, choices=TIPOS, default='otro')
+    fecha = models.DateField(db_index=True)
+    fecha_fin = models.DateField('hasta (si dura varios días)', null=True, blank=True)
+    hora_inicio = models.TimeField(null=True, blank=True)
+    hora_fin = models.TimeField(null=True, blank=True)
+    lugar = models.CharField(max_length=150, blank=True)
+    plantel = models.CharField(max_length=12, choices=Plantel.choices, blank=True)
+    responsable = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    notas = models.TextField(blank=True)
+    creado_por = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='+',
+                                   editable=False)
+    creado_en = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ['fecha', 'hora_inicio']
+        verbose_name_plural = 'actividades'
+
+    def __str__(self):
+        return self.titulo
+
+    def dias(self):
+        import datetime as dt
+        fin = self.fecha_fin if self.fecha_fin and self.fecha_fin >= self.fecha else self.fecha
+        return [self.fecha + dt.timedelta(days=i) for i in range((fin - self.fecha).days + 1)]
+
+
 class Formulario(models.Model):
     nombre = models.CharField(max_length=255)
     tipo = models.CharField(max_length=10, choices=Cuestionario.choices)
@@ -325,6 +356,8 @@ class Pregunta(models.Model):
     de_sistema = models.BooleanField('del sistema', default=False, editable=False,
                                      help_text='Las reglas de prioridad la usan: no se puede borrar ni cambiar de tipo.')
     editada = models.BooleanField(default=False, editable=False)
+    retirada = models.BooleanField(default=False, editable=False,
+                                   help_text='Se quitó del Form: se conserva para las respuestas que ya llegaron.')
 
     class Meta:
         ordering = ['cuestionario', 'orden']

@@ -1,0 +1,99 @@
+{% extends "prospectos/base.html" %}
+{% block subtitulo %}<p class="subtitulo">Visitas a prepas, actividades del equipo y llamadas que vencen, en un solo mes. Las visitas se editan en Eventos y QR.</p>{% endblock %}
+{% block pagina %}
+<div class="cal-barra">
+  <h2>{{ m.nombre }}</h2>
+  <div class="cal-nav">
+    <a class="udc-btn chico secundario" href="?mes={{ m.anterior }}" aria-label="Mes anterior"><span class="material-symbols-outlined">chevron_left</span></a>
+    <a class="udc-btn chico secundario" href="?">Hoy</a>
+    <a class="udc-btn chico secundario" href="?mes={{ m.siguiente }}" aria-label="Mes siguiente"><span class="material-symbols-outlined">chevron_right</span></a>
+  </div>
+  {% if puede %}<a class="udc-btn chico" href="?mes={{ m.clave }}&dia={{ hoy|date:'Y-m-d' }}#actividad"><span class="material-symbols-outlined">add</span>Actividad</a>
+  <a class="udc-btn chico secundario" href="{% url 'admin:prospectos_evento_add' %}">Visita a prepa</a>{% endif %}
+  <a class="udc-btn chico secundario" href="?mes={{ m.clave }}&ics=1" title="Para importarlo en Google Calendar u Outlook">Descargar .ics</a>
+</div>
+
+{% if vencidas and puede_tareas %}
+<div class="aviso"><span class="material-symbols-outlined">schedule</span><div>Hay <b>{{ vencidas }} llamada{{ vencidas|pluralize }} vencida{{ vencidas|pluralize }}</b>; se cuentan en el día de hoy. <a class="underline" href="{% url 'prospectos:cola' %}">Ir a «A quién llamar hoy»</a></div></div>
+{% endif %}
+
+<div class="cal-cuerpo">
+  <section class="grupo">
+    <div class="cal-leyenda">
+      <span><i class="p-actividad" style="background:var(--punto)"></i>Actividad del equipo</span>
+      <span><i class="p-por_solicitar" style="background:var(--punto)"></i>Visita por solicitar</span>
+      <span><i class="p-solicitado" style="background:var(--punto)"></i>Solicitada</span>
+      <span><i class="p-confirmado" style="background:var(--punto)"></i>Confirmada</span>
+      <span><i class="p-realizado" style="background:var(--punto)"></i>Realizada</span>
+      {% if puede_tareas %}<span style="color:var(--c-naranja)">N llamadas: pendientes que vencen ese día</span>{% endif %}
+    </div>
+    <div class="cal-mes" role="grid" aria-label="{{ m.nombre }}">
+      {% for d in m.dias_semana %}<div class="cal-cab" role="columnheader">{{ d }}</div>{% endfor %}
+      {% for s in m.semanas %}{% for d in s %}
+      <div class="cal-dia{% if not d.del_mes %} fuera{% endif %}{% if d.hoy %} hoy{% endif %}" role="gridcell">
+        {% if puede %}<a class="cal-mas" href="?mes={{ m.clave }}&dia={{ d.fecha|date:'Y-m-d' }}#actividad" title="Agregar el {{ d.fecha|date:'j \d\e F' }}"><span class="material-symbols-outlined">add</span></a>{% endif %}
+        <span class="cal-num">{{ d.fecha.day }}</span>
+        {% for c in d.cosas|slice:":4" %}
+          {% if c.clase == 'evento' %}
+          <a class="cal-cosa p-{{ c.estado }} {{ c.estado }}" href="{% url 'admin:prospectos_evento_change' c.pk %}" title="{{ c.detalle }} · {{ c.titulo }} · {{ c.estado_txt }}{% if c.quien %} · {{ c.quien }}{% endif %}">{% if c.hora %}<time>{{ c.hora }}</time>{% endif %}<b>{{ c.titulo }}</b></a>
+          {% else %}
+          <a class="cal-cosa p-actividad" href="{% if puede %}?mes={{ m.clave }}&editar={{ c.pk }}#actividad{% else %}#{% endif %}" title="{{ c.detalle }} · {{ c.titulo }}{% if c.lugar %} · {{ c.lugar }}{% endif %}{% if c.quien %} · {{ c.quien }}{% endif %}">{% if c.hora %}<time>{{ c.hora }}</time>{% endif %}<b>{{ c.titulo }}</b></a>
+          {% endif %}
+        {% endfor %}
+        {% if d.cosas|length > 4 %}<span class="cal-cosa" style="color:var(--c-texto-2)">+{{ d.cosas|length|add:"-4" }} más</span>{% endif %}
+        {% if d.tareas and puede_tareas %}<a class="cal-tareas" href="{% url 'prospectos:cola' %}">{{ d.tareas }} llamada{{ d.tareas|pluralize }}</a>{% endif %}
+      </div>
+      {% endfor %}{% endfor %}
+    </div>
+  </section>
+
+  <div class="flex flex-col gap-5">
+    {% if editar %}
+    <section class="grupo" id="actividad">
+      <header class="grupo-cabecera"><h2>{% if editar.instance.pk %}Editar actividad{% else %}Nueva actividad{% endif %}</h2>
+        <a class="text-sm" href="?mes={{ m.clave }}">Cerrar</a></header>
+      <form method="post" class="cal-form" action="?mes={{ m.clave }}">{% csrf_token %}
+        {% if editar.instance.pk %}<input type="hidden" name="pk" value="{{ editar.instance.pk }}">{% endif %}
+        {{ editar.non_field_errors }}
+        <label class="ancho">Qué{{ editar.titulo }}{{ editar.titulo.errors }}</label>
+        <label>Tipo{{ editar.tipo }}</label>
+        <label>Plantel{{ editar.plantel }}</label>
+        <label>Día{{ editar.fecha }}{{ editar.fecha.errors }}</label>
+        <label>Hasta (si dura varios días){{ editar.fecha_fin }}{{ editar.fecha_fin.errors }}</label>
+        <label>De{{ editar.hora_inicio }}{{ editar.hora_inicio.errors }}</label>
+        <label>A{{ editar.hora_fin }}{{ editar.hora_fin.errors }}</label>
+        <label class="ancho">Lugar{{ editar.lugar }}</label>
+        <label class="ancho">Responsable{{ editar.responsable }}</label>
+        <label class="ancho">Notas{{ editar.notas }}</label>
+        <div class="botones">
+          <button class="udc-btn chico" name="accion" value="guardar">Guardar</button>
+          {% if editar.instance.pk %}<button class="udc-btn chico secundario" name="accion" value="borrar" style="margin-left:auto;color:var(--c-rojo)"
+            onclick="return confirm('¿Quitar «{{ editar.instance.titulo|escapejs }}» del calendario?')" formnovalidate>Quitar</button>{% endif %}
+        </div>
+      </form>
+    </section>
+    {% endif %}
+
+    <section class="grupo cal-agenda">
+      <header class="grupo-cabecera"><h2>Lo que viene</h2><span class="text-subtle text-sm">14 días</span></header>
+      {% for d in agenda %}
+      <div class="cal-ag-dia">
+        <h3>{% if d.hoy %}Hoy{% elif d.manana %}Mañana{% else %}{{ d.fecha|date:"l"|capfirst }}{% endif %} <span>{{ d.fecha|date:"j \d\e F" }}</span></h3>
+        {% for c in d.cosas %}
+          {% if c.clase == 'evento' %}
+          <a class="cal-cosa p-{{ c.estado }} {{ c.estado }}" href="{% url 'admin:prospectos_evento_change' c.pk %}"><span>{% if c.hora %}<time>{{ c.hora }}{% if c.hora_fin %}–{{ c.hora_fin }}{% endif %}</time> {% endif %}<b>{{ c.titulo }}</b>
+            <small>{{ c.detalle }} · {{ c.estado_txt }}{% if c.quien %} · {{ c.quien }}{% endif %}</small></span></a>
+          {% else %}
+          <a class="cal-cosa p-actividad" href="{% if puede %}?mes={{ m.clave }}&editar={{ c.pk }}#actividad{% else %}#{% endif %}"><span>{% if c.hora %}<time>{{ c.hora }}{% if c.hora_fin %}–{{ c.hora_fin }}{% endif %}</time> {% endif %}<b>{{ c.titulo }}</b>
+            <small>{{ c.detalle }}{% if c.varios_dias %} · {% if c.inicio < d.fecha %}sigue {% endif %}hasta el {{ c.fin|date:"j \d\e F" }}{% endif %}{% if c.lugar %} · {{ c.lugar }}{% endif %}{% if c.quien %} · {{ c.quien }}{% endif %}</small></span></a>
+          {% endif %}
+        {% endfor %}
+        {% if d.tareas and puede_tareas %}<a class="cal-tareas" href="{% url 'prospectos:cola' %}">{{ d.tareas }} llamada{{ d.tareas|pluralize }} por hacer</a>{% endif %}
+      </div>
+      {% empty %}
+      <p class="lista-vacia">Nada en los próximos 14 días.</p>
+      {% endfor %}
+    </section>
+  </div>
+</div>
+{% endblock %}

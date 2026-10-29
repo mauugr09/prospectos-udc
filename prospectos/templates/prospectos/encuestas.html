@@ -1,0 +1,125 @@
+{% extends "prospectos/base.html" %}
+{% block subtitulo %}<p class="subtitulo">Agrega, cambia o quita preguntas aquí: se cambian en el Google Form en ese momento y el programa ya sabe leerlas.</p>{% endblock %}
+{% block pagina %}
+{% if formularios %}
+<div class="enc-barra">
+  <nav class="seg" aria-label="Encuesta">
+    {% for t, fo in formularios.items %}<a href="?tipo={{ t }}" class="{% if t == tipo %}activo{% endif %}">{% if t == 'ALUMNO' %}Alumno{% else %}Familia{% endif %}</a>{% endfor %}
+  </nav>
+  {% if url %}<a class="udc-btn chico secundario" href="{{ url }}" target="_blank" rel="noopener">Ver como la ve el alumno</a>{% endif %}
+  <a class="udc-btn chico secundario" href="https://docs.google.com/forms/d/{{ f.google_form_id }}/edit" target="_blank" rel="noopener">Abrir en Google</a>
+</div>
+{% endif %}
+
+{% if not f %}
+  <section class="grupo"><p class="lista-vacia">Todavía no hay un Google Form registrado. Agrégalo en Configuración → Formularios de Google.</p></section>
+{% elif error %}
+  <div class="aviso aviso-rojo"><span class="material-symbols-outlined">cloud_off</span><div><b>No se pudo leer el Form.</b> {{ error }}</div></div>
+{% else %}
+
+{% if pendientes %}
+<details class="grupo enc-pendientes" open>
+  <summary class="grupo-cabecera"><h2>Cambios del programa que el Form aún no tiene</h2><span class="text-subtle text-sm">{{ pendientes|length }}</span></summary>
+  <form method="post">{% csrf_token %}<input type="hidden" name="accion" value="pendientes">
+    <ul class="lista pub-lista">
+      {% for c in pendientes %}
+      <li><label class="pub-fila"><input type="checkbox" name="cambio" value="{{ c.id }}" {% if c.marcado %}checked{% endif %}>
+        <span class="pub-tipo pub-{{ c.tipo }}">{% if c.tipo == 'titulo' %}Texto{% elif c.tipo == 'renombrar' %}Renombrar{% elif c.tipo == 'agregar' %}Agregar{% else %}Quitar{% endif %}</span>
+        <span class="fila-texto"><b>{{ c.detalle }}</b><small>{{ c.pregunta }}</small></span></label></li>
+      {% endfor %}
+    </ul>
+    <div class="grupo-cuerpo"><button class="udc-btn chico">Pasar lo marcado al Form</button>
+      <span class="text-sm text-subtle ms-2">Por ejemplo, carreras nuevas o apagadas en Configuración → Carreras.</span></div>
+  </form>
+</details>
+{% endif %}
+
+{% for s in secciones %}
+<section class="grupo enc-seccion">
+  <header class="grupo-cabecera"><h2>{% if s.titulo %}{{ s.titulo }}{% elif forloop.first %}Inicio del Form{% else %}Sección sin título{% endif %}</h2>
+    <span class="text-subtle text-sm">{{ s.preguntas|length }} pregunta{{ s.preguntas|pluralize }}</span></header>
+  <ol class="enc-lista">
+    {% for p in s.preguntas %}
+    <li class="enc-pregunta">
+      <div class="enc-cabeza">
+        <div class="enc-titulo">
+          <b>{{ p.titulo }}</b>
+          <small>{{ p.nombre_tipo }}{% if p.requerida %}, obligatoria{% endif %}{% if p.del_sistema %}, la usa el programa{% endif %}</small>
+        </div>
+        <div class="enc-acciones">
+          <form method="post">{% csrf_token %}<input type="hidden" name="item" value="{{ p.item_id }}">
+            <button class="enc-icono" name="accion" value="arriba" title="Subir" {% if forloop.first %}disabled{% endif %}><span class="material-symbols-outlined">arrow_upward</span></button>
+            <button class="enc-icono" name="accion" value="abajo" title="Bajar" {% if forloop.last %}disabled{% endif %}><span class="material-symbols-outlined">arrow_downward</span></button>
+            {% if not p.pregunta %}<button class="udc-btn chico secundario" name="accion" value="adoptar" title="Para verla en las fichas y reportes">Usar en el programa</button>{% endif %}
+            {% if not p.del_sistema %}<button class="enc-icono peligro" name="accion" value="quitar" title="Quitar del Form"
+              onclick="return confirm('¿Quitar «{{ p.titulo|escapejs }}» del Form?\n\nLas respuestas que ya llegaron se conservan en el programa. En Google dejarán de verse las de esta pregunta.')"><span class="material-symbols-outlined">delete</span></button>{% endif %}
+          </form>
+        </div>
+      </div>
+      {% if p.opciones_texto %}<div class="enc-opciones">{% for o in p.opciones_texto|slice:":14" %}<span>{{ o }}</span>{% endfor %}{% if p.opciones_texto|length > 14 %}<span>+{{ p.opciones_texto|length|add:"-14" }}</span>{% endif %}{% if p.tiene_otro %}<span class="otro">Otro</span>{% endif %}</div>{% endif %}
+      {% if not p.pregunta %}<p class="enc-nota">Se creó en Google y el programa no la lee. «Usar en el programa» la agrega a las fichas y reportes.</p>{% endif %}
+
+      <details class="enc-editar">
+        <summary>Editar</summary>
+        <form method="post" class="enc-form">{% csrf_token %}<input type="hidden" name="accion" value="editar"><input type="hidden" name="item" value="{{ p.item_id }}">
+          <label>Pregunta<textarea name="texto" rows="2" class="udc-campo" required>{{ p.titulo }}</textarea></label>
+          <label class="enc-check"><input type="checkbox" name="requerida" {% if p.requerida %}checked{% endif %}> Obligatoria</label>
+          {% if p.opciones_texto %}
+            {% if p.opciones_de_catalogo %}
+              <p class="enc-nota">Estas opciones son las carreras: se cambian en <a class="underline" href="{% url 'admin:prospectos_carrera_changelist' %}">Configuración → Carreras</a> y aparecen arriba en «Cambios del programa».</p>
+            {% else %}
+              <fieldset class="enc-opciones-editar"><legend>Opciones</legend>
+                {% for o, t in p.opciones_programa %}
+                <div class="enc-opcion">
+                  <input type="hidden" name="op_{{ forloop.counter0 }}" value="{{ o.pk|default:'' }}"><input type="hidden" name="antes_{{ forloop.counter0 }}" value="{{ t }}">
+                  <input class="udc-campo" name="despues_{{ forloop.counter0 }}" value="{{ t }}" aria-label="Opción">
+                  {% if o.fija %}<span class="enc-fija" title="La usan las reglas del programa: se puede renombrar, no quitar">Fija</span>
+                  {% else %}<label class="enc-check"><input type="checkbox" name="quitar_{{ forloop.counter0 }}"> Quitar</label>{% endif %}
+                </div>
+                {% endfor %}
+                <input type="hidden" name="n" value="{{ p.opciones_texto|length }}">
+                <label>Agregar opciones (una por renglón)<textarea name="nuevas" rows="2" class="udc-campo"></textarea></label>
+              </fieldset>
+              <p class="enc-nota">Si cambias el texto de una opción, las respuestas viejas se siguen contando como esa misma opción.</p>
+            {% endif %}
+          {% endif %}
+          <div><button class="udc-btn chico">Guardar en el Form</button></div>
+        </form>
+      </details>
+    </li>
+    {% empty %}
+    <li class="lista-vacia">Esta sección no tiene preguntas.</li>
+    {% endfor %}
+  </ol>
+  <details class="enc-agregar">
+    <summary><span class="material-symbols-outlined">add_circle</span>Agregar pregunta {% if s.titulo %}en esta sección{% endif %}</summary>
+    <form method="post" class="enc-form" data-agregar>{% csrf_token %}<input type="hidden" name="accion" value="agregar"><input type="hidden" name="seccion" value="{{ s.item_id|default:'' }}">
+      <label>Pregunta<textarea name="texto" rows="2" class="udc-campo" required placeholder="Por ejemplo: ¿Trabajas actualmente?"></textarea></label>
+      <label>Tipo de respuesta
+        <select name="tipo" class="udc-campo">{% for t, g, nombre in tipos %}<option value="{{ t }}">{{ nombre }}</option>{% endfor %}</select></label>
+      <label class="enc-solo-opciones">Opciones (una por renglón)<textarea name="opciones" rows="4" class="udc-campo" placeholder="Sí&#10;No"></textarea></label>
+      <label class="enc-check"><input type="checkbox" name="requerida"> Obligatoria</label>
+      <div><button class="udc-btn chico">Agregar al Form</button></div>
+    </form>
+  </details>
+</section>
+{% endfor %}
+
+<section class="grupo">
+  <header class="grupo-cabecera"><h2>Bueno saber</h2></header>
+  <div class="grupo-cuerpo text-sm text-subtle" style="line-height:1.55">
+    <p>Los cambios se ven en el Form al instante, también para quien lo esté contestando. Antes de cada cambio se guarda una copia del Form.</p>
+    <p class="mt-2">Las preguntas que usa el programa (nombre, edad, plantel, carrera, permiso…) se pueden reescribir, no quitar.</p>
+    <p class="mt-2">Lo que Google no deja hacer desde fuera: validaciones (p. ej. edad entre 12 y 99), imágenes y la navegación entre secciones. Eso, en «Abrir en Google».</p>
+  </div>
+</section>
+{% endif %}
+<script>
+  // Las opciones solo aplican a preguntas de opciones.
+  document.querySelectorAll('[data-agregar]').forEach((f) => {
+    const tipo = f.querySelector('[name=tipo]'), caja = f.querySelector('.enc-solo-opciones');
+    const ver = () => { caja.hidden = !['opcion', 'multiple', 'lista'].includes(tipo.value); };
+    tipo.addEventListener('change', ver); ver();
+  });
+</script>
+{% endblock %}

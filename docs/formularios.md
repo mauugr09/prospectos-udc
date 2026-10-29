@@ -15,8 +15,8 @@ Google dice que no se puede compartir fuera de la organización, usa la **B**.
 5. Copia el correo de la cuenta (`algo@proyecto.iam.gserviceaccount.com`).
 6. En **cada** Form: botón **⋮ → Agregar colaboradores** → pega ese correo. Google Forms solo permite
    colaboradores con permiso de **edición** (no existe «solo lectura»). Para importar, el programa pide solo
-   permisos de lectura; únicamente al usar **Publicar en Google** (y después de que una persona confirme los
-   cambios) pide el permiso para editar el Form (`forms.body`).
+   permisos de lectura; únicamente al usar **Encuestas** (cuando una persona agrega, cambia o quita una
+   pregunta) pide el permiso para editar el Form (`forms.body`).
 
 > La llave JSON es una credencial: no la mandes por correo ni la subas a un repositorio.
 > Si se filtra, revócala en la consola y genera otra.
@@ -37,7 +37,7 @@ Workspace de universidades no dejan compartir con ellos. En ese caso:
    Se abre el navegador: entra con la cuenta **dueña o editora** de los Forms y acepta. El permiso se
    guarda en `datos\google-token.json` (trátalo como una contraseña) y `config.json` queda con
    `"GOOGLE_MODO": "oauth"`.
-   Si ya lo habías conectado antes de existir «Publicar en Google», vuelve a ejecutarlo una vez: ahora pide
+   Si ya lo habías conectado antes de existir «Encuestas», vuelve a ejecutarlo una vez: ahora pide
    también el permiso para editar los Forms (solo se usa al publicar).
 4. Si esa persona deja la universidad o le quitan acceso a los Forms, la importación se detiene:
    repite el paso 3 con otra cuenta. Por eso la opción A es preferible cuando se puede.
@@ -176,25 +176,30 @@ permiso». Por eso conviene revisar Familias por unir seguido.
 (respuesta corta, código `aspirante_contacto`). Con eso se une sola aunque el nombre venga mal escrito.
 Es dato de contacto del menor: se guarda cifrado y solo se usa para unir.
 
-## 6. Cambiar el Form desde el programa («Publicar en Google»)
+## 6. Cambiar el Form desde el programa («Encuestas»)
 
-Las preguntas, sus opciones y las carreras se cambian **en el programa** (Configuración → *Preguntas y
-opciones* o *Carreras*). Luego, en **Configuración → Publicar en Google**, el programa compara con el Form y
-muestra la lista de cambios:
+En **Configuración → Encuestas** se ve el Form tal como está en Google, por secciones (Alumno o Familia).
+Cada cambio se aplica en Google **en ese momento**:
 
-| Cambio | Ejemplo | Viene marcado |
-|---|---|---|
-| Texto de una pregunta | «Nombre completo» → «Tu nombre completo (nombre y apellidos)» | Sí |
-| Renombrar una opción | «Semanal» → «Escolarizada (lunes a viernes)». El texto anterior queda como alias: las respuestas viejas se siguen reconociendo | Sí |
-| Agregar una opción | Carrera nueva: aparece solo en la sección del plantel donde se ofrece | Sí |
-| Quitar una opción | Carrera apagada, u opción que ya no está en el programa | **No** |
-| Pregunta nueva | Aviso de privacidad (va al inicio, obligatoria), Código de evento, CURP… (al final) | **No** |
+| Acción | Qué pasa |
+|---|---|
+| **Agregar pregunta** (en cualquier sección) | Respuesta corta, párrafo, opción única, varias opciones o lista. Se crea en Google y el programa ya la lee: aparece en la ficha y en «Respuestas». |
+| **Editar** | Texto, obligatoria y opciones. Si se cambia el texto de una opción, el anterior queda como alias y las respuestas viejas se siguen contando. Las opciones que usan las reglas (p. ej. «Sí» del permiso) se pueden renombrar, no quitar. |
+| **Quitar** | Antes de quitarla se importan las respuestas pendientes; si la importación falla, no se quita. Lo ya importado se queda en el programa; **en Google dejan de verse las respuestas de esa pregunta**. |
+| **↑ ↓** | Cambia el orden dentro de la sección. |
+| **Usar en el programa** | Para preguntas que alguien creó directo en Google: el programa empieza a guardarlas. |
 
-Al publicar: se guarda una copia del Form como estaba (`datos/respaldos/forms/`), se aplican los cambios
-marcados y el mapeo se actualiza solo. Si alguien editó el Form en Google mientras tanto, no se aplica nada
-(para no pisar su cambio) y hay que volver a abrir la pantalla.
+Las preguntas que el programa necesita (nombre, edad, plantel, carrera, permiso, código de evento…) se pueden
+reescribir, no quitar. Las opciones de carrera salen de **Configuración → Carreras**: al agregar o apagar una,
+arriba aparece «Cambios del programa que el Form aún no tiene» para pasarlo al Form (solo a la sección del
+plantel donde se ofrece).
 
-**Lo que se sigue haciendo en Google, a mano:** borrar preguntas (Google borraría también sus respuestas),
-validaciones (edad «número entre 12 y 99», formato de CURP), mover preguntas de lugar y la navegación entre
-secciones. La API de Google no permite configurar validaciones.
+Antes de cada cambio se guarda una copia del Form (`datos/respaldos/forms/`). Si alguien editó el Form en
+Google al mismo tiempo, Google rechaza el cambio y hay que recargar la pantalla.
 
+**Permiso:** la primera vez, el programa pide permiso para **editar** el Form (además de leerlo). Con cuenta de
+servicio, compártele el Form como **Editor**; con OAuth, vuelve a conectar la cuenta en Formularios de Google.
+
+**Lo que se sigue haciendo en Google («Abrir en Google»):** validaciones (edad «número entre 12 y 99», formato
+de CURP), imágenes, descripciones de sección y «ir a la sección según la respuesta». La API de Google no
+permite configurar validaciones.

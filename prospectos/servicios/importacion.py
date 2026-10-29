@@ -226,7 +226,7 @@ def importar_todos(fuente=None) -> list[Importacion]:
 def proponer_mapeo(formulario: Formulario, fuente=None) -> list[dict]:
     """Propone questionId → código comparando títulos. SIEMPRE debe revisarlo una persona."""
     fuente = fuente or fuente_por_defecto()
-    preguntas = list(Pregunta.objects.filter(cuestionario=formulario.tipo))
+    preguntas = list(Pregunta.objects.filter(cuestionario=formulario.tipo, retirada=False))
     vigentes = {p.codigo for p in preguntas}
     actual = {q: c for q, c in (formulario.mapeo_campos or {}).items() if c in vigentes}  # códigos retirados se re-proponen
     usados, propuesta = set(), []
