@@ -1,62 +1,61 @@
 {% extends "prospectos/impreso.html" %}
 {% block barra %}
   <a href="{% url 'admin:prospectos_evento_change' e.pk %}">Editar datos del evento</a>
+  {% if e.beca_carta %}<a href="{% url 'prospectos:evento_becas' e.pk %}">Cartas de beca</a>{% endif %}
   <a href="{% url 'prospectos:evento_reporte' e.pk %}">Reporte final</a>
   {% if puede_editar and e.estado == 'por_solicitar' %}<form method="post" style="display:inline">{% csrf_token %}<button name="accion" value="solicitado">Marcar como solicitado</button></form>{% endif %}
 {% endblock %}
 {% block antes %}
 {% if puede_editar %}
-<details class="config" {% if not firma.nombre %}open{% endif %}>
-  <summary>Quién firma las solicitudes {% if not firma.nombre %}(falta llenarlo){% endif %}</summary>
+<details class="config">
+  <summary>Quién firma las cartas: {{ firma.nombre|default:"(falta)" }}, {{ firma.cargo }}</summary>
   <form method="post">{% csrf_token %}<input type="hidden" name="accion" value="firma">
     <label>Nombre<input name="nombre" value="{{ firma.nombre }}" placeholder="Nombre de quien firma"></label>
     <label>Cargo<input name="cargo" value="{{ firma.cargo }}"></label>
-    <label>Teléfono<input name="telefono" value="{{ firma.telefono }}"></label>
-    <label>Correo<input name="correo" value="{{ firma.correo }}"></label>
+    <label>Teléfono (opcional, para dudas)<input name="telefono" value="{{ firma.telefono }}"></label>
+    <label>Correo (opcional)<input name="correo" value="{{ firma.correo }}"></label>
     <label style="grid-column:1/-1">Lugar (para la fecha)<input name="lugar" value="{{ firma.lugar }}"></label>
-    <button>Guardar</button>
+    <button>Guardar para todas las cartas</button>
   </form>
 </details>
 {% endif %}
 {% endblock %}
-{% block hoja %}
-<p class="derecha">{{ firma.lugar }}, a {{ hoy|date:"j \d\e F \d\e Y" }}</p>
-<p class="derecha"><b>Asunto:</b> solicitud de {{ e.get_actividad_display|lower }}</p>
+{% block hojas %}
+<section class="carta">
+  <img class="fondo" src="/marca/hoja-membretada.jpg" alt="">
+  <div class="cuerpo justificado">
+    <p class="fecha">{{ firma.lugar }} a {{ hoy|date:"d \d\e F \d\e Y" }}</p>
+    <div class="destinatario">
+      {% if e.dirigido_a %}{{ e.dirigido_a }}<br>{{ e.dirigido_cargo|default:"Director(a)" }}{% else %}A quien corresponda{% endif %}<br>
+      {{ e.preparatoria.nombre }}<br>
+      Presente
+    </div>
+    <p class="asunto">Asunto: Difusión educativa</p>
 
-<p style="margin-top:22px"><b>{{ e.dirigido_a|default:"________________________________" }}</b><br>
-{{ e.dirigido_cargo|default:"Director(a)" }}<br>
-{{ e.preparatoria }}{% if e.preparatoria.municipio %}, {{ e.preparatoria.municipio }}{% endif %}<br>
-Presente</p>
+    <p>Por medio de la presente, reciban un cordial saludo de parte de la Universidad de Cuautitlán México. Nos complace dirigirnos a ustedes con
+    la intención de establecer un acercamiento institucional que nos permita colaborar en favor de la formación académica de sus estudiantes y
+    de su institución.</p>
 
-<p style="margin-top:18px">Reciba un cordial saludo. Por medio de la presente, la Universidad de Cuautitlán solicita su autorización para
-realizar una <b>{{ e.get_actividad_display|lower }}</b> dirigida a los alumnos de {{ e.grupos|default:"último año" }} de su institución, el
-<b>{{ e.fecha|date:"l j \d\e F \d\e Y" }}</b>{% if e.hora_inicio %}, de <b>{{ e.hora_inicio|time:"H:i" }}</b>{% if e.hora_fin %} a <b>{{ e.hora_fin|time:"H:i" }}</b>{% endif %} horas{% endif %}.</p>
+    <p>En la UDC buscamos acercar a los jóvenes a nuevas oportunidades educativas, motivándolos a continuar sus estudios y brindándoles información
+    clara sobre las opciones para su formación profesional mediante actividades dinámicas y orientación académica.</p>
 
-<p>En ella damos a conocer nuestra oferta educativa, las becas y el proceso de admisión, como apoyo a la orientación vocacional de sus
-alumnos. Al terminar, quien lo desee puede contestar un breve cuestionario desde su celular. La participación es voluntaria y los datos se
-tratan conforme a nuestro aviso de privacidad; en el caso de alumnos menores de edad, solo daremos seguimiento con la autorización de su
-madre, padre o tutor.</p>
+    <p>En este sentido, la UDC propone coordinar una visita para realizar {% if e.actividad == 'platica' %}Sesiones Informativas{% else %}{{ e.get_actividad_display }}{% endif %}
+    acerca de nuestra oferta educativa y sobre las opciones de formación profesional que ofrecemos{% if e.fecha %}, el
+    <b>{{ e.fecha|date:"l j \d\e F \d\e Y" }}</b>{% if e.hora_inicio %}, de <b>{{ e.hora_inicio|time:"H:i" }}</b>{% if e.hora_fin %} a <b>{{ e.hora_fin|time:"H:i" }}</b>{% endif %} horas{% endif %}{% endif %}{% if e.grupos %}, con los alumnos de {{ e.grupos }}{% endif %}.
+    {% if requerimientos %}Para ello, les solicitamos amablemente: {{ requerimientos|join:"; " }}.{% endif %}
+    {% if e.alumnos_esperados %}Contemplamos la participación de aproximadamente {{ e.alumnos_esperados }} alumnos.{% endif %}
+    La participación es voluntaria; los datos se tratan conforme a nuestro aviso de privacidad y, en el caso de menores de edad, solo daremos
+    seguimiento con la autorización de su madre, padre o tutor.</p>
 
-{% if e.requerimientos or e.alumnos_esperados %}
-<p>Para el desarrollo de la actividad le solicitamos amablemente:</p>
-<ul style="margin:0 0 10px 18px;padding:0">
-  {% if e.requerimientos %}{% for linea in e.requerimientos.splitlines %}{% if linea.strip %}<li>{{ linea }}</li>{% endif %}{% endfor %}{% endif %}
-  {% if e.alumnos_esperados %}<li>Contemplamos la participación de aproximadamente {{ e.alumnos_esperados }} alumnos.</li>{% endif %}
-</ul>
-{% endif %}
+    <p>Asimismo, ponemos a disposición de su institución nuestros servicios educativos y beneficios especiales para docentes, directivos y personal
+    administrativo, con el propósito de establecer vínculos de colaboración que favorezcan el desarrollo profesional de su comunidad.</p>
 
-<p>Quedamos atentos a su respuesta y a cualquier ajuste de fecha u horario que convenga a su institución.
-{% if promotor %}La persona que acudirá es <b>{{ promotor.get_full_name|default:promotor.get_username }}</b>{% if promotor.email %} ({{ promotor.email }}){% endif %}.{% endif %}
-{% if firma.telefono or firma.correo %}Para cualquier duda, puede comunicarse al {{ firma.telefono|default:"" }}{% if firma.telefono and firma.correo %} o al correo {% endif %}{{ firma.correo|default:"" }}.{% endif %}</p>
+    <p>Agradecemos la atención brindada a esta propuesta y reiteramos nuestra disposición para adaptarnos a las necesidades, horarios y lineamientos
+    de su institución educativa.{% if promotor %} La persona que acudirá es {{ promotor.get_full_name|default:promotor.get_username }}{% if promotor.email %} ({{ promotor.email }}){% endif %}.{% endif %}
+    {% if firma.telefono or firma.correo %}Para cualquier duda: {{ firma.telefono }}{% if firma.telefono and firma.correo %}, {% endif %}{{ firma.correo }}.{% endif %}</p>
 
-<p>Agradecemos de antemano la atención y el apoyo a sus alumnos.</p>
-
-<p style="margin-top:26px">Atentamente</p>
-<div class="firma"><b>{{ firma.nombre|default:" " }}</b><br>{{ firma.cargo }}<br>Universidad de Cuautitlán</div>
-
-<div class="acuse">
-  <b>Acuse de recibido</b> <span class="gris">(para la preparatoria; regrese una copia firmada)</span>
-  <div class="renglones"><div>Nombre</div><div>Firma y sello</div><div>Fecha</div><div>Fecha y hora autorizadas</div></div>
-</div>
-<p class="gris" style="font-size:9pt;margin-top:14px">Referencia interna: {{ e.codigo }}</p>
+    {% include "prospectos/_carta_firma.html" %}
+  </div>
+  <span class="folio">Ref. {{ e.codigo }}</span>
+</section>
 {% endblock %}

@@ -363,6 +363,8 @@ class EventoAdmin(ModelAdmin):
     fieldsets = [
         (None, {'fields': ['preparatoria', 'fecha', ('hora_inicio', 'hora_fin'), 'actividad', 'estado', 'promotor', 'codigo']}),
         ('Para la solicitud a la preparatoria', {'fields': [('dirigido_a', 'dirigido_cargo'), 'grupos', 'alumnos_esperados', 'requerimientos']}),
+        ('Cartas de beca para los alumnos', {'fields': ['beca_carta', ('beca_porcentaje', 'beca_hojas'), ('beca_vigencia', 'beca_inicio')],
+                                             'description': 'Se imprimen desde «Becas» en la lista de eventos, una por alumno y con folio.'}),
         ('Resultados', {'fields': ['alumnos_asistentes', 'meta_registros', 'costo', 'notas']}),
     ]
 
@@ -392,10 +394,12 @@ class EventoAdmin(ModelAdmin):
             '<a class="udc-mini" href="{}"><span class="material-symbols-outlined">qr_code_2</span>QR</a>'
             '<a class="udc-mini" href="{}"><span class="material-symbols-outlined">style</span>Tarjetas</a>'
             '<a class="udc-mini udc-mini-vivo" href="{}"><span class="material-symbols-outlined">sensors</span>En vivo</a>'
-            '<a class="udc-mini" href="{}"><span class="material-symbols-outlined">summarize</span>Reporte</a></span>',
+            '<a class="udc-mini" href="{}"><span class="material-symbols-outlined">summarize</span>Reporte</a>{}</span>',
             reverse('prospectos:evento_solicitud', args=[obj.pk]), reverse('prospectos:evento_qr', args=[obj.pk]),
             reverse('prospectos:tarjetas', args=[obj.pk]), reverse('prospectos:evento_vivo', args=[obj.pk]),
-            reverse('prospectos:evento_reporte', args=[obj.pk]))
+            reverse('prospectos:evento_reporte', args=[obj.pk]),
+            format_html('<a class="udc-mini" href="{}"><span class="material-symbols-outlined">workspace_premium</span>Becas ({})</a>',
+                        reverse('prospectos:evento_becas', args=[obj.pk]), obj.beca_hojas or 0) if obj.beca_carta else '')
 
 
 def solo_propios(request, permiso: str) -> bool:

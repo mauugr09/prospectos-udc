@@ -335,6 +335,18 @@ def huella() -> str:
     return hashlib.sha256(str(settings.DATA_DIR.resolve()).encode()).hexdigest()[:12]
 
 
+def hoja_membretada(request):
+    """Fondo de cartas y reportes. Para cambiarlo (nueva dirección o teléfono) basta poner datos/hoja-membretada.jpg:
+    una página tamaño carta completa, de preferencia a 150 ppp (1275 × 1650)."""
+    from django.contrib.staticfiles import finders
+    from django.http import FileResponse
+    propio = settings.DATA_DIR / 'hoja-membretada.jpg'
+    ruta = propio if propio.exists() else finders.find('prospectos/marca/hoja-membretada.jpg')
+    r = FileResponse(open(ruta, 'rb'), content_type='image/jpeg')
+    r['Cache-Control'] = 'no-cache'
+    return r
+
+
 def logo(request):
     """Logo opcional de la institución (datos/logo.png). Público: se usa también en el login."""
     from django.http import FileResponse, Http404
@@ -407,8 +419,9 @@ def evento_vivo_datos(request, pk):
                          'ranking': ranking[:10]})
 
 
-FIRMA_OMISION = {'nombre': '', 'cargo': 'Coordinación de Admisiones', 'telefono': '', 'correo': '',
-                 'lugar': 'Cuautitlán Izcalli, Estado de México'}
+# Como en las cartas oficiales de la UDC (las firma Rectoría). Se cambia en «Quién firma» de la solicitud.
+FIRMA_OMISION = {'nombre': 'Ing. César Hernández López', 'cargo': 'Rector', 'telefono': '', 'correo': '',
+                 'lugar': 'Cuautitlán, Estado de México'}
 
 
 def _firma():
@@ -430,9 +443,42 @@ def evento_solicitud(request, pk):
             e.save(update_fields=['estado'])
             messages.success(request, 'Evento marcado como solicitado.')
         return redirect(request.path)
+    requerimientos = [x.strip().rstrip('.;') for x in (e.requerimientos or '').splitlines() if x.strip()]
     return render(request, 'prospectos/evento_solicitud.html', {
         'e': e, 'firma': _firma(), 'hoy': timezone.localdate(), 'puede_editar': request.user.has_perm('prospectos.change_evento'),
-        'promotor': e.promotor, 'title': f'Solicitud · {e.preparatoria}'})
+        'promotor': e.promotor, 'requerimientos': requerimientos, 'title': f'Solicitud · {e.preparatoria}'})
+
+
+@staff_member_required
+def evento_becas(request, pk):
+    """Cartas de beca del evento: una hoja membretada por alumno, cada una con su folio."""
+    from django.core.exceptions import ValidationError
+    from .servicios import cartas
+    e = _evento(request, pk)
+    try:
+        e.clean()
+        if not e.beca_carta:
+            raise ValidationError('Este evento no tiene carta de beca.')
+    except ValidationError as err:
+        messages.error(request, 'Antes de imprimir, completa en el evento la sección «Cartas de beca»: '
+                       + ' '.join(m for ms in getattr(err, 'message_dict', {'': err.messages}).values() for m in ms))
+        return redirect('admin:prospectos_evento_change', e.pk)
+    maximo = e.beca_hojas
+
+    def _num(clave, defecto):
+        try:
+            return min(max(int(request.GET.get(clave) or defecto), 1), maximo)
+        except ValueError:
+            return defecto
+    desde, hasta = _num('desde', 1), _num('hasta', maximo)
+    if hasta < desde:
+        desde, hasta = hasta, desde
+    auditoria.registrar('cartas_beca', None, {'evento': e.codigo, 'carta': e.beca_carta, 'porcentaje': e.beca_porcentaje,
+                                              'folios': f'{desde}-{hasta}'}, request=request)
+    return render(request, 'prospectos/evento_becas.html', {
+        'e': e, 'firma': _firma(), 'de': cartas.de_la_prepa(e.preparatoria.nombre)[0], 'prepa': cartas.de_la_prepa(e.preparatoria.nombre)[1],
+        'folios': cartas.folios(e.codigo, desde, hasta), 'desde': desde, 'hasta': hasta, 'maximo': maximo,
+        'title': f'Cartas de beca · {e.preparatoria}'})
 
 
 @staff_member_required

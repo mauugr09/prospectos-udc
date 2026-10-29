@@ -102,9 +102,15 @@ descárgalo otra vez).
 
 1. **Eventos y QR → Agregar evento**: preparatoria, fecha, promotor, meta de registros y costo. El código del
    evento se genera solo.
-2. En la lista de eventos: **QR** (general, para proyectar) y **Tarjetas** (una por alumno, con
+2. **Solicitud** (en la lista de eventos): la carta de «Difusión educativa» en la hoja membretada de la UDC, con la
+   fecha, el horario y lo que se pide a la prepa. Quién firma (por omisión, Rectoría) se cambia arriba de la carta.
+3. **Cartas de beca** (si se van a entregar): en el evento, sección «Cartas de beca para los alumnos», elige la carta
+   (beca especial o regularización), el porcentaje, la vigencia y cuántas imprimir. En la lista aparece **Becas (N)**:
+   imprime todas, o solo un rango de folios si se acabaron. Cada carta lleva un folio (`EV…-001`) para saber de qué
+   evento viene cuando el alumno la presente.
+4. En la lista de eventos: **QR** (general, para proyectar) y **Tarjetas** (una por alumno, con
    dos QR que comparten código de familia). Indica cuántas y presiona Imprimir.
-3. Durante la visita abre **En vivo** en el proyector: contador, avance contra la meta y
+5. Durante la visita abre **En vivo** en el proyector: contador, avance contra la meta y
    ranking de promotores del día. No muestra nombres.
 
 > Las respuestas aparecen en **menos de 2 minutos** (el importador corre cada minuto) **siempre que

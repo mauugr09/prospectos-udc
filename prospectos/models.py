@@ -4,6 +4,7 @@ import secrets
 from difflib import SequenceMatcher
 
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
@@ -226,6 +227,19 @@ class Evento(models.Model):
     alumnos_esperados = models.PositiveIntegerField('alumnos esperados', null=True, blank=True)
     requerimientos = models.TextField('qué se pide a la prepa', blank=True,
                                       help_text='Espacio, proyector, tiempo por grupo… Aparece en la solicitud.')
+    # Cartas de beca que se entregan en la visita (una por alumno, con folio).
+    beca_carta = models.CharField('carta de beca', max_length=16, blank=True, choices=[
+        ('especial', 'Asignación de beca especial'), ('regularizacion', 'Regularización de estudios')],
+        help_text='Vacío: en este evento no se entregan cartas de beca.')
+    beca_porcentaje = models.PositiveSmallIntegerField('% de beca', null=True, blank=True,
+                                                       validators=[MinValueValidator(1), MaxValueValidator(100)])
+    beca_vigencia = models.DateField('vigente hasta', null=True, blank=True,
+                                     help_text='En la carta se imprime el mes y el año: «Vigencia: diciembre 2026». Obligatoria en la beca especial.')
+    beca_inicio = models.DateField('inicio de clases', null=True, blank=True,
+                                   help_text='Solo para la carta de regularización: se imprime el mes («ENERO DE 2027»).')
+    beca_hojas = models.PositiveIntegerField('cartas a imprimir', null=True, blank=True,
+                                             validators=[MaxValueValidator(2000)],
+                                             help_text='Normalmente, los alumnos esperados más unas de reserva.')
     alumnos_asistentes = models.PositiveIntegerField(null=True, blank=True)
     meta_registros = models.PositiveIntegerField('meta de registros', null=True, blank=True)
     costo = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -236,6 +250,24 @@ class Evento(models.Model):
 
     def __str__(self):
         return f'{self.codigo} · {self.preparatoria} · {self.fecha:%d/%m/%Y}'
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if not self.beca_carta:
+            return
+        errores = {}
+        if not self.beca_porcentaje:
+            errores['beca_porcentaje'] = 'Indica el porcentaje que dice la carta.'
+        if not self.beca_vigencia and self.beca_carta == 'especial':
+            errores['beca_vigencia'] = 'Una carta de beca sin vigencia obliga a respetarla para siempre.'
+        elif self.beca_vigencia and self.fecha and self.beca_vigencia < self.fecha:
+            errores['beca_vigencia'] = 'La vigencia termina antes del evento.'
+        if self.beca_carta == 'regularizacion' and not self.beca_inicio:
+            errores['beca_inicio'] = 'La carta de regularización dice cuándo empiezan las clases.'
+        if not self.beca_hojas:
+            errores['beca_hojas'] = 'Cuántas cartas se van a imprimir.'
+        if errores:
+            raise ValidationError(errores)
 
 
 class Actividad(models.Model):

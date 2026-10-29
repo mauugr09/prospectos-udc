@@ -23,6 +23,7 @@ urlpatterns = [
     path('evento/<int:pk>/en-vivo/datos/', views.evento_vivo_datos, name='evento_vivo_datos'),
     path('evento/<int:pk>/qr/', views.evento_qr, name='evento_qr'),
     path('evento/<int:pk>/solicitud/', views.evento_solicitud, name='evento_solicitud'),
+    path('evento/<int:pk>/becas/', views.evento_becas, name='evento_becas'),
     path('evento/<int:pk>/reporte/', views.evento_reporte, name='evento_reporte'),
     path('preparatoria/<int:pk>/qr/', views.prepa_qr, name='prepa_qr'),
     path('evento/<int:pk>/tarjetas/', views.tarjetas, name='tarjetas'),

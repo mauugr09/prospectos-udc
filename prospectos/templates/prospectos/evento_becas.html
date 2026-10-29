@@ -1,0 +1,70 @@
+{% extends "prospectos/impreso.html" %}
+{% block barra %}
+  <a href="{% url 'admin:prospectos_evento_change' e.pk %}">Editar datos del evento</a>
+  <a href="{% url 'prospectos:evento_solicitud' e.pk %}">Solicitud</a>
+{% endblock %}
+{% block ayuda_impresion %}{{ folios|length }} carta{{ folios|pluralize }}, folios {{ folios.0 }} a {{ folios|last }}. Tamaño carta, sin «ajustar a la página».{% endblock %}
+{% block boton %}Imprimir {{ folios|length }}{% endblock %}
+{% block antes %}
+<details class="config" {% if not folios %}open{% endif %}>
+  <summary>Imprimir solo algunos folios (por ejemplo, si se acabaron en el evento o se atascó la impresora)</summary>
+  <form method="get">
+    <label>Del folio<input type="number" name="desde" min="1" max="{{ maximo }}" value="{{ desde }}"></label>
+    <label>Al folio<input type="number" name="hasta" min="1" max="{{ maximo }}" value="{{ hasta }}"></label>
+    <button>Ver estos</button>
+  </form>
+  <p>Este evento tiene {{ e.beca_hojas }} cartas (folios {{ e.codigo }}-001 a {{ e.codigo }}-{{ e.beca_hojas|stringformat:"03d" }}). Para hacer más, cambia «cartas a imprimir» en el evento: los folios ya impresos no cambian.</p>
+</details>
+{% endblock %}
+{% block hojas %}
+{% for folio in folios %}
+<section class="carta">
+  <img class="fondo" src="/marca/hoja-membretada.jpg" alt="">
+  <div class="cuerpo justificado">
+    <p class="fecha">{{ firma.lugar }} a {{ e.fecha|date:"d \d\e F \d\e Y" }}</p>
+    <div class="destinatario">
+      Estimado estudiante {{ de }}<br>
+      {{ prepa }}<br>
+      {% if e.beca_carta == 'regularizacion' %}<span class="espaciado">Presente</span>{% else %}Presente{% endif %}
+    </div>
+    {% if e.beca_carta == 'regularizacion' %}
+    <p class="asunto">Asunto: Regularización de estudios</p>
+
+    <p>En la Universidad de Cuautitlán México creemos firmemente que la educación es una de las principales herramientas para construir un mejor
+    futuro. Por ello, nuestro compromiso va más allá de formar profesionistas; nos interesa que cada estudiante tenga la oportunidad de continuar
+    con sus sueños, proyectos y metas, aún cuando en el camino se presentan circunstancias que puedan dificultar su trayectoria académica.</p>
+
+    <p>Con este compromiso, ponemos a tu alcance una alternativa para continuar con tu formación profesional a partir de
+    <b>{{ e.beca_inicio|date:"F \D\E Y"|upper }}</b>, mientras concluyes el proceso de regularización de tus estudios de nivel medio superior.</p>
+
+    <p>Al ser parte de la comunidad {{ de }} {{ prepa }}, se te ha asignado una <b>BECA ESPECIAL DEL {{ e.beca_porcentaje }}% EN INSCRIPCIÓN Y
+    COLEGIATURAS</b> como parte de los beneficios que ponemos a tu alcance para que puedas iniciar esta nueva etapa y continuar avanzando en tu
+    formación profesional.</p>
+
+    <p>En la Universidad de Cuautitlán México estamos dispuestos a ayudarte a seguir avanzando. Tu proyecto no tiene por qué detenerse; estamos
+    para acompañarte a dar el siguiente paso e iniciar el próximo mes de {{ e.beca_inicio|date:"F" }}.</p>
+    {% else %}
+    <p class="asunto">Asunto: Asignación de beca especial</p>
+
+    <p>En la Universidad de Cuautitlán México creemos que cada estudiante merece oportunidades para crecer, desarrollar su talento y alcanzar sus
+    metas profesionales. Por ello, queremos ser una opción para continuar tu preparación académica y acompañarte en esta importante etapa.</p>
+
+    <p>Por formar parte de la comunidad estudiantil {{ de }} {{ prepa }}, te ha sido asignada una <b>BECA ESPECIAL DEL {{ e.beca_porcentaje }}% EN
+    INSCRIPCIÓN Y COLEGIATURAS.</b> Este beneficio es un reconocimiento a tu trayectoria académica y una oportunidad para dar el siguiente paso
+    hacia tu formación profesional.</p>
+
+    <p>En la UDC encontrarás una amplia oferta educativa y modalidades de estudio que te permitirán desarrollar tus conocimientos y fortalecer tus
+    habilidades para nuevos retos. También contamos con un Centro de Idiomas, porque sabemos que dominar una segunda lengua es una herramienta
+    clave para ampliar tus oportunidades académicas y profesionales.</p>
+
+    <p>Te invitamos a ti y a tu familia a conocer nuestras instalaciones, así como nuestra oferta académica y descubre cómo podemos contribuir a tu
+    desarrollo profesional.</p>
+    {% endif %}
+    {% if e.beca_vigencia %}<p class="vigencia">Vigencia: {{ e.beca_vigencia|date:"F Y" }}</p>{% endif %}
+
+    {% include "prospectos/_carta_firma.html" %}
+  </div>
+  <span class="folio">Folio {{ folio }}</span>
+</section>
+{% endfor %}
+{% endblock %}

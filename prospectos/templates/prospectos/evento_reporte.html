@@ -6,8 +6,10 @@
   <form method="post" style="display:inline" title="Asigna a sus eventos las respuestas que llegaron sin código, por preparatoria y fecha">{% csrf_token %}<button name="accion" value="reatribuir">Volver a asignar respuestas</button></form>
 {% endblock %}
 {% block hoja %}
-<h1>Reporte del evento</h1>
-<p class="gris">{{ e.get_actividad_display }} en <b style="color:#111">{{ e.preparatoria }}</b>, {{ e.fecha|date:"l j \d\e F \d\e Y" }}{% if e.hora_inicio %}, {{ e.hora_inicio|time:"H:i" }}{% if e.hora_fin %}–{{ e.hora_fin|time:"H:i" }}{% endif %}{% endif %}.
+<p class="fecha" style="margin-bottom:.6cm">{{ firma.lugar }} a {{ hoy|date:"d \d\e F \d\e Y" }}</p>
+<p class="asunto" style="margin-bottom:.3cm">Asunto: Reporte final del evento</p>
+<h1>{{ e.preparatoria }}</h1>
+<p class="gris">{{ e.get_actividad_display }}, {{ e.fecha|date:"l j \d\e F \d\e Y" }}{% if e.hora_inicio %}, {{ e.hora_inicio|time:"H:i" }}{% if e.hora_fin %}–{{ e.hora_fin|time:"H:i" }}{% endif %}{% endif %}.
 {% if e.promotor %}Promotor: {{ e.promotor.get_full_name|default:e.promotor.get_username }}.{% endif %} Código {{ e.codigo }}.</p>
 
 <div class="cifras">
@@ -29,12 +31,12 @@
 <div class="dos">
   <div>
     <h2>Carreras de interés</h2>
-    <table>{% for c in d.carreras %}<tr><td>{{ c.etiqueta }}</td><td style="width:35%"><span class="barra-h"><i style="width:{{ c.pct }}%"></i></span></td><td class="n">{{ c.total }}</td></tr>
+    <table class="datos">{% for c in d.carreras %}<tr><td>{{ c.etiqueta }}</td><td style="width:35%"><span class="barra-h"><i style="width:{{ c.pct }}%"></i></span></td><td class="n">{{ c.total }}</td></tr>
       {% empty %}<tr><td class="gris">Sin datos.</td></tr>{% endfor %}</table>
   </div>
   <div>
     <h2>Plantel y modalidad</h2>
-    <table>
+    <table class="datos">
       {% for x in d.planteles %}<tr><td>Plantel {{ x.etiqueta }}</td><td class="n">{{ x.total }}</td></tr>{% endfor %}
       {% for x in d.modalidades %}<tr><td>{{ x.etiqueta }}</td><td class="n">{{ x.total }}</td></tr>{% endfor %}
       {% if not d.planteles and not d.modalidades %}<tr><td class="gris">Sin datos.</td></tr>{% endif %}
@@ -45,12 +47,12 @@
 <div class="dos">
   <div>
     <h2>Registros por hora</h2>
-    <table>{% for h, n in d.por_hora %}<tr><td>{{ h }}</td><td class="n">{{ n }}</td></tr>{% empty %}<tr><td class="gris">Sin registros de alumnos.</td></tr>{% endfor %}</table>
+    <table class="datos">{% for h, n in d.por_hora %}<tr><td>{{ h }}</td><td class="n">{{ n }}</td></tr>{% empty %}<tr><td class="gris">Sin registros de alumnos.</td></tr>{% endfor %}</table>
     {% if d.primero %}<p class="gris" style="font-size:9.5pt;margin-top:6px">Primer registro {{ d.primero|time:"H:i" }}, último {{ d.ultimo|time:"H:i" }}.</p>{% endif %}
   </div>
   <div>
     <h2>Costo y promotores</h2>
-    <table>
+    <table class="datos">
       <tr><td>Costo del evento</td><td class="n">{{ d.costo_txt }}</td></tr>
       <tr><td>Costo por alumno registrado</td><td class="n">{{ d.costo_registro_txt }}</td></tr>
       {% for nombre, n in d.promotores %}<tr><td>{{ nombre }}</td><td class="n">{{ n }}</td></tr>{% endfor %}
@@ -60,7 +62,7 @@
 
 {% if con_nombres %}
 <h2>Aspirantes con permiso ({{ d.nombres|length }})</h2>
-<table><tr><th>Aspirante</th><th>Carrera</th><th>Familia</th><th class="n">Prioridad</th></tr>
+<table class="datos"><tr><th>Aspirante</th><th>Carrera</th><th>Familia</th><th class="n">Prioridad</th></tr>
   {% for p in d.nombres %}<tr><td>{{ p.nombre_aspirante }}</td><td>{{ p.carrera|default:"Aún no decide" }}</td><td>{% if p.tiene_tutor %}Sí{% else %}—{% endif %}</td><td class="n">{{ p.score }}</td></tr>{% endfor %}
 </table>
 <p class="gris" style="font-size:9pt">Documento interno con datos personales: no lo compartas fuera de Admisiones. Sin teléfonos ni correos.</p>
@@ -70,5 +72,6 @@
 {% if e.notas %}<p>{{ e.notas|linebreaksbr }}</p>{% endif %}
 <div class="lineas"><div></div><div></div><div></div></div>
 
-<p class="gris" style="font-size:9pt;margin-top:20px">Generado el {{ hoy|date:"j \d\e F \d\e Y" }}. Cuenta solo las respuestas asignadas a este evento (por su QR o por la preparatoria y fecha).</p>
+{% if e.beca_carta %}<p class="gris" style="font-size:9pt">Cartas de beca: {{ e.get_beca_carta_display|lower }} del {{ e.beca_porcentaje }} %, {{ e.beca_hojas }} folios ({{ e.codigo }}-001 en adelante){% if e.beca_vigencia %}, vigentes hasta {{ e.beca_vigencia|date:"F Y" }}{% endif %}.</p>{% endif %}
+<p class="gris" style="font-size:9pt;margin-top:14px">Cuenta solo las respuestas asignadas a este evento (por su QR o por la preparatoria y fecha).</p>
 {% endblock %}
