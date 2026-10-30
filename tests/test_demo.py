@@ -32,6 +32,9 @@ def test_borra_lo_ficticio_y_respeta_lo_real(con_demo, f_alumno, client):
     assert set(Prospecto.objects.values_list('pk', flat=True)) == reales
     assert not Formulario.objects.filter(google_form_id__startswith='demo-').exists() and Formulario.objects.filter(pk=f_alumno.pk).exists()
     assert not Evento.objects.filter(codigo__startswith='EVDEMO').exists()
+    from prospectos.servicios.semillas import PREPAS
+    assert not Preparatoria.objects.filter(nombre__in=[p[0] for p in PREPAS]).exclude(prospectos__in=Prospecto.objects.all()).exists()
+    assert not Preparatoria.objects.filter(nombre__in=['CEP Coyotepec', 'Instituto simulado', 'Los álamos']).exists()
     assert not User.objects.filter(username__endswith='@demo.local').exists() and User.objects.filter(pk=real.pk).exists()
     assert 'Hay datos de demostración' not in client.get('/admin/').content.decode()
 

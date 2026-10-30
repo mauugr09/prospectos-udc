@@ -42,8 +42,12 @@ def _prospectos():
 
 
 def _prepas_demo():
+    """Las prepas ficticias y las que el importador dio de alta con los nombres que «escribieron» los alumnos de la demo."""
     from .semillas import PREPAS
-    return Preparatoria.objects.filter(nombre__in=[p[0] for p in PREPAS])
+    from .texto import normalizar
+    nombres = {normalizar(n) for p in PREPAS for n in [p[0], *p[5]]}
+    ids = [pk for pk, nombre in Preparatoria.objects.values_list('pk', 'nombre') if normalizar(nombre) in nombres]
+    return Preparatoria.objects.filter(pk__in=ids)
 
 
 def _eventos(_=None):
