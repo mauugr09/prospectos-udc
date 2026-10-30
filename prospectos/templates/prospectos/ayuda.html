@@ -89,17 +89,19 @@
       <a class="gu-ir" href="{% url 'prospectos:avisos' %}">Ir a Avisos<span class="material-symbols-outlined">arrow_forward</span></a>
     </section>
 
-    <section class="gu-guia" id="familias" data-palabras="familia tutor mama papa unir duplicados alumno encuesta padres">
+    <section class="gu-guia" id="familias" data-palabras="familia tutor mama papa unir duplicados alumno encuesta padres buscar filtrar hijo ninguno">
       <header><span class="gu-icono"><span class="material-symbols-outlined">family_restroom</span></span><div><h2>Unir al alumno con su familia</h2><p>La encuesta de la familia y la del alumno se juntan en una sola ficha.</p></div></header>
       <ol class="gu-pasos">
         <li>Cuando el programa está seguro, las une solo al importar.</li>
-        <li>Las dudosas aparecen en <b>Familias por unir</b> con sus puntos de parecido: pulsa <b>Son la misma familia</b> o <b>No son</b>.</li>
-        <li>Si una familia no tiene propuesta, búscale al alumno por nombre y únelos a mano.</li>
+        <li>Las dudosas aparecen en <b>Familias por unir</b>, una tarjeta por familia con sus posibles hijos(as), el más probable primero. Pulsa <b>Unir</b> en el correcto, la <b>✕</b> en el que no es, o <b>Ninguno es su hijo(a)</b>.</li>
+        <li>Usa el buscador de arriba para encontrar una familia, tutor, alumno o prepa (no importan los acentos), y filtra por seguridad: <b>Alta</b> (60 puntos o más), <b>Media</b> o <b>Baja</b>. Tecla <b>/</b> para ir al buscador.</li>
+        <li>Si el hijo(a) no está entre las propuestas, escribe su nombre en <b>«¿Es otro alumno?»</b> dentro de la tarjeta. Las encuestas sin ninguna propuesta están en <b>Sin pareja</b>.</li>
       </ol>
       <ul class="gu-saber">
         <li>Si el alumno es menor, al unirlo con su familia ya cuenta con el permiso de ella.</li>
         <li>Las <b>tarjetas familiares</b> del evento (dos QR con el mismo código) unen a la familia sin dudas.</li>
         <li><b>Posibles duplicados</b> son dos fichas que parecen la misma persona; el programa nunca las une solo.</li>
+        <li>Unir no tiene botón de deshacer. Si un alumno de la búsqueda no tiene nada en común con la familia, el programa pide un segundo clic.</li>
       </ul>
       <a class="gu-ir" href="{% url 'prospectos:familias' %}">Ir a Familias por unir<span class="material-symbols-outlined">arrow_forward</span></a>
     </section>

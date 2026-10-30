@@ -11,6 +11,7 @@ urlpatterns = [
     path('avisos/<int:pk>/', vistas_avisos.abrir, name='aviso_abrir'),
     path('avisos/leer-todo/', vistas_avisos.leer_todo, name='avisos_leer_todo'),
     path('familias/', views.familias_por_unir, name='familias'),
+    path('familias/alumnos/', views.familias_buscar_alumno, name='familias_alumnos'),
     path('publicar/', views.publicar_google, name='publicar'),
     path('apariencia/', views.apariencia, name='apariencia'),
     path('demo/borrar/', views.borrar_demo, name='borrar_demo'),

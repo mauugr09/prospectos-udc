@@ -190,6 +190,14 @@ def pendientes():
             .select_related('prospecto', 'candidato', 'prospecto__preparatoria', 'candidato__preparatoria'))
 
 
+def familias_pendientes() -> int:
+    """Cuántas encuestas de familia tienen al menos una propuesta (lo que cuenta el menú; no las propuestas sueltas)."""
+    ids = set()
+    for p_id, p_es_alumno, c_id in pendientes().values_list('prospecto_id', 'prospecto__tiene_alumno', 'candidato_id'):
+        ids.add(c_id if p_es_alumno else p_id)
+    return len(ids)
+
+
 def buscar_para_todos() -> dict:
     """Vuelve a buscar pareja para todas las fichas a medias (útil tras mejorar el criterio o importar mucho)."""
     unidas = propuestas = 0
@@ -204,3 +212,71 @@ def buscar_para_todos() -> dict:
         else:
             propuestas += PosibleCoincidencia.objects.filter(prospecto=p).count() - antes
     return {'unidas': unidas, 'propuestas': propuestas}
+
+
+# --------------------------------------------------------------------------- pantalla «Familias por unir»
+
+def nivel(puntos: int | None) -> str:
+    if puntos is None:
+        return 'sin'
+    return 'alta' if puntos >= 60 else 'media' if puntos >= 45 else 'baja'
+
+
+def _soy_familia(p: Prospecto) -> bool:
+    return p.tiene_tutor and not p.tiene_alumno
+
+
+def mesa(limite_solas: int = 500) -> dict:
+    """
+    Agrupa por encuesta de familia: cada una con sus alumnos candidatos (mejor primero).
+    Una misma pareja puede tener dos propuestas (una creada desde cada lado, o con criterios viejos):
+    se muestra una sola, con el puntaje más alto, y al rechazarla se rechazan todas.
+    """
+    grupos: dict[int, dict] = {}
+    for c in pendientes().prefetch_related('prospecto__carreras', 'candidato__carreras'):
+        f, a = (c.prospecto, c.candidato) if _soy_familia(c.prospecto) else (c.candidato, c.prospecto)
+        if not _soy_familia(f) or not (a.tiene_alumno and not a.tiene_tutor):
+            continue  # alguna de las dos ya se completó por otro lado
+        g = grupos.setdefault(f.pk, {'familia': f, 'candidatos': {}})
+        puntos = round(c.similitud * 100)
+        previo = g['candidatos'].get(a.pk)
+        if previo:
+            previo['propuestas'].append(c.pk)
+            if puntos <= previo['puntos']:
+                continue
+        g['candidatos'][a.pk] = {'alumno': a, 'puntos': puntos, 'nivel': nivel(puntos),
+                                 'razones': [r for r in c.motivo.split(': ', 1)[-1].split(', ') if r and r != 'indicios débiles'],
+                                 'propuestas': (previo or {}).get('propuestas', []) + ([] if previo else [c.pk])}
+    con = []
+    for g in grupos.values():
+        g['candidatos'] = sorted(g['candidatos'].values(), key=lambda x: -x['puntos'])
+        g['mejor'] = g['candidatos'][0]['puntos']
+        g['nivel'] = nivel(g['mejor'])
+        con.append(g)
+    con.sort(key=lambda g: (-g['mejor'], g['familia'].nombre_aspirante))
+    solas_qs = (_vivos().filter(tiene_tutor=True, tiene_alumno=False).exclude(pk__in=grupos)
+                .select_related('carrera_tutor').order_by('-creado_en'))
+    solas = [{'familia': f, 'candidatos': [], 'mejor': None, 'nivel': 'sin'} for f in solas_qs[:limite_solas]]
+    return {'con': con, 'solas': solas, 'total_solas': solas_qs.count(),
+            'alumnos_solos': _vivos().filter(tiene_alumno=True, tiene_tutor=False).count()}
+
+
+def buscar_alumnos(familia: Prospecto, q: str, maximo: int = 15) -> list[dict]:
+    """Alumnos sin familia cuyo nombre contiene todas las palabras de `q`, con los puntos que tendrían."""
+    # Mismas reglas que nombre_normalizado (Ximena→jimena, z→s, h muda…), para que «Gonzalez» encuentre «González».
+    palabras = [texto._variantes(t) for t in texto.normalizar(q).split(' ') if len(t) >= 2 and t not in texto.PARTICULAS]
+    palabras = [t for t in palabras if t]
+    if not palabras:
+        return []
+    qs = _vivos().filter(tiene_alumno=True, tiene_tutor=False).select_related('preparatoria')
+    for t in palabras:
+        qs = qs.filter(nombre_normalizado__icontains=t)
+    if familia.token_familia:
+        qs = qs.filter(Q(token_familia__isnull=True) | Q(token_familia=familia.token_familia))
+    yo = _lado(familia)
+    res = []
+    for a in qs.prefetch_related('carreras')[:60]:
+        puntos, razones = puntuar(yo, _lado(a))
+        res.append({'alumno': a, 'puntos': puntos, 'nivel': nivel(puntos) if puntos else 'sin', 'razones': razones})
+    res.sort(key=lambda r: (-r['puntos'], r['alumno'].nombre_aspirante))
+    return res[:maximo]

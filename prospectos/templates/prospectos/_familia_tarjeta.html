@@ -1,0 +1,32 @@
+{% with f=g.familia %}
+<article class="fm-tarjeta" data-tipo="{{ tipo }}" data-nivel="{{ g.nivel }}" data-familia="{{ f.pk }}"{% if tipo == 'sin' %} hidden{% endif %}>
+  <header class="fm-cabeza">
+    <span class="fm-icono material-symbols-outlined" aria-hidden="true">family_restroom</span>
+    <div class="fm-quien">
+      <small>La familia dice que su hijo(a) se llama</small>
+      <h3>{{ f.nombre_aspirante|default:"(sin nombre)" }}</h3>
+      <p>{{ f.tutor_nombre|default:"Tutor sin nombre" }}{% if f.creado_en %} · contestó el {{ f.creado_en|date:"j M" }}{% endif %}{% if f.plantel %} · {{ f.get_plantel_display }}{% endif %}{% if f.carrera_tutor %} · {{ f.carrera_tutor }}{% endif %}</p>
+    </div>
+    {% if g.mejor is not None %}<span class="fm-mejor {{ g.nivel }}" title="Puntos del mejor candidato">{{ g.mejor }}</span>{% endif %}
+  </header>
+
+  {% if g.candidatos %}
+  <ol class="fm-cands">
+    {% for c in g.candidatos %}{% include "prospectos/_familia_candidato.html" with a=c.alumno %}{% endfor %}
+  </ol>
+  {% endif %}
+
+  <div class="fm-otro">
+    <label class="fm-buscar fm-buscar-chico"><span class="material-symbols-outlined" aria-hidden="true">person_search</span>
+      <input type="search" class="fm-otro-q" placeholder="{% if g.candidatos %}¿Es otro alumno? Escribe su nombre o un apellido{% else %}Busca a su hijo(a) por nombre o un apellido{% endif %}" autocomplete="off"
+             aria-label="Buscar alumno para {{ f.nombre_aspirante }}"></label>
+    <ol class="fm-cands fm-resultados" aria-live="polite"></ol>
+  </div>
+
+  {% if g.candidatos %}
+  <footer class="fm-pie">
+    <button type="button" class="fm-ninguno" data-accion="ninguno">Ninguno es su hijo(a)</button>
+  </footer>
+  {% endif %}
+</article>
+{% endwith %}

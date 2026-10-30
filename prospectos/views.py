@@ -852,57 +852,73 @@ def badge_familias(request):
     if not request.user.has_perm('prospectos.resolver_coincidencias'):
         return None
     from .servicios import familias
-    return familias.pendientes().count() or None
+    return familias.familias_pendientes() or None
 
 
 @staff_member_required
 def familias_por_unir(request):
-    """Encuestas de padres ↔ cuestionarios de alumnos: confirmar con un clic, o unir a mano buscando por nombre."""
+    """Encuestas de padres ↔ cuestionarios de alumnos, agrupadas por familia; se filtra y se une sin recargar."""
     _permiso(request, 'resolver_coincidencias')
     from .servicios import familias
     from .servicios.inteligencia import NoFusionable, fusionar, rechazar
+    js = request.headers.get('x-requested-with') == 'fetch'
     if request.method == 'POST':
         accion = request.POST.get('accion')
+        resultado = {'ok': True}
         try:
             if accion in ('unir', 'no'):
-                c = get_object_or_404(PosibleCoincidencia, pk=request.POST.get('propuesta'), estado='pendiente')
+                ids = [x for x in request.POST.getlist('propuesta') if x.isdigit()]
+                props = list(PosibleCoincidencia.objects.filter(pk__in=ids, estado='pendiente').select_related('prospecto', 'candidato'))
+                if not props:
+                    raise NoFusionable('Esa propuesta ya se resolvió. Recarga la página.')
                 if accion == 'unir':
+                    c = props[0]
                     a, f = (c.candidato, c.prospecto) if c.prospecto.tiene_tutor and not c.prospecto.tiene_alumno else (c.prospecto, c.candidato)
                     fusionar(a, f, request.user)
-                    messages.success(request, f'Listo: {a.nombre_aspirante} ya tiene a su familia en la ficha.')
+                    resultado |= {'familia': f.pk, 'alumno': a.pk, 'mensaje': f'Listo: {a.nombre_aspirante} ya tiene a su familia en la ficha.'}
                 else:
+                    for c in props:
+                        rechazar(c, request.user)
+                    resultado['mensaje'] = 'Descartado.'
+            elif accion == 'ninguno':
+                f = get_object_or_404(Prospecto, pk=request.POST.get('familia'))
+                props = familias.pendientes().filter(Q(prospecto=f) | Q(candidato=f))
+                n = 0
+                for c in props:
                     rechazar(c, request.user)
+                    n += 1
+                resultado |= {'familia': f.pk, 'mensaje': f'Se descartaron {n} propuestas. La encuesta queda sin pareja.'}
             elif accion == 'manual':
                 f = get_object_or_404(Prospecto, pk=request.POST.get('familia'), tiene_tutor=True, tiene_alumno=False)
                 a = get_object_or_404(Prospecto, pk=request.POST.get('alumno'), tiene_alumno=True, tiene_tutor=False)
                 fusionar(a, f, request.user)
-                messages.success(request, f'Listo: {a.nombre_aspirante} ya tiene a su familia en la ficha.')
+                resultado |= {'familia': f.pk, 'alumno': a.pk, 'mensaje': f'Listo: {a.nombre_aspirante} ya tiene a su familia en la ficha.'}
             elif accion == 'buscar_todo':
                 r = familias.buscar_para_todos()
-                messages.success(request, f"Se unieron {r['unidas']} familias sin duda y quedaron {r['propuestas']} propuestas nuevas para revisar.")
+                resultado['mensaje'] = f"Se unieron {r['unidas']} familias sin duda y quedaron {r['propuestas']} propuestas nuevas para revisar."
+                js = False  # cambia toda la lista: se recarga
         except NoFusionable as e:
+            if js:
+                return JsonResponse({'ok': False, 'mensaje': str(e)}, status=409)
             messages.error(request, str(e))
+            return redirect(request.get_full_path())
+        if js:
+            return JsonResponse(resultado)
+        messages.success(request, resultado.get('mensaje', 'Listo.'))
         return redirect(request.get_full_path())
 
-    propuestas = list(familias.pendientes().order_by('-similitud')[:100])
-    for c in propuestas:  # mostrar siempre: izquierda la familia, derecha el alumno
-        c.familia, c.alumno = (c.prospecto, c.candidato) if c.prospecto.tiene_tutor and not c.prospecto.tiene_alumno else (c.candidato, c.prospecto)
-        c.puntos = round(c.similitud * 100)
-        c.razones = c.motivo.split(': ', 1)[-1]
-    con_propuesta = {x for c in propuestas for x in (c.prospecto_id, c.candidato_id)}
-    vivos = Prospecto.objects.filter(fusionado_en__isnull=True, anonimizado_en__isnull=True)
-    solas = vivos.filter(tiene_tutor=True, tiene_alumno=False).exclude(pk__in=con_propuesta).order_by('-creado_en')[:60]
-    elegida = request.GET.get('familia')
+    m = familias.mesa()
+    return render(request, 'prospectos/familias.html', _ctx(request, 'Familias por unir', **m))
+
+
+@staff_member_required
+def familias_buscar_alumno(request):
+    """Búsqueda en vivo de alumnos sin familia para una encuesta de familia (fragmento HTML)."""
+    _permiso(request, 'resolver_coincidencias')
+    from .servicios import familias
+    f = get_object_or_404(Prospecto, pk=request.GET.get('familia'), tiene_tutor=True, tiene_alumno=False)
     q = (request.GET.get('q') or '').strip()
-    resultados = []
-    if elegida and q:
-        resultados = list(vivos.filter(tiene_alumno=True, tiene_tutor=False, nombre_aspirante__icontains=q)
-                          .select_related('preparatoria').order_by('nombre_aspirante')[:20])
-    return render(request, 'prospectos/familias.html', _ctx(
-        request, 'Familias por unir', propuestas=propuestas, solas=solas, elegida=int(elegida) if (elegida or '').isdigit() else None,
-        q=q, resultados=resultados,
-        total_solas=vivos.filter(tiene_tutor=True, tiene_alumno=False).exclude(pk__in=con_propuesta).count(),
-        total_alumnos_solos=vivos.filter(tiene_alumno=True, tiene_tutor=False).count()))
+    return render(request, 'prospectos/_familia_busqueda.html', {'resultados': familias.buscar_alumnos(f, q), 'q': q, 'familia': f})
 
 
 # --------------------------------------------------------------------------- calendario de admisiones

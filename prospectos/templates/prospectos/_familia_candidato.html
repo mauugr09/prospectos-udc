@@ -1,0 +1,18 @@
+<li class="fm-cand" data-alumno="{{ a.pk }}">
+  <span class="fm-avatar" aria-hidden="true">{{ a.nombre_aspirante|slice:":1" }}</span>
+  <div class="fm-cand-texto">
+    <a href="{% url 'admin:prospectos_prospecto_change' a.pk %}" target="_blank" rel="noopener">{{ a.nombre_aspirante }}</a>
+    <small>{{ a.preparatoria|default:"Sin prepa" }}{% if a.creado_en %} · {{ a.creado_en|date:"j M" }}{% endif %}</small>
+    {% if c.razones %}<span class="fm-razones">{% for r in c.razones %}<i>{{ r }}</i>{% endfor %}</span>{% endif %}
+  </div>
+  {% if c.puntos %}<span class="fm-puntos {{ c.nivel }}" title="Puntos: entre más, más seguro"><b>{{ c.puntos }}</b><span><i style="width:{{ c.puntos }}%"></i></span></span>
+  {% else %}<span class="fm-puntos sin" title="Sin indicios en común: revisa bien antes de unir"><b>—</b></span>{% endif %}
+  <div class="fm-botones">
+    {% if c.propuestas %}
+    <button type="button" class="udc-btn chico" data-accion="unir" data-propuestas="{{ c.propuestas|join:',' }}">Unir</button>
+    <button type="button" class="fm-no" data-accion="no" data-propuestas="{{ c.propuestas|join:',' }}" aria-label="No es {{ a.nombre_aspirante }}" title="No es"><span class="material-symbols-outlined">close</span></button>
+    {% else %}
+    <button type="button" class="udc-btn chico{% if not c.puntos %} secundario{% endif %}" data-accion="manual" data-alumno="{{ a.pk }}"{% if not c.puntos %} data-confirmar="¿Seguro? No tienen nada en común"{% endif %}>Unir</button>
+    {% endif %}
+  </div>
+</li>

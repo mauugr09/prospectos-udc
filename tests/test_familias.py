@@ -1,6 +1,8 @@
 """Unir la encuesta de la familia con el cuestionario del alumno, y la CURP sin consultas externas."""
 import datetime as dt
 
+from django.db.models import Q
+
 from django.contrib.auth.models import User
 
 from prospectos.models import PosibleCoincidencia, Prospecto
@@ -61,7 +63,7 @@ def test_con_duda_va_a_familias_por_unir_y_se_resuelve_con_un_clic(client, f_alu
     assert prop.similitud >= .3 and 'nombre coincide' in prop.motivo
     client.force_login(User.objects.create_superuser('f@x.mx', 'f@x.mx', 'Clave-de-prueba-123'))
     html = client.get('/admin/herramientas/familias/').content.decode()
-    assert 'Son la misma familia' in html and 'Diego Hernández Ruiz' in html
+    assert 'data-accion="unir"' in html and 'Diego Hernández Ruiz' in html
     assert 'Familias por unir' in client.get('/admin/').content.decode()  # en el menú
     client.post('/admin/herramientas/familias/', {'accion': 'unir', 'propuesta': prop.pk})
     p = Prospecto.objects.get(fusionado_en__isnull=True)
@@ -75,7 +77,7 @@ def test_union_manual_y_rechazo(client, f_alumno, f_tutor, evento):
     familia = Prospecto.objects.get(tiene_tutor=True, tiene_alumno=False)
     a = Prospecto.objects.get(tiene_alumno=True, tiene_tutor=False)
     client.force_login(User.objects.create_superuser('m@x.mx', 'm@x.mx', 'Clave-de-prueba-123'))
-    html = client.get(f'/admin/herramientas/familias/?familia={familia.pk}&q=torres').content.decode()
+    html = client.get(f'/admin/herramientas/familias/alumnos/?familia={familia.pk}&q=torres').content.decode()
     assert 'Sofía Torres Vega' in html
     client.post('/admin/herramientas/familias/', {'accion': 'manual', 'familia': familia.pk, 'alumno': a.pk})
     assert Prospecto.objects.get(pk=a.pk).tiene_tutor
@@ -93,3 +95,73 @@ def test_planteles_distintos_restan(f_alumno, f_tutor, evento):
     importar(f_tutor, tutor('t1', 'Karla Núñez Ortiz', evento=None, tutor_correo=None, tutor_telefono=None,
                             plantel='Universidad de Tultepec', tutor_nombre='José Ortiz'))
     assert Prospecto.objects.filter(fusionado_en__isnull=True).count() == 2
+
+
+# --------------------------------------------------------------------------- pantalla agrupada por familia
+
+def _dos_candidatos(f_alumno, f_tutor):
+    importar(f_alumno, alumno('a1', 'Luis Pérez Ruiz'), alumno('a2', 'Luis Pérez Gómez', evento='EV2', correo='o@x.mx'))
+    importar(f_tutor, tutor('t1', 'Luis Pérez', evento=None, tutor_correo=None, tutor_telefono=None, tutor_nombre='Ana Mora'))
+    return Prospecto.objects.get(tiene_tutor=True, tiene_alumno=False)
+
+
+def test_mesa_agrupa_por_familia_y_no_repite_parejas(f_alumno, f_tutor, evento, evento2):
+    familia = _dos_candidatos(f_alumno, f_tutor)
+    alumno1 = Prospecto.objects.get(nombre_aspirante='Luis Pérez Ruiz')
+    # Misma pareja propuesta desde el otro lado (pasa con propuestas de criterios anteriores)
+    PosibleCoincidencia.objects.create(prospecto=alumno1, candidato=familia, similitud=.4, motivo='Familia: viejo')
+    m = familias.mesa()
+    assert len(m['con']) == 1 and m['solas'] == []
+    g = m['con'][0]
+    assert g['familia'] == familia and len(g['candidatos']) == 2
+    c1 = next(c for c in g['candidatos'] if c['alumno'] == alumno1)
+    assert len(c1['propuestas']) == 2 and c1['puntos'] > 40
+    assert familias.familias_pendientes() == 1  # el menú cuenta familias, no propuestas
+
+
+def test_descartar_una_pareja_descarta_sus_duplicados(client, f_alumno, f_tutor, evento, evento2):
+    familia = _dos_candidatos(f_alumno, f_tutor)
+    alumno1 = Prospecto.objects.get(nombre_aspirante='Luis Pérez Ruiz')
+    PosibleCoincidencia.objects.create(prospecto=alumno1, candidato=familia, similitud=.4, motivo='Familia: viejo')
+    client.force_login(User.objects.create_superuser('d@x.mx', 'd@x.mx', 'Clave-de-prueba-123'))
+    c1 = next(c for c in familias.mesa()['con'][0]['candidatos'] if c['alumno'] == alumno1)
+    r = client.post('/admin/herramientas/familias/', {'accion': 'no', 'propuesta': c1['propuestas']}, HTTP_X_REQUESTED_WITH='fetch')
+    assert r.json()['ok']
+    assert not familias.pendientes().filter(Q(prospecto=alumno1) | Q(candidato=alumno1)).exists()
+    assert len(familias.mesa()['con'][0]['candidatos']) == 1
+
+
+def test_ninguno_deja_la_encuesta_sin_pareja(client, f_alumno, f_tutor, evento, evento2):
+    familia = _dos_candidatos(f_alumno, f_tutor)
+    client.force_login(User.objects.create_superuser('n@x.mx', 'n@x.mx', 'Clave-de-prueba-123'))
+    r = client.post('/admin/herramientas/familias/', {'accion': 'ninguno', 'familia': familia.pk}, HTTP_X_REQUESTED_WITH='fetch')
+    assert r.json()['ok'] and 'Se descartaron 2' in r.json()['mensaje']
+    m = familias.mesa()
+    assert m['con'] == [] and [g['familia'] for g in m['solas']] == [familia]
+
+
+def test_unir_por_fetch_responde_json_y_resuelta_da_409(client, f_alumno, f_tutor, evento, evento2):
+    familia = _dos_candidatos(f_alumno, f_tutor)
+    client.force_login(User.objects.create_superuser('j@x.mx', 'j@x.mx', 'Clave-de-prueba-123'))
+    c = familias.mesa()['con'][0]['candidatos'][0]
+    r = client.post('/admin/herramientas/familias/', {'accion': 'unir', 'propuesta': c['propuestas']}, HTTP_X_REQUESTED_WITH='fetch')
+    j = r.json()
+    assert j['ok'] and j['alumno'] == c['alumno'].pk and j['familia'] == familia.pk
+    assert Prospecto.objects.get(pk=c['alumno'].pk).tiene_tutor
+    r = client.post('/admin/herramientas/familias/', {'accion': 'unir', 'propuesta': c['propuestas']}, HTTP_X_REQUESTED_WITH='fetch')
+    assert r.status_code == 409 and not r.json()['ok']
+
+
+def test_busqueda_de_alumno_tolera_acentos_y_variantes_y_da_puntos(client, f_alumno, f_tutor, evento):
+    importar(f_alumno, alumno('a1', 'Ximena González Vázquez'), alumno('a2', 'Pedro Ruiz Soto', correo='p@x.mx'))
+    importar(f_tutor, tutor('t1', 'Mi hija', evento=None, tutor_correo=None, tutor_telefono=None, tutor_nombre='Rosa Vázquez',
+                            minutos=60 * 24 * 10))
+    familia = Prospecto.objects.get(tiene_tutor=True, tiene_alumno=False)
+    res = familias.buscar_alumnos(familia, 'jimena gonzales')
+    assert [r['alumno'].nombre_aspirante for r in res] == ['Ximena González Vázquez']
+    assert familias.buscar_alumnos(familia, 'z') == []  # muy corto
+    client.force_login(User.objects.create_superuser('b@x.mx', 'b@x.mx', 'Clave-de-prueba-123'))
+    html = client.get(f'/admin/herramientas/familias/alumnos/?familia={familia.pk}&q=ruiz').content.decode()
+    assert 'Pedro Ruiz Soto' in html and 'data-confirmar' in html  # sin nada en común: pide confirmar
+    html = client.get('/admin/herramientas/familias/').content.decode()
+    assert 'id="fm-q"' in html and 'Busca a su hijo(a)' in html

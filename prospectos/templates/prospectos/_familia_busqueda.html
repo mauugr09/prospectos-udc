@@ -1,0 +1,3 @@
+{% for c in resultados %}{% include "prospectos/_familia_candidato.html" with a=c.alumno %}{% empty %}
+<li class="fm-sin-resultados">{% if q|length < 2 %}Escribe al menos 2 letras.{% else %}Ningún alumno sin familia se llama así. Si aún no contesta su cuestionario, deja la encuesta: se unirá sola cuando conteste.{% endif %}</li>
+{% endfor %}
