@@ -8,10 +8,59 @@
 {% block content %}
 <div class="tb">
 
-  <header class="tb-cabecera">
-    <h1 class="titulo-grande">Inicio</h1>
-    <p class="subtitulo">{{ hoy|date:"l j \d\e F"|capfirst }}</p>
+  <header class="tb-cabecera tb-saludo">
+    <div>
+      <h1 class="titulo-grande">{{ saludo }}, {{ nombre_corto }}</h1>
+      <p class="subtitulo">{{ hoy|date:"l j \d\e F"|capfirst }} · esto es lo que pasa hoy en Admisiones</p>
+    </div>
+    {% if puede_reportes %}
+    <div class="tb-saludo-acciones">
+      <nav class="seg" aria-label="Periodo">
+        {% for d, etiqueta in periodos %}<a href="?dias={{ d }}" class="{% if d == dias %}activo{% endif %}" {% if d == dias %}aria-current="true"{% endif %}>{{ etiqueta }}</a>{% endfor %}
+      </nav>
+      {% if perms.prospectos.reporte_ejecutivo %}<a class="tb-boton-vidrio" href="{% url 'prospectos:reporte' %}"><span class="material-symbols-outlined">download</span>Reporte</a>{% endif %}
+    </div>
+    {% endif %}
   </header>
+
+  {% if puede_reportes or llamar is not None %}
+  <div class="tb-kpis">
+    {% if puede_reportes %}
+    {% for t in tarjetas %}{% if t.resumen %}
+    <a class="tb-kpi" href="{{ t.url }}">
+      <span class="tb-kpi-icono azul"><span class="material-symbols-outlined">groups</span></span>
+      <span class="tb-kpi-flecha material-symbols-outlined">north_east</span>
+      <small>Aspirantes nuevos · {{ periodo_txt }}</small>
+      <b>{{ t.valor }}</b>
+      {% if actividad.crecimiento is not None %}<span class="tb-kpi-chip {% if actividad.crecimiento >= 0 %}sube{% else %}baja{% endif %}">{% if actividad.crecimiento >= 0 %}+{% endif %}{{ actividad.crecimiento }} %</span>{% endif %}
+      <canvas class="tb-kpi-linea" data-serie="actividad" aria-hidden="true"></canvas>
+    </a>
+    {% endif %}{% endfor %}
+    {% endif %}
+    {% if llamar is not None %}
+    <a class="tb-kpi" href="{% url 'prospectos:cola' %}">
+      <span class="tb-kpi-icono naranja"><span class="material-symbols-outlined">support_agent</span></span>
+      <span class="tb-kpi-flecha material-symbols-outlined">north_east</span>
+      <small>Por llamar</small><b>{{ llamar_total }}</b>
+      <span class="tb-kpi-chip neutro">en orden de prioridad</span>
+    </a>
+    {% endif %}
+    {% if puede_reportes %}
+    <a class="tb-kpi" href="{% url 'prospectos:reporte' %}">
+      <span class="tb-kpi-icono verde"><span class="material-symbols-outlined">forum</span></span>
+      <span class="tb-kpi-flecha material-symbols-outlined">north_east</span>
+      <small>Pidieron información</small><b>{{ info_pct }} %</b>
+      <span class="tb-kpi-medidor"><i style="width:{{ info_pct }}%"></i></span>
+    </a>
+    <a class="tb-kpi" href="{% url 'prospectos:cola' %}?segmento=listo_para_convertir">
+      <span class="tb-kpi-icono morado"><span class="material-symbols-outlined">rocket_launch</span></span>
+      <span class="tb-kpi-flecha material-symbols-outlined">north_east</span>
+      <small>Listos para inscribirse</small><b>{{ kpi_listos_pct }} %</b>
+      <span class="tb-kpi-medidor morado"><i style="width:{{ kpi_listos_pct }}%"></i></span>
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
 
   {% if formularios_error %}
   <div class="aviso aviso-rojo"><span class="material-symbols-outlined">error</span>
@@ -120,11 +169,6 @@
   {% if puede_reportes %}
   <header class="tb-seccion">
     <h2>Resumen {% if dias == 365 %}del último año{% else %}de los últimos {{ periodo_txt }}{% endif %}</h2>
-    <nav class="seg" aria-label="Periodo">
-      {% for d, etiqueta in periodos %}
-        <a href="?dias={{ d }}" class="{% if d == dias %}activo{% endif %}" {% if d == dias %}aria-current="true"{% endif %}>{{ etiqueta }}</a>
-      {% endfor %}
-    </nav>
   </header>
 
   <div class="tb-rejilla">
@@ -132,11 +176,6 @@
       <header class="grupo-cabecera"><h2>Aspirantes por día</h2>
         {% if actividad.crecimiento is not None %}<span class="variacion {% if actividad.crecimiento >= 0 %}sube{% else %}baja{% endif %}">{% if actividad.crecimiento >= 0 %}+{% endif %}{{ actividad.crecimiento }} % contra el periodo anterior</span>{% endif %}</header>
       <div class="grupo-cuerpo">
-        <div class="cifras">
-          {% for t in tarjetas %}{% if t.resumen %}<div><b>{{ t.valor }}</b><span>{{ t.etiqueta|lower|capfirst }}</span></div>{% endif %}{% endfor %}
-          <div><b>{{ info_pct }} %</b><span>Pidió información</span></div>
-          {% for a in anillos|slice:":1" %}<div><b>{{ a.pct }} %</b><span>{{ a.etiqueta }}</span></div>{% endfor %}
-        </div>
         <div class="tb-lienzo"><canvas id="g-actividad" aria-label="Aspirantes registrados por día"></canvas><div id="g-actividad-tip" class="tb-tip" hidden></div></div>
       </div>
     </section>

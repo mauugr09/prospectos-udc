@@ -56,3 +56,21 @@ def test_si_falla_el_respaldo_no_se_borra_nada(con_demo, monkeypatch):
     with pytest.raises(RuntimeError):
         demo.borrar(real)
     assert Prospecto.objects.count() == antes and Preparatoria.objects.exists()
+
+
+def test_foto_de_fondo(client, settings, tmp_path):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    settings.DATA_DIR = tmp_path
+    r = client.get('/marca/fondo')
+    assert r.status_code == 200 and r['Content-Type'] == 'image/gif'  # sin foto: pixel transparente
+    client.force_login(User.objects.create_superuser('ap@x.mx', 'ap@x.mx', 'Clave-de-prueba-123'))
+    client.post('/admin/herramientas/apariencia/', {'foto': SimpleUploadedFile('x.txt', b'hola', 'text/plain')})
+    assert not list(tmp_path.glob('fondo.*'))  # no es imagen
+    jpg = b'\xff\xd8\xff\xe0' + b'0' * 100
+    client.post('/admin/herramientas/apariencia/', {'foto': SimpleUploadedFile('p.jpg', jpg, 'image/jpeg')})
+    assert (tmp_path / 'fondo.jpg').read_bytes() == jpg
+    assert b''.join(client.get('/marca/fondo').streaming_content) == jpg
+    client.post('/admin/herramientas/apariencia/', {'accion': 'quitar'})
+    assert not (tmp_path / 'fondo.jpg').exists()
+    html = client.get('/admin/').content.decode()
+    assert 'tb-kpis' in html and ('Buenos días' in html or 'Buenas tardes' in html or 'Buenas noches' in html)

@@ -16,6 +16,24 @@
     graficas.forEach((g) => g.repintar());
   });
 
+  // ---------------------------------------------------------------- línea chica de las tarjetas de arriba
+  const lineas = [...document.querySelectorAll('canvas.tb-kpi-linea[data-serie="actividad"]')];
+  const pintarLinea = (cv) => {
+    const v = d.actividad.valores || [];
+    const r = cv.getBoundingClientRect(), k = window.devicePixelRatio || 1;
+    if (!r.width || v.length < 2) return;
+    cv.width = r.width * k; cv.height = r.height * k;
+    const g = cv.getContext('2d'); g.scale(k, k);
+    const max = Math.max(...v, 1), paso = r.width / (v.length - 1), y = (n) => r.height - 3 - (n / max) * (r.height - 6);
+    const grad = g.createLinearGradient(0, 0, r.width, 0);
+    grad.addColorStop(0, '#f2a33a'); grad.addColorStop(1, '#2bb673');
+    g.beginPath(); v.forEach((n, i) => (i ? g.lineTo(i * paso, y(n)) : g.moveTo(0, y(n))));
+    g.strokeStyle = grad; g.lineWidth = 2; g.lineJoin = 'round'; g.lineCap = 'round'; g.stroke();
+  };
+  // La página arranca oculta hasta que carga Alpine: se pinta cuando el lienzo ya tiene tamaño.
+  if ('ResizeObserver' in window) lineas.forEach((cv) => new ResizeObserver(() => pintarLinea(cv)).observe(cv));
+  else lineas.forEach(pintarLinea);
+
   // ---------------------------------------------------------------- actividad (una línea; el detalle aparece al pasar el mouse)
   const lienzo = document.getElementById('g-actividad');
   if (lienzo && window.Chart) {

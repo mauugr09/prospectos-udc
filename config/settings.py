@@ -348,6 +348,8 @@ UNFOLD = {
                  'permission': _permiso('prospectos.view_carrera')},
                 {'title': 'Mapa (Google Maps)', 'icon': 'map', 'link': reverse_lazy('prospectos:configurar_mapa'),
                  'permission': lambda r: r.user.is_superuser},
+                {'title': 'Apariencia', 'icon': 'wallpaper', 'link': reverse_lazy('prospectos:apariencia'),
+                 'permission': lambda r: r.user.is_superuser},
                 {'title': 'Otras computadoras', 'icon': 'devices', 'link': reverse_lazy('prospectos:otras_computadoras'),
                  'permission': lambda r: r.user.is_superuser},
                 {'title': 'Reglas de prioridad', 'icon': 'tune', 'link': reverse_lazy('prospectos:configuracion'),

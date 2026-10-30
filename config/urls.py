@@ -8,6 +8,7 @@ from prospectos import views
 urlpatterns = [
     path('marca/logo.png', views.logo),
     path('marca/hoja-membretada.jpg', views.hoja_membretada),
+    path('marca/fondo', views.fondo),
     path('conectar/', views.conectar, name='conectar'),
     path('conectar/Prospectos-UDC.crt', views.certificado, name='certificado'),
     path('salud/', lambda r: HttpResponse('prospectos-ok:' + views.huella(), content_type='text/plain')),

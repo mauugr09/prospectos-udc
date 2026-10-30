@@ -120,6 +120,11 @@ def _actividad(qs, dias: int, hoy):
     return {'etiquetas': etiquetas, 'valores': valores, 'total': actual, 'previo': previo, 'crecimiento': crecimiento}
 
 
+def _saludo() -> str:
+    h = timezone.localtime().hour
+    return 'Buenos días' if 5 <= h < 12 else 'Buenas tardes' if 12 <= h < 19 else 'Buenas noches'
+
+
 def contexto_tablero(request, context=None) -> dict:
     """Portada del panel (DASHBOARD_CALLBACK de unfold): primero a quién llamar hoy; luego el resumen del periodo."""
     ctx = context if context is not None else {}
@@ -135,6 +140,7 @@ def contexto_tablero(request, context=None) -> dict:
         'hoy': hoy, 'dias': dias, 'periodos': PERIODOS, 'periodo_txt': dict(PERIODOS)[dias].replace('12 meses', 'año'),
         'puede_reportes': u.has_perm('prospectos.ver_reportes'),
         'eventos_hoy': Evento.objects.filter(fecha=hoy).select_related('preparatoria'),
+        'saludo': _saludo(), 'nombre_corto': (u.first_name or u.get_username().split('@')[0]).split()[0].capitalize(),
     })
     tarjetas = []
     if u.has_perm('prospectos.change_prospecto'):
@@ -239,6 +245,7 @@ def contexto_tablero(request, context=None) -> dict:
             'info_pct': round(100 * piden_info / total_periodo) if total_periodo else 0,
             'actividad': actividad, 'barras_edad': barras_edad, 'anillos': anillos,
             'datos_tablero': {'actividad': actividad, 'anillos': anillos, 'puntos': puntos, 'tiles': TILES()},
+            'kpi_listos_pct': anillos[0]['pct'] if anillos else 0,
         })
     ctx['tarjetas'] = tarjetas
     return ctx
@@ -360,6 +367,66 @@ def hoja_membretada(request):
     r = FileResponse(open(ruta, 'rb'), content_type='image/jpeg')
     r['Cache-Control'] = 'no-cache'
     return r
+
+
+FONDO_ARCHIVO = 'fondo'  # datos/fondo.jpg|png|webp: foto de un plantel detrás del programa (Configuración → Apariencia)
+_FORMATOS_FONDO = {b'\xff\xd8\xff': ('jpg', 'image/jpeg'), b'\x89PNG': ('png', 'image/png'), b'RIFF': ('webp', 'image/webp')}
+_PIXEL = b'GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;'
+
+
+def _fondo_actual():
+    for ext, tipo in (('jpg', 'image/jpeg'), ('png', 'image/png'), ('webp', 'image/webp')):
+        ruta = settings.DATA_DIR / f'{FONDO_ARCHIVO}.{ext}'
+        if ruta.exists():
+            return ruta, tipo
+    return None, None
+
+
+def fondo(request):
+    """Foto de fondo. Sin foto devuelve un pixel transparente: debajo se ve el degradado de la marca."""
+    from django.http import FileResponse
+    ruta, tipo = _fondo_actual()
+    if not ruta:
+        r = HttpResponse(_PIXEL, content_type='image/gif')
+    else:
+        r = FileResponse(open(ruta, 'rb'), content_type=tipo)
+    r['Cache-Control'] = 'private, max-age=300'
+    return r
+
+
+@staff_member_required
+def apariencia(request):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    if request.method == 'POST':
+        actual, _ = _fondo_actual()
+        if request.POST.get('accion') == 'quitar':
+            if actual:
+                actual.unlink()
+            messages.success(request, 'Se quitó la foto; queda el degradado de la marca.')
+            return redirect(request.path)
+        archivo = request.FILES.get('foto')
+        if not archivo:
+            messages.error(request, 'Elige una foto.')
+            return redirect(request.path)
+        if archivo.size > 8 * 1024 * 1024:
+            messages.error(request, 'La foto pesa más de 8 MB. Usa una de unos 2000 píxeles de ancho.')
+            return redirect(request.path)
+        inicio = archivo.read(12)
+        formato = next((f for firma, f in _FORMATOS_FONDO.items() if inicio.startswith(firma) and (firma != b'RIFF' or inicio[8:12] == b'WEBP')), None)
+        if not formato:
+            messages.error(request, 'Solo fotos JPG, PNG o WebP.')
+            return redirect(request.path)
+        if actual:
+            actual.unlink()
+        archivo.seek(0)
+        with open(settings.DATA_DIR / f'{FONDO_ARCHIVO}.{formato[0]}', 'wb') as f:
+            for trozo in archivo.chunks():
+                f.write(trozo)
+        auditoria.registrar('cambiar_fondo', None, {'bytes': archivo.size}, request=request)
+        messages.success(request, 'Foto guardada. Así se ve el Inicio.')
+        return redirect('admin:index')
+    return render(request, 'prospectos/apariencia.html', _ctx(request, 'Apariencia', tiene_foto=bool(_fondo_actual()[0])))
 
 
 def logo(request):
