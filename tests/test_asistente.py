@@ -213,3 +213,18 @@ def test_error_de_conexion_se_explica(client, jefa, activo, monkeypatch):
     monkeypatch.setattr(asistente.requests, 'post', caida)
     r = _preguntar(client, '¿Cuántos aspirantes hay este mes?')
     assert r.status_code == 503 and 'internet' in r.json()['mensaje']
+
+
+def test_kuali_en_el_menu_con_su_nombre_y_en_las_instrucciones(client, jefa):
+    html = client.get('/admin/').content.decode()
+    assert 'id="km"' in html and 'data-nombre="Kuali"' in html and 'class="kuali' in html
+    client.post(URL + 'configurar/', {'mascota_nombre': 'Cuauhti<script>', 'tope_usd': '10'})
+    assert asistente.nombre_mascota() == 'Cuauhtiscript'  # sin < >
+    html = client.get('/admin/').content.decode()
+    assert 'data-nombre="Cuauhtiscript"' in html
+    sistema = asistente._sistema(jefa, {})
+    assert 'Eres Cuauhtiscript, un aguilucho' in sistema and 'nunca hagas bromas' in sistema
+
+
+def test_sin_sesion_no_hay_mascota(client):
+    assert 'id="km"' not in client.get('/admin/login/').content.decode()

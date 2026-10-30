@@ -247,4 +247,4 @@ def test_inicio_empieza_por_a_quien_llamar(client):
     c = cliente(client, User.objects.create_superuser('i@x.mx', 'i@x.mx', 'Clave-de-prueba-123'))
     html = c.get('/admin/').content.decode()
     assert html.index('A quién llamar hoy') < html.index('Pendientes')
-    assert 'Buenas tardes' not in html and 'Buenos días' not in html  # sin saludo genérico
+    assert any(sal in html for sal in ('Buenos días', 'Buenas tardes', 'Buenas noches'))  # saludo según la hora (decisión 45)

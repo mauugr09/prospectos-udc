@@ -41,7 +41,8 @@ recuperación.
 | `prospectos/views.py` | Pantallas propias: Inicio, A quién llamar, Respuestas, Familias por unir, mapa, calendario, eventos (QR, tarjetas, solicitud, becas, en vivo), reportes, encuestas, apariencia, ayuda. |
 | `prospectos/vistas_avisos.py` | Campanita: bandeja, panel, contador y preferencias. |
 | `prospectos/vistas_proteccion.py` | Protección de datos: copia externa, llave de recuperación y separar uniones. |
-| `prospectos/vistas_asistente.py` | Asistente: conversación, confirmación de propuestas y configuración (llave cifrada, tope, modelo). |
+| `prospectos/vistas_asistente.py` | Asistente: conversación, confirmación de propuestas y configuración (llave cifrada, tope, modelo, nombre de la mascota). |
+| `templates/prospectos/_kuali.svg.html` | Kuali, la mascota: un SVG con capas por estado (`.k-pensando-on`, `.k-contento-on`, `.k-avisando-on`, `.k-preocupado-on`, `.k-dormido-on`) que anima `udc.css`; `asistente.js` cambia los estados. Va en el menú (`unfold/helpers/navigation_user.html`) y en el encabezado. |
 | `prospectos/middleware.py` | Cambio de contraseña obligatorio, `Referer` solo en el mapa, bloqueo por intentos y cierre por inactividad. |
 | `prospectos/programador.py` | Tareas periódicas (sección 6). |
 | `prospectos/servicios/` | La lógica, separada de las vistas (sección 4). |

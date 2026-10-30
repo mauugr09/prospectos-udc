@@ -95,6 +95,9 @@ def configurar(request):
         if modelo in asistente.PRECIOS:
             Configuracion.guardar('asistente.modelo', modelo, request.user)
         Configuracion.guardar('asistente.activo', bool(request.POST.get('activo')), request.user)
+        nombre = re.sub(r'[^\w áéíóúñÁÉÍÓÚÑ-]', '', request.POST.get('mascota_nombre', '')).strip()[:24]
+        if nombre:
+            Configuracion.guardar('asistente.mascota_nombre', nombre, request.user)
         auditoria.registrar('asistente_configurar', None, {'activo': bool(request.POST.get('activo')), 'tope_usd': tope,
                                                             'llave_nueva': bool(llave), 'modelo': asistente.modelo()}, request=request)
         messages.success(request, 'Configuración del asistente guardada.')
@@ -104,4 +107,4 @@ def configurar(request):
     return render(request, 'prospectos/asistente_configurar.html', _ctx(
         request, 'Asistente inteligente', activo=bool(Configuracion.obtener('asistente.activo', False)),
         tiene_llave=bool(asistente.llave()), gasto=g, tope=tope, uso=min(100, round(g['usd'] / tope * 100)) if tope else 100,
-        modelo=asistente.modelo(), modelos=[(m, p) for m, p in asistente.PRECIOS.items()]))
+        mascota=asistente.nombre_mascota(), modelo=asistente.modelo(), modelos=[(m, p) for m, p in asistente.PRECIOS.items()]))

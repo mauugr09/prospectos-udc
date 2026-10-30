@@ -103,4 +103,5 @@ def contexto(request):
     u = getattr(request, 'user', None)
     if not u or not u.is_authenticated or not u.is_staff or not request.path.startswith('/admin'):
         return {}
-    return {'avisos_sin_leer': avisos.no_leidas(u)}
+    from .servicios.asistente import nombre_mascota
+    return {'avisos_sin_leer': avisos.no_leidas(u), 'mascota_nombre': nombre_mascota()}

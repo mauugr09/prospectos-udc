@@ -13,6 +13,7 @@
     cifra.textContent = n > 99 ? '99+' : n;
     boton.setAttribute('aria-label', n ? `Avisos: ${n} sin leer` : 'Avisos');
     document.title = n ? `(${n}) ${tituloBase}` : tituloBase;
+    document.dispatchEvent(new CustomEvent('avisos:cifra', { detail: n }));  // la mascota reacciona
   }
 
   function cerrar() {

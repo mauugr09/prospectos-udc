@@ -5,6 +5,58 @@
   boton.dataset.listo = '1';
   const ficha = (location.pathname.match(/\/admin\/prospectos\/prospecto\/(\d+)\/change\//) || [])[1] || null;
 
+  // ---------------------------------------------------------------- la mascota (Kuali): solo reacciona, nunca interrumpe
+  const tarjetaKuali = document.getElementById('km');
+  const NOMBRE = (tarjetaKuali && tarjetaKuali.dataset.nombre) || 'Kuali';
+  const FRASES = { reposo: '¿En qué te ayudo?', pensando: 'Pensando…', contento: '¡Listo!', preocupado: 'Algo salió mal', dormido: 'Zzz…' };
+  let avisosSinLeer = 0, estadoFijo = null, temporizador = null, ultimoMovimiento = Date.now();
+  const mascotas = () => document.querySelectorAll('svg.kuali');
+  function pintarMascota(estado) {
+    mascotas().forEach((svg) => {
+      ['pensando', 'contento', 'avisando', 'preocupado', 'dormido'].forEach((e) => svg.classList.toggle(`k-${e}-on`, e === estado));
+    });
+    if (tarjetaKuali) {
+      const txt = tarjetaKuali.querySelector('small');
+      tarjetaKuali.classList.toggle('avisando', estado === 'avisando');
+      txt.textContent = estado === 'avisando' ? `Tienes ${avisosSinLeer} aviso${avisosSinLeer === 1 ? '' : 's'}` : (FRASES[estado] || FRASES.reposo);
+    }
+  }
+  const base = () => (avisosSinLeer ? 'avisando' : 'reposo');
+  // estado(e) fija un estado (p. ej. pensando) hasta que se llame con null; estado(e, ms) lo muestra un momento.
+  function estado(e, ms) {
+    clearTimeout(temporizador);
+    if (ms) { pintarMascota(e); temporizador = setTimeout(() => pintarMascota(estadoFijo || base()), ms); return; }
+    estadoFijo = e;
+    pintarMascota(e || base());
+  }
+  document.addEventListener('avisos:cifra', (ev) => { avisosSinLeer = ev.detail || 0; if (!estadoFijo) pintarMascota(base()); });
+  const cifraInicial = document.querySelector('.av-cifra');
+  avisosSinLeer = cifraInicial && !cifraInicial.hidden ? parseInt(cifraInicial.textContent, 10) || 0 : 0;
+  pintarMascota(base());
+  // Parpadea de vez en cuando y se duerme tras 5 minutos sin que nadie mueva el mouse ni escriba.
+  (function parpadear() {
+    setTimeout(() => {
+      if (!document.hidden) mascotas().forEach((svg) => { svg.classList.add('parpadea'); setTimeout(() => svg.classList.remove('parpadea'), 140); });
+      parpadear();
+    }, 2800 + Math.random() * 4200);
+  })();
+  ['mousemove', 'keydown', 'scroll', 'click'].forEach((t) => addEventListener(t, () => {
+    ultimoMovimiento = Date.now();
+    if (estadoFijo === 'dormido') estado(null);
+  }, { passive: true }));
+  setInterval(() => { if (!estadoFijo && Date.now() - ultimoMovimiento > 5 * 60000) estado('dormido'); }, 30000);
+  // Si la tarjeta del menú no se ve (menú cerrado, celular u oculta), queda el botón de arriba.
+  let oculta = false;
+  try { oculta = localStorage.getItem('kuali-oculto') === '1'; } catch (e) { /* sin almacenamiento */ }
+  function acomodar() {
+    if (tarjetaKuali) tarjetaKuali.hidden = oculta;
+    const visible = tarjetaKuali && !oculta && tarjetaKuali.offsetParent !== null && tarjetaKuali.getBoundingClientRect().width > 0;
+    boton.classList.toggle('con-kuali-visible', !!visible);
+  }
+  addEventListener('resize', acomodar);
+  new MutationObserver(acomodar).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  setTimeout(acomodar, 50); setTimeout(acomodar, 600);
+
   const SUGERENCIAS = ficha
     ? ['Prepara la llamada con este aspirante', 'Escribe un WhatsApp para invitarlo al open house', '¿En qué no coincide con su familia?']
     : ['¿Cuántos aspirantes llegaron este mes por plantel?', '¿Qué carreras piden más en Tultepec?', '¿Qué visitas hay las próximas 2 semanas?',
@@ -18,8 +70,8 @@
   panel.hidden = true;
   panel.innerHTML = `
     <header class="as-cabeza">
-      <span class="as-logo material-symbols-outlined" aria-hidden="true">auto_awesome</span>
-      <div><h2>Asistente</h2><small>${ficha ? 'Sobre la ficha abierta, sin su nombre' : 'Cifras, ayuda y propuestas'}</small></div>
+      <span class="as-logo-kuali" aria-hidden="true"></span>
+      <div><h2></h2><small>${ficha ? 'Sobre la ficha abierta, sin su nombre' : 'Tu asistente: cifras, ayuda y propuestas'}</small></div>
       <button type="button" class="as-icono" data-nueva title="Nueva conversación" aria-label="Nueva conversación"><span class="material-symbols-outlined">edit_square</span></button>
       <button type="button" class="as-icono" data-cerrar title="Cerrar" aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button>
     </header>
@@ -28,8 +80,22 @@
       <textarea rows="1" placeholder="Pregunta algo…" aria-label="Tu pregunta" maxlength="1500"></textarea>
       <button type="submit" class="as-enviar" aria-label="Enviar"><span class="material-symbols-outlined">arrow_upward</span></button>
     </form>
-    <p class="as-pie">No escribas nombres ni teléfonos: el asistente no los recibe. Puede equivocarse: revisa antes de confirmar.</p>`;
+    <p class="as-pie">No escribas nombres ni teléfonos: no los recibe. Puede equivocarse: revisa antes de confirmar.
+      <button type="button" class="as-ocultar"></button></p>`;
   document.body.appendChild(panel);
+  panel.querySelector('h2').textContent = NOMBRE;
+  panel.setAttribute('aria-label', NOMBRE);
+  const original = document.querySelector('#km svg.kuali') || boton.querySelector('svg.kuali');
+  if (original) panel.querySelector('.as-logo-kuali').appendChild(original.cloneNode(true));
+  const ocultar = panel.querySelector('.as-ocultar');
+  const textoOcultar = () => { ocultar.textContent = oculta ? `Mostrar a ${NOMBRE} en el menú` : `Ocultar a ${NOMBRE} del menú`; };
+  textoOcultar();
+  ocultar.onclick = () => {
+    oculta = !oculta;
+    try { localStorage.setItem('kuali-oculto', oculta ? '1' : '0'); } catch (e) { /* sin almacenamiento */ }
+    textoOcultar(); acomodar();
+  };
+  if (tarjetaKuali) tarjetaKuali.querySelector('button').addEventListener('click', () => (panel.hidden ? abrir() : cerrar()));
   const hilo = panel.querySelector('.as-hilo');
   const campo = panel.querySelector('textarea');
   const formulario = panel.querySelector('form');
@@ -37,8 +103,14 @@
   function bienvenida() {
     hilo.innerHTML = '';
     const b = el('div', 'as-bienvenida');
-    b.appendChild(el('p', '', ficha ? 'Puedo preparar la llamada o un mensaje para este aspirante. Pongo su nombre al final, en esta computadora.'
-      : 'Pregúntame cifras, cómo hacer algo en el programa, o pídeme que prepare una visita o asigne aspirantes. Tú confirmas antes de que cambie algo.'));
+    b.appendChild(el('p', '', ficha ? `Hola, soy ${NOMBRE}. Puedo preparar la llamada o un mensaje para este aspirante. Su nombre lo pongo al final, en esta computadora.`
+      : `Hola, soy ${NOMBRE}. Pregúntame cifras, cómo hacer algo en el programa, o pídeme que prepare una visita o asigne aspirantes. Tú confirmas antes de que cambie algo.`));
+    if (avisosSinLeer) {
+      const av = el('button', 'as-sugerencia as-sugerencia-aviso', `Ver mis ${avisosSinLeer} aviso${avisosSinLeer === 1 ? '' : 's'} sin leer`);
+      av.type = 'button';
+      av.onclick = () => { cerrar(); document.querySelector('.av-boton')?.click(); };
+      b.appendChild(av);
+    }
     const lista = el('div', 'as-sugerencias');
     SUGERENCIAS.forEach((s) => { const c = el('button', 'as-sugerencia', s); c.type = 'button'; c.onclick = () => enviar(s); lista.appendChild(c); });
     b.appendChild(lista);
@@ -108,6 +180,7 @@
         headers: { 'X-CSRFToken': boton.dataset.csrf, 'X-Requested-With': 'fetch' } });
       const j = await r.json().catch(() => ({ mensaje: 'No se pudo.' }));
       acciones.replaceWith(el('p', 'as-propuesta-resultado ' + (j.ok && decision === 'si' ? 'hecho' : ''), j.mensaje));
+      if (j.ok && decision === 'si') estado('contento', 2200); else if (!j.ok) estado('preocupado', 3000);
     };
     si.onclick = () => decidir('si');
     no.onclick = () => decidir('no');
@@ -123,6 +196,7 @@
     burbuja('yo', texto);
     campo.value = ''; ajustar();
     const pensando = burbuja('ia', el('div', 'as-pensando', 'Consultando…'));
+    estado('pensando');
     try {
       const r = await fetch(boton.dataset.url, { method: 'POST', credentials: 'same-origin',
         headers: { 'X-CSRFToken': boton.dataset.csrf, 'X-Requested-With': 'fetch', 'Content-Type': 'application/json' },
@@ -130,7 +204,8 @@
       if (r.status === 401) { location.reload(); return; }
       const j = await r.json().catch(() => ({ ok: false, mensaje: 'Respuesta inesperada del programa.' }));
       pensando.remove();
-      if (!j.ok) { burbuja('aviso ' + (j.tipo || ''), j.mensaje); return; }
+      estado(null);
+      if (!j.ok) { estado('preocupado', 3500); burbuja('aviso ' + (j.tipo || ''), j.mensaje); return; }
       const b = burbuja('ia', j.texto || '(sin respuesta)');
       if (j.consulto && j.consulto.length) b.appendChild(el('small', 'as-fuente', 'Consultó: ' + j.consulto.map(nombreHerramienta).join(', ')));
       if (ficha && /whatsapp|mensaje|correo/i.test(texto)) botonCopiar(b, j.texto);
@@ -138,12 +213,13 @@
       hilo.scrollTop = hilo.scrollHeight;
     } catch (e) {
       pensando.remove();
+      estado(null); estado('preocupado', 3500);
       burbuja('aviso', 'Sin conexión con la PC del sistema.');
     } finally { ocupado = false; campo.focus(); }
   }
-  const NOMBRES = { consultar_cifras: 'cifras', embudo: 'embudo', consultar_visitas: 'visitas', buscar_ayuda: 'manual', manual: 'manual',
+  const NOMBRES_H = { consultar_cifras: 'cifras', embudo: 'embudo', consultar_visitas: 'visitas', buscar_ayuda: 'manual', manual: 'manual',
     perfil_del_aspirante: 'perfil sin nombre', proponer_crear_visita: 'propuesta', proponer_crear_actividad: 'propuesta', proponer_asignar_asesor: 'propuesta' };
-  const nombreHerramienta = (n) => NOMBRES[n] || n;
+  const nombreHerramienta = (n) => NOMBRES_H[n] || n;
 
   function ajustar() { campo.style.height = 'auto'; campo.style.height = Math.min(campo.scrollHeight, 140) + 'px'; }
   campo.addEventListener('input', ajustar);

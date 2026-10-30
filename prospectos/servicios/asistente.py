@@ -76,6 +76,13 @@ def modelo() -> str:
     return Configuracion.obtener('asistente.modelo') or _cfg('ASISTENTE_MODELO') or MODELO_OMISION
 
 
+NOMBRE_OMISION = 'Kuali'  # «bueno» en náhuatl; se cambia en Configuración → Asistente
+
+
+def nombre_mascota() -> str:
+    return (Configuracion.obtener('asistente.mascota_nombre') or NOMBRE_OMISION)[:24]
+
+
 def tope_usd() -> float:
     return float(Configuracion.obtener('asistente.tope_usd', 10))
 
@@ -559,9 +566,10 @@ def herramientas(user, contexto) -> list[dict]:
 def _sistema(user, contexto) -> str:
     hoy = timezone.localdate()
     return (
-        f'Eres el asistente del programa «Prospectos» de Admisiones de la Universidad de Cuautitlán (planteles Cuautitlán y '
-        f'Tultepec). Hoy es {hoy:%Y-%m-%d}. Hablas con una persona del equipo de Admisiones. Responde en español de México, '
-        'breve y claro, sin tecnicismos.\n'
+        f'Eres {nombre_mascota()}, un aguilucho que es la mascota y el asistente del programa «Prospectos» de Admisiones de la '
+        f'Universidad de Cuautitlán (planteles Cuautitlán y Tultepec). Hoy es {hoy:%Y-%m-%d}. Hablas con una persona del equipo '
+        'de Admisiones. Responde en español de México: amable y breve, sin tecnicismos. Puedes ser cálido, pero nunca hagas '
+        'bromas sobre aspirantes, familias, permisos de menores, becas o dinero. No hables de ti salvo que te pregunten.\n'
         'Reglas:\n'
         '- Para CUALQUIER número usa las herramientas; nunca estimes ni inventes. Di el periodo de la cifra.\n'
         '- No tienes ni pides nombres, teléfonos, correos ni datos que identifiquen a un aspirante. Si te los piden, explica '

@@ -76,11 +76,22 @@ Arriba a la derecha. El número rojo indica cuántos avisos no has leído.
 
 ![Bandeja de avisos](img/avisos.jpg)
 
-## 5. El asistente
+## 5. Kuali, el asistente
 
-![Asistente](img/asistente.jpg)
+![Kuali](img/asistente.jpg)
 
-El botón **Asistente** (arriba a la derecha) abre una conversación. Sirve para tres cosas:
+**Kuali** («bueno» en náhuatl) es el aguilucho que vive en el menú lateral, arriba de tu nombre. Es la mascota del programa y
+también el asistente. Un administrador puede cambiarle el nombre en Configuración → Asistente.
+
+- **No interrumpe.** Nunca aparece solo ni abre ventanas: solo cambia de cara según lo que pasa, y habla cuando le das clic.
+- **Sus caras:** tranquilo; con un «!» y la frase «Tienes N avisos» si hay avisos sin leer; pensando mientras consulta; contento
+  cuando se confirma algo; preocupado si algo falla; y dormido si nadie usa la computadora en 5 minutos.
+- Si el menú está cerrado o estás en el celular, Kuali está arriba a la derecha, junto a la campanita.
+- ¿No te gusta? En su ventana, abajo, **Ocultar a Kuali del menú**. Seguirá arriba a la derecha y se puede volver a mostrar.
+
+![Las caras de Kuali](img/kuali-estados.jpg)
+
+Al darle clic sirve para tres cosas:
 
 - **Cifras:** «¿cuántos aspirantes llegaron este mes por plantel?», «¿qué carreras piden más en Tultepec?», «¿cómo va el
   embudo desde agosto?». Las cifras salen del programa. Debajo de la respuesta dice qué consultó. Los grupos de menos de 3
@@ -95,7 +106,7 @@ Confirmar**. No puede borrar, unir, exportar ni cambiar estatus.
 
 ![Propuesta del asistente](img/asistente-propuesta.jpg)
 
-**Privacidad.** El asistente usa una inteligencia artificial externa (Claude, de Anthropic). Por eso:
+**Privacidad.** Kuali usa una inteligencia artificial externa (Claude, de Anthropic). Por eso:
 - Nunca recibe nombres, teléfonos, correos, CURP, edad, la prepa del aspirante ni lo que escribió con sus palabras.
 - Si escribes un nombre o un teléfono en la pregunta, el programa no la envía y te pide reformularla.
 - En la ficha recibe solo categorías (carrera, modalidad, grupos y lo que marcó en preguntas de opción). El nombre lo pone el

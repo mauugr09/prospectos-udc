@@ -24,6 +24,11 @@
     <form method="post" class="grupo-cuerpo as-config">{% csrf_token %}
       <label class="av-pref"><span class="av-texto"><b>Activar el asistente con IA</b><small>Usa Claude, de Anthropic. Necesita internet y una llave de pago.</small></span>
         <input type="checkbox" class="av-switch" name="activo" value="1"{% if activo %} checked{% endif %}></label>
+      <div class="as-mascota-config">
+        {% include "prospectos/_kuali.svg.html" with k_id="cfg" %}
+        <label class="pd-campo"><span>Nombre de la mascota (aguilucho)</span>
+          <input class="udc-campo" name="mascota_nombre" value="{{ mascota }}" maxlength="24" style="font-family:inherit"></label>
+      </div>
       <label class="pd-campo"><span>Llave de la API de Anthropic {% if tiene_llave %}(ya hay una guardada; escribe otra solo para cambiarla){% endif %}</span>
         <input class="udc-campo" type="password" name="llave" autocomplete="off" placeholder="sk-ant-…" spellcheck="false"></label>
       <div class="pd-fila">
