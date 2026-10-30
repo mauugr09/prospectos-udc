@@ -82,6 +82,7 @@ class Perfil(models.Model):
                                        help_text='Se envía en el campo prellenado "promotor" del Form.')
     debe_cambiar_clave = models.BooleanField('debe cambiar su contraseña al entrar', default=False,
                                              help_text='Se activa al crear la cuenta o al restablecer la contraseña.')
+    avisos_apagados = models.JSONField('avisos que no quiere recibir', default=list, blank=True)
 
     class Meta:
         verbose_name = 'perfil'
@@ -719,3 +720,33 @@ class Respaldo(models.Model):
 
     class Meta:
         ordering = ['-creado_en']
+
+
+class TipoAviso(models.TextChoices):
+    ASIGNADO = 'asignado', 'Aspirantes nuevos para mí'
+    VENCIDAS = 'vencidas', 'Llamadas vencidas'
+    EVENTO = 'evento', 'Visitas próximas'
+    SISTEMA = 'sistema', 'Problemas del sistema'
+
+
+class Notificacion(models.Model):
+    """Aviso dentro del sistema. No guarda nombres ni datos de contacto: solo cifras y un enlace,
+    para que anonimizar un prospecto no deje su nombre olvidado en una bandeja."""
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='avisos')
+    tipo = models.CharField(max_length=12, choices=TipoAviso.choices, db_index=True)
+    clave = models.CharField(max_length=120, help_text='Evita repetir el mismo aviso.')
+    titulo = models.CharField('título', max_length=200)
+    detalle = models.CharField(max_length=300, blank=True)
+    url = models.CharField(max_length=300, blank=True)
+    cantidad = models.PositiveIntegerField(default=1)
+    creada_en = models.DateTimeField(default=timezone.now)
+    actualizada_en = models.DateTimeField(default=timezone.now, db_index=True)
+    leida_en = models.DateTimeField(null=True, blank=True, db_index=True)
+
+    class Meta:
+        ordering = ['-actualizada_en']
+        verbose_name = 'aviso'
+        indexes = [models.Index(fields=['usuario', 'clave']), models.Index(fields=['usuario', 'leida_en'])]
+
+    def __str__(self):
+        return self.titulo

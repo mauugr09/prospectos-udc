@@ -1,0 +1,39 @@
+{% extends "prospectos/base.html" %}
+{% block ayuda %}avisos{% endblock %}
+{% block pagina %}
+<div class="av-bandeja">
+  <section class="grupo">
+    <header class="grupo-cabecera av-bandeja-cabecera">
+      <nav class="seg" aria-label="Mostrar">
+        <a href="?ver=nuevos" class="{% if filtro == 'nuevos' %}activo{% endif %}">Sin leer{% if sin_leer %} · {{ sin_leer }}{% endif %}</a>
+        <a href="?ver=todos" class="{% if filtro == 'todos' %}activo{% endif %}">Todos</a>
+      </nav>
+      {% if sin_leer %}
+      <form method="post" action="{% url 'prospectos:avisos_leer_todo' %}">{% csrf_token %}
+        <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+        <button class="udc-btn secundario" type="submit"><span class="material-symbols-outlined">done_all</span>Marcar todo como leído</button>
+      </form>{% endif %}
+    </header>
+    {% if avisos_lista %}
+    <ol class="av-lista av-lista-grande">{% for n in avisos_lista %}{% include "prospectos/_aviso.html" %}{% endfor %}</ol>
+    {% else %}
+    <div class="av-vacio"><span class="material-symbols-outlined">done_all</span>
+      <p>{% if filtro == 'nuevos' %}Estás al día.{% else %}No hay avisos de los últimos {{ dias }} días.{% endif %}</p></div>
+    {% endif %}
+  </section>
+
+  <section class="grupo" id="preferencias">
+    <header class="grupo-cabecera"><h2>Qué avisos recibir</h2></header>
+    <form method="post" class="av-prefs">{% csrf_token %}
+      {% for t in tipos %}
+      <label class="av-pref">
+        <span class="av-icono av-{{ t.valor }} material-symbols-outlined" aria-hidden="true">{{ t.icono }}</span>
+        <span class="av-texto"><b>{{ t.nombre }}</b><small>{{ t.descripcion }}</small></span>
+        <input type="checkbox" class="av-switch" name="tipo" value="{{ t.valor }}"{% if t.encendido %} checked{% endif %}{% if t.fijo %} checked disabled{% endif %}>
+      </label>
+      {% endfor %}
+      <div class="av-prefs-pie"><button type="submit" class="udc-btn"><span class="material-symbols-outlined">save</span>Guardar</button></div>
+    </form>
+  </section>
+</div>
+{% endblock %}

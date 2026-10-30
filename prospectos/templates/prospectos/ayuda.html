@@ -73,6 +73,22 @@
       <a class="gu-ir" href="{% url 'prospectos:cola' %}">Ir a A quién llamar hoy<span class="material-symbols-outlined">arrow_forward</span></a>
     </section>
 
+    <section class="gu-guia" id="avisos" data-palabras="avisos notificaciones campanita campana alerta vencidas asignado recordatorio respaldo">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">notifications</span></span><div><h2>Avisos (la campanita)</h2><p>Lo que pasó y necesita que hagas algo. Está arriba a la derecha.</p></div></header>
+      <ol class="gu-pasos">
+        <li>El número rojo es cuántos avisos no has leído. Pulsa la campanita para verlos; al abrir uno se marca como leído.</li>
+        <li>En <b>Ver todos</b> eliges qué avisos recibir. Los problemas del sistema (respaldos, Forms que no se pudieron leer) les llegan a los administradores y no se pueden apagar.</li>
+      </ol>
+      <ul class="gu-saber">
+        <li><b>Aspirantes nuevos:</b> cuando alguien te asigna uno, o cuando se registran con tu código o QR. Se juntan en un solo aviso mientras no lo abras.</li>
+        <li><b>Llamadas vencidas:</b> un solo aviso al día con la cifra, no uno por aspirante.</li>
+        <li><b>Visitas:</b> un día antes de cada visita (con cuántas cartas de beca llevar) y si a una semana aún no se pide permiso a la prepa.</li>
+        <li>Los avisos no muestran nombres ni teléfonos, solo cifras. Se borran solos a los 60 días.</li>
+        <li>Se revisan cada 5 minutos <b>mientras el programa está abierto</b> en la PC del sistema. Si estuvo apagada, los avisos llegan al volver a abrirlo.</li>
+      </ul>
+      <a class="gu-ir" href="{% url 'prospectos:avisos' %}">Ir a Avisos<span class="material-symbols-outlined">arrow_forward</span></a>
+    </section>
+
     <section class="gu-guia" id="familias" data-palabras="familia tutor mama papa unir duplicados alumno encuesta padres">
       <header><span class="gu-icono"><span class="material-symbols-outlined">family_restroom</span></span><div><h2>Unir al alumno con su familia</h2><p>La encuesta de la familia y la del alumno se juntan en una sola ficha.</p></div></header>
       <ol class="gu-pasos">

@@ -1,10 +1,15 @@
 from django.urls import path
 
-from . import views
+from . import views, vistas_avisos
 
 app_name = 'prospectos'
 urlpatterns = [
     path('cola/', views.cola, name='cola'),
+    path('avisos/', vistas_avisos.bandeja, name='avisos'),
+    path('avisos/panel/', vistas_avisos.panel, name='avisos_panel'),
+    path('avisos/contador/', vistas_avisos.contador, name='avisos_contador'),
+    path('avisos/<int:pk>/', vistas_avisos.abrir, name='aviso_abrir'),
+    path('avisos/leer-todo/', vistas_avisos.leer_todo, name='avisos_leer_todo'),
     path('familias/', views.familias_por_unir, name='familias'),
     path('publicar/', views.publicar_google, name='publicar'),
     path('apariencia/', views.apariencia, name='apariencia'),

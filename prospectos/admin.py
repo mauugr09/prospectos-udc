@@ -735,6 +735,9 @@ class ProspectoAdmin(AccionesFila, ModelAdmin):
             super().save_model(request, obj, form, change)
         if form.changed_data:
             auditoria.registrar('editar', obj, {'campos': list(form.changed_data)}, request=request)
+        if 'asesor' in form.changed_data and obj.asesor_id:
+            from .servicios import avisos
+            avisos.asignado(obj.asesor, obj, por=request.user)
 
     def save_formset(self, request, form, formset, change):
         formset.new_objects, formset.changed_objects, formset.deleted_objects = [], [], []

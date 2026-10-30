@@ -6,6 +6,7 @@ Tareas periódicas dentro del mismo programa (sustituye al cron/scheduler):
   - respaldo + rotación: diario a RESPALDO_HORA (o al arrancar si el último tiene > 24 h)
   - verificación del respaldo: semanal
   - retención / purga de cuarentena: diario
+  - avisos de la campanita: cada 5 min (deduplicados; ver servicios/avisos.py)
 
 Limitación honesta: solo corre mientras el programa está abierto. Si la PC está apagada,
 lo pendiente se hace al volver a abrirlo (la importación es incremental y no pierde nada).
@@ -49,7 +50,7 @@ class Programador(threading.Thread):
 
     def run(self):
         from .models import Configuracion, Respaldo
-        from .servicios import importacion, respaldos, seguimiento, seguridad
+        from .servicios import avisos, importacion, respaldos, seguimiento, seguridad
 
         cada_import = max(1, int(settings.CONFIG.get('IMPORTADOR_CADA_MINUTOS', 1))) * 60
         hh, mm = (int(x) for x in settings.PROSPECTOS['RESPALDO_HORA'].split(':'))
@@ -98,6 +99,8 @@ class Programador(threading.Thread):
                 self._correr('bienvenidas', seguimiento.reintentar_bienvenidas)
             if self._toca('tareas', 3600):
                 self._correr('tareas', seguimiento.generar_tareas_sin_contacto)
+            if self._toca('avisos', 300):
+                self._correr('avisos', avisos.revisar)
             if self._toca('respaldo', 300):
                 self._correr('respaldo', respaldar)
             if self._toca('verificar', 3600):

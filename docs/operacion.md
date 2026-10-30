@@ -158,6 +158,13 @@ descárgalo otra vez).
    (o Descartado).
 5. Si pasan **5 días sin contacto**, el sistema crea una tarea automática.
 
+## Avisos (campanita)
+
+- Arriba a la derecha. El número rojo son los avisos sin leer; al abrir uno se marca como leído.
+- **Ver todos** → elegir qué avisos recibir. Los problemas del sistema solo les llegan a los administradores y no se apagan: si aparece «Falló el respaldo» o «No se pudieron traer las respuestas», atiéndelo el mismo día (ver «Si algo falla»).
+- Las llamadas vencidas llegan como un aviso al día con la cifra; el detalle está en *A quién llamar hoy*.
+- Se generan cada 5 minutos solo mientras el programa está abierto en la PC del sistema.
+
 ## Posibles duplicados (revisar al menos 2 veces por semana)
 
 Aparecen cuando el sistema **no está seguro** de que dos respuestas sean de la misma familia

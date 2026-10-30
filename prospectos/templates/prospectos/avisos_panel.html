@@ -1,0 +1,12 @@
+<header class="av-panel-cabecera">
+  <h2>Avisos</h2>
+  {% if sin_leer %}<button type="button" class="av-leer-todo">Marcar todo como leído</button>{% endif %}
+</header>
+{% if avisos_lista %}
+<ol class="av-lista">
+  {% for n in avisos_lista %}{% include "prospectos/_aviso.html" %}{% endfor %}
+</ol>
+{% else %}
+<div class="av-vacio"><span class="material-symbols-outlined">notifications_off</span><p>No tienes avisos.</p></div>
+{% endif %}
+<a class="av-ver-todos" href="{% url 'prospectos:avisos' %}">Ver todos y elegir qué avisos recibir</a>

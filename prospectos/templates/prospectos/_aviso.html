@@ -1,0 +1,8 @@
+<li class="av-item av-{{ n.tipo }}{% if not n.leida_en %} av-nuevo{% endif %}">
+  <a href="{% url 'prospectos:aviso_abrir' n.pk %}">
+    <span class="av-icono material-symbols-outlined" aria-hidden="true">{{ n.icono }}</span>
+    <span class="av-texto"><b>{{ n.titulo }}</b>{% if n.detalle %}<small>{{ n.detalle }}</small>{% endif %}
+      <time datetime="{{ n.actualizada_en|date:'c' }}">{{ n.hace }}</time></span>
+    {% if not n.leida_en %}<span class="av-punto" aria-label="sin leer"></span>{% endif %}
+  </a>
+</li>

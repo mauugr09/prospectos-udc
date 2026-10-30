@@ -1,0 +1,28 @@
+{% load i18n static unfold %}
+
+{% if not is_popup %}
+    <div class="flex flex-row gap-3 items-center ml-auto">
+        {% if environment %}
+            {% include "unfold/helpers/label.html" with text=environment.0 type=environment.1 %}
+        {% endif %}
+
+        {% action_list %}
+
+        {% if nav_global_side %}
+            {{ nav_global_side }}
+        {% endif %}
+
+        {% if avisos_sin_leer is not None %}
+        <div class="av-campana" id="av-campana" data-panel="{% url 'prospectos:avisos_panel' %}" data-contador="{% url 'prospectos:avisos_contador' %}"
+             data-leer="{% url 'prospectos:avisos_leer_todo' %}" data-csrf="{{ csrf_token }}">
+            <button type="button" class="av-boton" aria-haspopup="true" aria-expanded="false" aria-controls="av-panel"
+                    aria-label="Avisos{% if avisos_sin_leer %}: {{ avisos_sin_leer }} sin leer{% endif %}">
+                <span class="material-symbols-outlined">notifications</span>
+                <b class="av-cifra"{% if not avisos_sin_leer %} hidden{% endif %}>{% if avisos_sin_leer > 99 %}99+{% else %}{{ avisos_sin_leer }}{% endif %}</b>
+            </button>
+            <div class="av-panel" id="av-panel" role="dialog" aria-label="Avisos" hidden></div>
+        </div>
+        <script src="{% static 'prospectos/js/avisos.js' %}" defer></script>
+        {% endif %}
+    </div>
+{% endif %}
