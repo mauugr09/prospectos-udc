@@ -116,6 +116,7 @@ def activar(perfil, secreto: str, texto: str) -> list[str] | None:
 
 
 def desactivar(perfil) -> None:
+    olvidar_dispositivos(perfil.usuario)
     perfil.dos_pasos_secreto, perfil.dos_pasos_activo, perfil.dos_pasos_codigos = None, False, []
     perfil.dos_pasos_ultimo, perfil.dos_pasos_desde = 0, None
     perfil.save(update_fields=['dos_pasos_secreto', 'dos_pasos_activo', 'dos_pasos_codigos', 'dos_pasos_ultimo', 'dos_pasos_desde'])
@@ -132,3 +133,81 @@ def obligatoria(usuario) -> bool:
     if settings.CONFIG.get('DOS_PASOS_TODOS'):
         return True
     return bool(usuario.is_superuser and settings.CONFIG.get('DOS_PASOS_ADMINS', True))
+
+
+# --------------------------------------------------------------------------- computadoras de confianza
+# Pedir el código en cada entrada cansa y la gente termina apagándolo. Se pide solo cuando hay motivo:
+#   - computadora o navegador nuevo (sin la cookie), o la cookie venció (DIAS_CONFIANZA);
+#   - la entrada viene de otra red (otra /24 en IPv4) que la de la última vez;
+#   - hubo contraseñas equivocadas para esa cuenta justo antes de entrar;
+#   - la contraseña cambió desde que se confió en esa computadora.
+# En una PC compartida, «confiar» significa que quien sepa la contraseña entra desde ESA PC sin código.
+COOKIE = 'prospectos_confianza'
+DIAS_CONFIANZA = 30
+
+
+def _hash_token(token: str) -> str:
+    return hashlib.sha256(f'{settings.SECRET_KEY}|confianza|{token}'.encode()).hexdigest()
+
+
+def _huella_clave(usuario) -> str:
+    return hashlib.sha256(f'{settings.SECRET_KEY}|{usuario.password}'.encode()).hexdigest()[:16]
+
+
+def red_de(ip: str) -> str:
+    import ipaddress
+    try:
+        d = ipaddress.ip_address((ip or '').strip())
+    except ValueError:
+        return ''
+    if d.is_loopback:
+        return 'local'
+    if d.version == 4:
+        return str(ipaddress.ip_network(f'{d}/24', strict=False))
+    return str(ipaddress.ip_network(f'{d}/64', strict=False))
+
+
+def _nombre_navegador(agente: str) -> str:
+    a = agente or ''
+    nav = next((n for k, n in (('Edg/', 'Edge'), ('OPR/', 'Opera'), ('Firefox/', 'Firefox'), ('Chrome/', 'Chrome'), ('Safari/', 'Safari')) if k in a), 'Navegador')
+    so = next((n for k, n in (('Windows', 'Windows'), ('Mac OS', 'Mac'), ('Android', 'Android'), ('iPhone', 'iPhone'), ('iPad', 'iPad'), ('Linux', 'Linux')) if k in a), '')
+    return f'{nav} en {so}' if so else nav
+
+
+def confiar(request, respuesta) -> None:
+    """Recuerda esta computadora DIAS_CONFIANZA días (cookie HttpOnly con un token; en la base solo su hash)."""
+    from datetime import timedelta
+
+    from ..models import DispositivoConfianza
+    token = secrets.token_urlsafe(32)
+    ahora = timezone.now()
+    DispositivoConfianza.objects.create(
+        usuario=request.user, token_hash=_hash_token(token), nombre=_nombre_navegador(request.META.get('HTTP_USER_AGENT', ''))[:80],
+        red=red_de(request.META.get('REMOTE_ADDR', '')), clave_huella=_huella_clave(request.user), vence_en=ahora + timedelta(days=DIAS_CONFIANZA))
+    respuesta.set_cookie(COOKIE, token, max_age=DIAS_CONFIANZA * 86400, httponly=True, samesite='Lax', secure=request.is_secure())
+
+
+def motivo_para_pedir(request) -> str | None:
+    """None si esta computadora es de confianza y nada se ve raro; si no, por qué se pide el código."""
+    from ..models import DispositivoConfianza
+    token = request.COOKIES.get(COOKIE)
+    if not token:
+        return 'nueva'
+    d = DispositivoConfianza.objects.filter(usuario=request.user, token_hash=_hash_token(token)).first()
+    if not d or d.vence_en <= timezone.now():
+        return 'nueva'
+    if d.clave_huella != _huella_clave(request.user):
+        return 'contraseña cambiada'
+    if request.session.get('intentos_previos', 0) >= 3:
+        return 'intentos fallidos'
+    red = red_de(request.META.get('REMOTE_ADDR', ''))
+    if d.red and red and red != d.red:
+        return 'otra red'
+    d.usado_en = timezone.now()
+    d.save(update_fields=['usado_en'])
+    return None
+
+
+def olvidar_dispositivos(usuario) -> int:
+    from ..models import DispositivoConfianza
+    return DispositivoConfianza.objects.filter(usuario=usuario).delete()[0]

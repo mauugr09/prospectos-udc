@@ -18,6 +18,7 @@ import time
 from datetime import timedelta
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import close_old_connections
 from django.utils import timezone
 
@@ -98,6 +99,25 @@ class Programador(threading.Thread):
             Configuracion.guardar('programador.retencion', hoy)
             return r
 
+        def mantenimiento():
+            """Una vez al día (SQLite): estadísticas para las consultas, vaciar el diario WAL y revisión rápida de integridad."""
+            from django.db import connection
+            hoy = timezone.localdate().isoformat()
+            if connection.vendor != 'sqlite' or Configuracion.obtener('programador.mantenimiento') == hoy:
+                return None
+            with connection.cursor() as c:
+                c.execute('PRAGMA optimize')
+                c.execute('PRAGMA wal_checkpoint(TRUNCATE)')
+                c.execute('PRAGMA quick_check')
+                estado = c.fetchone()[0]
+            Configuracion.guardar('programador.mantenimiento', hoy)
+            if estado != 'ok':
+                from .models import TipoAviso
+                for u in get_user_model().objects.filter(is_superuser=True, is_active=True):
+                    avisos.avisar(u, TipoAviso.SISTEMA, 'bd-integridad', 'La base de datos tiene un error de integridad',
+                                  'Restaura el último respaldo verificado (Protección de datos) y avisa a soporte.', '')
+            return f'base: {estado}'
+
         def importar():
             regs = importacion.importar_todos()
             nuevas = sum(r.nuevas + r.actualizadas for r in regs)
@@ -121,6 +141,8 @@ class Programador(threading.Thread):
                 self._correr('verificar', verificar)
             if self._toca('retencion', 3600):
                 self._correr('retencion', retencion)
+            if self._toca('mantenimiento', 3600):
+                self._correr('mantenimiento', mantenimiento)
             # Al final: así ve el respaldo recién hecho y no avisa en falso al abrir el programa.
             if self._toca('avisos', 300):
                 self._correr('avisos', avisos.revisar)

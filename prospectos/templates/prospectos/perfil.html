@@ -57,6 +57,22 @@
         <a class="udc-btn {% if perfil.dos_pasos_activo %}secundario {% endif %}chico" href="{% url 'prospectos:dos_pasos' %}">{% if perfil.dos_pasos_activo %}Administrar{% else %}Activar{% endif %}</a>
       </div>
 
+      {% if perfil.dos_pasos_activo %}
+      <div class="pf-dispositivos">
+        <h3>Computadoras donde no se pide el código</h3>
+        {% for d in dispositivos %}
+        <form method="post" class="pf-disp">{% csrf_token %}<input type="hidden" name="accion" value="olvidar"><input type="hidden" name="id" value="{{ d.pk }}">
+          <span class="material-symbols-outlined" aria-hidden="true">computer</span>
+          <div><b>{{ d.nombre|default:"Navegador" }}</b><small>Última vez {{ d.usado_en|date:"j M, H:i" }} · hasta el {{ d.vence_en|date:"j M" }}</small></div>
+          <button class="udc-btn secundario chico">Olvidar</button>
+        </form>
+        {% empty %}<p class="pf-nota" style="margin:0">Ninguna: se pide el código cada vez que entras.</p>{% endfor %}
+        {% if dispositivos|length > 1 %}<form method="post">{% csrf_token %}<input type="hidden" name="accion" value="olvidar">
+          <button class="pf-enlace">Olvidar todas</button></form>{% endif %}
+        <p class="pf-nota">Aunque sea de confianza, se vuelve a pedir si entras desde otra red, si hubo contraseñas equivocadas o si cambió tu contraseña.</p>
+      </div>
+      {% endif %}
+
       <form method="post" class="pf-form pf-clave">{% csrf_token %}<input type="hidden" name="accion" value="clave">
         <h3>Cambiar tu contraseña</h3>
         <div class="pf-rejilla">
@@ -79,6 +95,12 @@
           <span class="av-icono material-symbols-outlined" aria-hidden="true">pets</span>
           <span class="av-texto"><b>Mostrar a {{ mascota_nombre }} en el menú</b><small>Si lo apagas, sigue arriba a la derecha.</small></span>
           <input type="checkbox" class="av-switch" name="kuali_visible" value="1"{% if not perfil.kuali_oculto %} checked{% endif %}>
+        </label>
+        <label class="av-pref">
+          <span class="av-icono material-symbols-outlined" aria-hidden="true">volume_up</span>
+          <span class="av-texto"><b>Sonido al llegar un aviso</b><small>Además de la ventanita en la esquina. <button type="button" class="pf-enlace" id="pf-probar-sonido">Probar</button>
+            · <button type="button" class="pf-enlace" id="pf-permiso-so">Avisarme aunque esté en otra ventana</button></small></span>
+          <input type="checkbox" class="av-switch" name="avisos_sonido" value="1"{% if perfil.avisos_sonido %} checked{% endif %}>
         </label>
         <p class="pf-sub">Qué avisos recibir en la campanita</p>
         {% for t in tipos %}

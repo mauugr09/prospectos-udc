@@ -19,6 +19,12 @@
       <div><small>Llave de recuperación</small><b>{% if llave_descargada %}Guardada{% else %}No descargada{% endif %}</b>
         <span>{% if llave_descargada %}{{ llave_descargada.creado_en|date:"j M Y" }}{% else %}Sin ella, una copia no sirve{% endif %}</span></div>
     </div>
+    <div class="pd-tile {% if disco.estado == 'si' %}bien{% elif disco.estado == 'no' %}mal{% else %}regular{% endif %}">
+      <span class="material-symbols-outlined">{% if disco.estado == 'si' %}enhanced_encryption{% else %}no_encryption{% endif %}</span>
+      <div><small>Disco cifrado ({{ disco.nombre }})</small>
+        <b>{% if disco.estado == 'si' %}Sí{% elif disco.estado == 'no' %}No{% elif disco.estado == 'suspendido' %}Suspendido{% else %}No se sabe{% endif %}</b>
+        <span>{% if disco.estado == 'si' %}Si se roban la PC, no se puede leer nada{% else %}<a href="#disco" class="underline">Cómo activarlo</a>{% endif %}</span></div>
+    </div>
   </section>
 
   <section class="grupo">
@@ -39,6 +45,17 @@
         <li>Si la memoria no está conectada, se reintenta sola cada media hora y te avisa si pasan 2 días sin copia.</li>
         <li>No uses una carpeta de OneDrive, Drive o Dropbox para la base, pero sí puedes usarla para estas copias cifradas.</li>
       </ul>
+    </div>
+  </section>
+
+  <section class="grupo" id="disco">
+    <header class="grupo-cabecera"><h2>Cifrado del disco</h2></header>
+    <div class="grupo-cuerpo">
+      <p class="pd-texto">El programa ya <b>cifra</b> correos, teléfonos, CURP y la respuesta completa de cada Form. Los nombres y las cifras
+        no se pueden cifrar sin perder la búsqueda y la unión de familias, y las llaves viven en <code>config.json</code>, en la misma carpeta.
+        Por eso, si alguien se lleva la computadora o el disco, lo único que protege <b>todo</b> es cifrar el disco con {{ disco.nombre }}.</p>
+      <p class="pd-texto"><b>Cómo:</b> {{ disco.como }}</p>
+      <a class="udc-btn secundario chico" href="?revisar=1#disco"><span class="material-symbols-outlined">refresh</span>Revisar otra vez</a>
     </div>
   </section>
 

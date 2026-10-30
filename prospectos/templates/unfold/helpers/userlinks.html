@@ -19,7 +19,8 @@
           {% include "prospectos/_kuali.svg.html" with k_id="cab" %}<span class="as-abrir-texto">{{ mascota_nombre }}</span></button>
         <script src="{% static 'prospectos/js/asistente.js' %}" defer></script>
         <div class="av-campana" id="av-campana" data-panel="{% url 'prospectos:avisos_panel' %}" data-contador="{% url 'prospectos:avisos_contador' %}"
-             data-leer="{% url 'prospectos:avisos_leer_todo' %}" data-csrf="{{ csrf_token }}">
+             data-leer="{% url 'prospectos:avisos_leer_todo' %}" data-csrf="{{ csrf_token }}" data-usuario="{{ request.user.pk }}"
+             data-sonido="{% if request.user.perfil.avisos_sonido is False %}0{% else %}1{% endif %}" data-icono="{% static 'prospectos/marca/favicon.svg' %}">
             <button type="button" class="av-boton" aria-haspopup="true" aria-expanded="false" aria-controls="av-panel"
                     aria-label="Avisos{% if avisos_sin_leer %}: {{ avisos_sin_leer }} sin leer{% endif %}">
                 <span class="material-symbols-outlined">notifications</span>

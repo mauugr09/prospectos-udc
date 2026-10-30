@@ -72,6 +72,9 @@ def _primera_vez():
     print(' (Para capacitar sin datos reales usa OTRA carpeta: Prospectos.exe demo)')
     print('=' * 70)
     call_command('crear_admin')
+    from prospectos.servicios import semillas
+    if semillas.forms_predeterminados():
+        print('Se registraron los Forms de la UDC (alumno y padres). Falta «Conectar con Google» (ver Primeros pasos).')
 
 
 def _pausa():

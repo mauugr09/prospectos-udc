@@ -964,6 +964,26 @@ body.acceso-udc { --ac-azul: #14214f; background: #0b1230 !important; min-height
 @keyframes ac-brillo { 0% { transform: translateX(-120%); } 35%, 100% { transform: translateX(120%); } }
 
 .ac-lado { position: absolute; left: 0; bottom: 0; width: 58%; padding: 40px 44px; color: #fff; }
+/* Los dos escudos: se dibujan (contorno), se rellenan y quedan «respirando» con un brillo que pasa. */
+.ac-escudos { display: flex; gap: 14px; margin-bottom: 22px; }
+.ac-escudo { display: flex; align-items: center; gap: 10px; padding: 9px 14px 9px 10px; border-radius: 16px; font-size: 12px; line-height: 1.15;
+  background: rgba(255,255,255,.14); -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.22); animation: ac-sube .8s cubic-bezier(.2, .8, .2, 1) both; position: relative; overflow: hidden; }
+.ac-escudo:nth-child(1) { animation-delay: .25s; } .ac-escudo:nth-child(2) { animation-delay: .45s; }
+.ac-escudo b { font-size: 15px; font-weight: 700; letter-spacing: .01em; }
+.ac-escudo::after { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%);
+  transform: translateX(-130%); animation: ac-destello 6s ease-in-out 3s infinite; }
+.ac-escudo:nth-child(2)::after { animation-delay: 3.4s; }
+@keyframes ac-destello { 0% { transform: translateX(-130%); } 25%, 100% { transform: translateX(130%); } }
+.escudo { display: block; height: 46px; width: auto; color: #fff; }
+.escudo path { fill: currentColor; stroke: currentColor; stroke-width: 14; stroke-dasharray: 1; stroke-dashoffset: 1; fill-opacity: 0;
+  animation: escudo-traza 1.6s cubic-bezier(.6, 0, .2, 1) forwards, escudo-relleno .7s ease forwards; }
+.ac-escudo:nth-child(1) .escudo path { animation-delay: .5s, 1.7s; } .ac-escudo:nth-child(2) .escudo path { animation-delay: .8s, 2s; }
+.ac-escudo:nth-child(1) .escudo { animation: escudo-respira 5s ease-in-out 2.6s infinite; }
+.ac-escudo:nth-child(2) .escudo { animation: escudo-respira 5s ease-in-out 3.1s infinite; }
+@keyframes escudo-traza { to { stroke-dashoffset: 0; } }
+@keyframes escudo-relleno { to { fill-opacity: 1; stroke-width: 0; } }
+@keyframes escudo-respira { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-2px) scale(1.04); } }
 .ac-eyebrow { font-size: 13px; letter-spacing: .04em; opacity: .85; margin-bottom: 10px; animation: ac-sube .8s .35s both; }
 .ac-lema { font-size: clamp(30px, 3.6vw, 44px); line-height: 1.08; font-weight: 700; letter-spacing: -.02em; text-shadow: 0 2px 24px rgba(0,0,0,.35);
   animation: ac-sube .9s .45s cubic-bezier(.2, .8, .2, 1) both; }
@@ -1002,6 +1022,8 @@ body.acceso-udc { --ac-azul: #14214f; background: #0b1230 !important; min-height
 .ac-aviso { background: rgba(255,255,255,.16); box-shadow: inset 0 0 0 1px rgba(255,255,255,.3); }
 .ac-aviso.error { background: rgba(255, 90, 90, .25); } .ac-aviso.success { background: rgba(70, 200, 120, .25); }
 .ac-salir { margin-top: 14px; text-align: center; }
+.ac-check { display: flex; gap: 10px; align-items: flex-start; font-size: 12.5px; line-height: 1.4; opacity: .9; cursor: pointer; }
+.ac-check input { margin-top: 2px; width: 16px; height: 16px; accent-color: #fff; flex: none; }
 .ac-salir button { background: none; border: 0; color: #fff; opacity: .85; font-size: 13px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 
 @media (max-width: 760px) {
@@ -1010,13 +1032,16 @@ body.acceso-udc { --ac-azul: #14214f; background: #0b1230 !important; min-height
   .ac-foto { position: relative; height: 260px; flex: none; }
   .ac-lado { width: 100%; top: 0; bottom: auto; height: 260px; padding: 24px; display: flex; flex-direction: column; justify-content: flex-end; }
   .ac-chip { display: none; }
+  .ac-escudos { margin-bottom: 12px; } .ac-escudo { padding: 6px 10px 6px 8px; } .escudo { height: 34px; }
   .ac-lema { font-size: 30px; }
   .ac-panel { position: relative; width: 100%; flex: 1; padding: 28px 24px 36px; justify-content: flex-start;
     background: linear-gradient(180deg, #1b2a66, #0d1638); backdrop-filter: none; box-shadow: none; }
   .ac-marca { position: static; margin-bottom: 22px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ac-fondo, .ac-foto-img, .ac-nubes, .ac-brillo, .ac-tarjeta, .ac-panel, .ac-lema, .ac-eyebrow, .ac-chip { animation: none !important; }
+  .ac-fondo, .ac-foto-img, .ac-nubes, .ac-brillo, .ac-tarjeta, .ac-panel, .ac-lema, .ac-eyebrow, .ac-chip, .ac-escudo, .ac-escudo::after,
+  .escudo, .escudo path { animation: none !important; }
+  .escudo path { fill-opacity: 1; stroke-width: 0; }
   .ac-brillo { display: none; }
 }
 
@@ -1435,7 +1460,7 @@ button.udc-btn.fm-confirmando { background-color: var(--c-rojo); color: #fff; }
 
 /* ============================================================ protección de datos */
 .pd { display: grid; gap: 18px; max-width: 900px; }
-.pd-estado { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--c-separador); overflow: hidden; }
+.pd-estado { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1px; background: var(--c-separador); overflow: hidden; }
 .pd-tile { display: flex; gap: 12px; align-items: flex-start; padding: 16px; background: var(--c-superficie); }
 .pd-tile > .material-symbols-outlined { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; font-size: 21px; }
 .pd-tile.bien > .material-symbols-outlined { background: rgba(36,138,61,.12); color: var(--c-verde); }
@@ -1465,6 +1490,25 @@ button.udc-btn.fm-confirmando { background-color: var(--c-rojo); color: #fff; }
 .pd-union-texto em { font-style: normal; font-weight: 600; color: var(--c-rojo); background: rgba(215,0,21,.10); padding: 0 7px; border-radius: 8px; }
 @media (max-width: 720px) { .pd-estado { grid-template-columns: 1fr; } }
 
+/* ---------------------------------------------------------------- avisos nuevos: ventanitas flotantes */
+.av-flotantes { position: fixed; right: 18px; bottom: 18px; z-index: 80; display: flex; flex-direction: column; gap: 10px; width: min(380px, calc(100vw - 32px)); pointer-events: none; }
+.av-flotante { pointer-events: auto; display: flex; align-items: center; gap: 12px; padding: 12px 10px 12px 14px; border-radius: 16px;
+  background: var(--c-material-fuerte, var(--c-superficie)); color: var(--c-texto); box-shadow: var(--c-sombra-flota), 0 0 0 .5px var(--c-separador);
+  -webkit-backdrop-filter: var(--vidrio); backdrop-filter: var(--vidrio); animation: av-entra .45s cubic-bezier(.2, .9, .3, 1.2) both; }
+.av-flotante.saliendo { animation: av-sale .3s ease both; }
+@keyframes av-entra { from { opacity: 0; transform: translateY(16px) scale(.96); } }
+@keyframes av-sale { to { opacity: 0; transform: translateX(24px); } }
+.av-flotante .av-icono { flex: none; animation: av-timbre 1s ease .25s 2; }
+@keyframes av-timbre { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-14deg); } 40% { transform: rotate(12deg); } 60% { transform: rotate(-8deg); } 80% { transform: rotate(4deg); } }
+.av-flotante-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.av-flotante-texto b { font-size: 14px; font-weight: 600; line-height: 1.3; }
+.av-flotante-texto small { font-size: 12.5px; color: var(--c-texto-2); line-height: 1.35; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.av-flotante-ver { flex: none; font-size: 13px; font-weight: 600; color: var(--c-acento); padding: 6px 8px; border-radius: 8px; }
+.av-flotante-ver:hover { background: var(--c-relleno); }
+.av-flotante-x { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: var(--c-texto-3); }
+.av-flotante-x:hover { background: var(--c-relleno); } .av-flotante-x .material-symbols-outlined { font-size: 18px; }
+@media (prefers-reduced-motion: reduce) { .av-flotante, .av-flotante .av-icono { animation: none; } }
+
 /* ---------------------------------------------------------------- Otras computadoras */
 .red-codigo { font: 700 28px/1.2 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .06em; color: var(--c-texto); margin: 2px 0 10px; }
 
@@ -1491,6 +1535,8 @@ button.udc-btn.fm-confirmando { background-color: var(--c-rojo); color: #fff; }
 .pf-campo input, .pf-campo textarea { width: 100%; font-family: inherit; }
 .pf-campo textarea { resize: vertical; min-height: 72px; padding-top: 8px; }
 .pf-nota { margin-top: 10px; font-size: 13px; color: var(--c-texto-3); }
+.pf-enlace { color: var(--c-acento); font-weight: 500; background: none; border: 0; padding: 0; cursor: pointer; }
+.pf-enlace:disabled { color: var(--c-texto-3); cursor: default; }
 .pf-2p { display: flex; gap: 12px; align-items: center; padding: 14px; border-radius: 12px; background: var(--c-relleno); margin-bottom: 20px; }
 .pf-2p > .material-symbols-outlined { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; font-size: 22px;
   background: var(--c-superficie); color: var(--c-texto-2); }
@@ -1498,6 +1544,10 @@ button.udc-btn.fm-confirmando { background-color: var(--c-rojo); color: #fff; }
 .pf-2p.mal > .material-symbols-outlined { background: rgba(215,0,21,.10); color: var(--c-rojo); }
 .pf-2p > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .pf-2p b { font-size: 15px; font-weight: 600; color: var(--c-texto); } .pf-2p span { font-size: 13px; color: var(--c-texto-2); }
+.pf-dispositivos { margin-bottom: 22px; } .pf-dispositivos h3 { font-size: 15px; font-weight: 600; color: var(--c-texto); margin-bottom: 8px; }
+.pf-disp { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: .5px solid var(--c-separador); }
+.pf-disp > .material-symbols-outlined { color: var(--c-texto-2); } .pf-disp > div { flex: 1; display: flex; flex-direction: column; }
+.pf-disp b { font-size: 14px; font-weight: 550; color: var(--c-texto); } .pf-disp small { font-size: 12px; color: var(--c-texto-2); }
 .pf-clave h3, .pf-sub { font-size: 15px; font-weight: 600; color: var(--c-texto); margin: 4px 0 12px; }
 .pf-sub { margin: 18px 0 4px; font-size: 13px; color: var(--c-texto-2); font-weight: 600; }
 .pf-tema { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; margin-bottom: 6px; border-bottom: .5px solid var(--c-separador);

@@ -143,13 +143,14 @@ def test_campanita_panel_abrir_y_leer_todo(client, promotor):
     avisos.avisar(promotor, TipoAviso.EVENTO, 'b', 'Otra', url='https://malo.example.com/')
     html = client.get('/admin/').content.decode()
     assert 'id="av-campana"' in html and 'class="av-cifra">2<' in html
-    assert client.get(URL + 'contador/').json() == {'sin_leer': 2}
+    j = client.get(URL + 'contador/').json()
+    assert j['sin_leer'] == 2 and len(j['recientes']) == 2 and all(a['url'].startswith('/admin/herramientas/avisos/') for a in j['recientes'])
     assert 'Visita mañana' in client.get(URL + 'panel/').content.decode()
     r = client.get(f'{URL}{a.pk}/')
     assert r.status_code == 302 and r.url == '/admin/herramientas/calendario/'
     otra = Notificacion.objects.get(clave='b')
     assert client.get(f'{URL}{otra.pk}/').url == URL  # nunca redirige fuera del sistema
-    assert client.get(URL + 'contador/').json() == {'sin_leer': 0}
+    assert client.get(URL + 'contador/').json() == {'sin_leer': 0, 'recientes': []}
     avisos.avisar(promotor, TipoAviso.EVENTO, 'c', 'Tercera')
     assert client.post(URL + 'leer-todo/', HTTP_X_REQUESTED_WITH='fetch').json() == {'sin_leer': 0}
 

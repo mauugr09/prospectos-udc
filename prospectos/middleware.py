@@ -89,7 +89,10 @@ def _fallo(sender, credentials, request=None, **kw):
 
 @receiver(user_logged_in)
 def _entro(sender, request, user, **kw):
+    previos = cache.get(_llaves(user.get_username(), _ip(request))[0], 0)
     cache.delete(_llaves(user.get_username(), _ip(request))[0])
+    if request is not None and hasattr(request, 'session'):
+        request.session['intentos_previos'] = previos  # la verificación en 2 pasos lo toma como sospecha
     if request is not None and hasattr(request, 'session'):
         request.session['ultima_actividad'] = time.time()
         request.session.pop('dos_pasos_ok', None)  # cada entrada con contraseña vuelve a pedir el código
@@ -160,7 +163,9 @@ class VerificacionEnDosPasos:
             from .servicios import dos_pasos
             perfil = Perfil.de(u)
             salir = reverse('admin:logout')
-            if perfil.dos_pasos_activo:
+            if perfil.dos_pasos_activo and dos_pasos.motivo_para_pedir(request) is None:
+                request.session[SESION_DOS_PASOS] = u.pk  # computadora de confianza y nada raro: no se pide el código
+            elif perfil.dos_pasos_activo:
                 verificar = reverse('prospectos:verificar')
                 if request.path not in (verificar, salir):
                     if request.headers.get('x-requested-with') == 'fetch':

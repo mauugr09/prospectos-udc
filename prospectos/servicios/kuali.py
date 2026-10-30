@@ -687,6 +687,11 @@ def _primer_nombre(p) -> str:
     return (p.nombre_aspirante or '').split()[0].capitalize() if p and p.nombre_aspirante else 'el aspirante'
 
 
+def _universidad(perfil: dict) -> str:
+    """Cada plantel es su propia universidad: el aspirante de Tultepec escucha «Universidad de Tultepec»."""
+    return 'la Universidad de Tultepec' if 'tultepec' in str(perfil.get('plantel') or '').lower() else 'la Universidad de Cuautitlán'
+
+
 def _asesor(user) -> str:
     return (user.first_name or user.get_username().split('@')[0]).split()[0].capitalize()
 
@@ -704,7 +709,7 @@ def r_ficha_llamada(user, ent, contexto) -> dict:
                 'Solicitó inscripción': 'Ayudarle a terminar la inscripción: documentos y pago.'}.get(perfil['estatus'], 'Dar seguimiento.')
     interes = carreras[0] if carreras else None
     lineas = [f"**Objetivo:** {objetivo}",
-              f"**Cómo abrir:** «Hola, {nombre}, soy {asesor} de la Universidad de Cuautitlán. Vi que te interesa "
+              f"**Cómo abrir:** «Hola, {nombre}, soy {asesor} de {_universidad(perfil)}. Vi que te interesa "
               f"{interes if interes else 'conocer nuestras carreras'}; ¿tienes cinco minutos?»", '', '**Preguntas clave:**']
     preguntas = []
     difs = perfil['diferencias_con_la_familia']
@@ -758,17 +763,16 @@ def r_ficha_mensaje(user, ent, contexto) -> dict:
         return _salida([perfil['error']], [], None, None)
     nombre, asesor = _primer_nombre(p), _asesor(user)
     carrera = perfil['carreras'][0] if perfil['carreras'] else None
-    plantel = perfil.get('plantel')
     q = ent['q']
     motivo = 'el open house' if _tiene(q, r'open house|invit') else ('las becas' if _tiene(q, r'beca') else None)
     tema = f"de {carrera}" if carrera else 'de nuestras carreras'
     if not motivo:
         motivo = 'el open house' if perfil['estatus'] in ('Registrado', 'Contactado') else 'tu inscripción'
     becas = 'Busca beca o precio' in perfil['grupos']
-    cercana = (f"¡Hola, {nombre}! Soy {asesor}, de la Universidad de Cuautitlán{f' plantel {plantel}' if plantel else ''}. "
+    cercana = (f"¡Hola, {nombre}! Soy {asesor}, de {_universidad(perfil)}. "
                f"Vi que te interesa la carrera {tema} 🙂 ¿Te gustaría venir a {motivo} para conocer el plantel y resolver tus dudas"
                f"{' sobre becas' if becas else ''}?")
-    formal = (f"Buen día, {nombre}. Le saluda {asesor}, de Admisiones de la Universidad de Cuautitlán. Con gusto le compartimos "
+    formal = (f"Buen día, {nombre}. Le saluda {asesor}, de Admisiones de {_universidad(perfil)}. Con gusto le compartimos "
               f"información {tema}{' y de nuestros apoyos económicos' if becas else ''}. ¿Le interesaría agendar su visita a {motivo}?")
     from ..models import Perfil
     firma = Perfil.de(user).firma.strip()
