@@ -1,12 +1,8 @@
 {% extends "prospectos/base.html" %}
 {% load static %}
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'prospectos/vendor/leaflet/leaflet.css' %}">{% endblock %}
+{% block ayuda %}configuracion{% endblock %}
 {% block pagina %}
-<div class="ay-intro mb-5">
-  <span class="material-symbols-outlined">map</span>
-  <div><b>Sin llave el programa usa OpenStreetMap</b> (gratis, ya funciona). Con una llave de Google Maps, los mapas usan Google
-  y el buscador de «Ubicar preparatorias» encuentra escuelas por su nombre. Si la llave falla, se regresa solo a OpenStreetMap.</div>
-</div>
 
 <div class="grid gap-5 xl:grid-cols-2">
   <section class="tb-card">
@@ -32,25 +28,9 @@
   </section>
 
   <section class="tb-card text-sm">
-    <header><h2>Cómo sacar la llave (una sola vez, ~15 minutos)</h2></header>
-    <ol class="list-decimal ps-5 flex flex-col gap-2">
-      <li>Entra a <b>console.cloud.google.com</b> con la cuenta de la universidad y crea un proyecto (o usa el de los Forms).</li>
-      <li><b>Facturación:</b> Google exige ligar una cuenta de facturación (tarjeta) aunque no cobre. Tiene usos gratis cada mes
-        por servicio; lo que hace Admisiones queda muy por debajo. <b>Pon una alerta de presupuesto</b> (Facturación → Presupuestos y alertas), p. ej. de $100 MXN.</li>
-      <li><b>APIs y servicios → Biblioteca</b>, habilita: <b>Maps JavaScript API</b>, <b>Places API (New)</b> y <b>Geocoding API</b>.</li>
-      <li><b>APIs y servicios → Credenciales → Crear credenciales → Clave de API.</b></li>
-      <li>En la clave, <b>restríngela</b> (si no, cualquiera que la vea puede gastar a tu nombre):
-        <ul class="list-disc ps-5 mt-1">
-          <li><i>Restricciones de aplicación</i> → <b>Sitios web</b> → agrega <code>{{ origen }}/*</code> y <code>http://localhost:8000/*</code>.</li>
-          <li><i>Restricciones de API</i> → solo las tres de arriba.</li>
-        </ul></li>
-      <li>Copia la clave (empieza con <code>AIza</code>), pégala aquí y guarda.</li>
-    </ol>
-    <p class="mt-4 text-subtle">Si el mapa de prueba dice que Google rechazó la llave: revisa que la facturación esté activa, que estén
-      habilitadas las tres APIs y que la restricción de sitios web tenga exactamente <code>{{ origen }}/*</code>. Los cambios en la
-      consola de Google tardan unos minutos.</p>
-    <p class="mt-2 text-subtle">Qué se envía a Google: las coordenadas del mapa que estás viendo y lo que escribes en el buscador de
-      «Ubicar». Nunca datos de aspirantes.</p>
+    <header><h2>¿No tienes llave?</h2></header>
+    <p>Sin llave el programa usa OpenStreetMap y funciona igual; la llave solo mejora el buscador de escuelas.</p>
+    <a class="udc-btn chico secundario mt-3" href="{% url 'prospectos:ayuda' %}#llave-google"><span class="material-symbols-outlined">menu_book</span>Guía para sacar la llave</a>
   </section>
   <section class="tb-card text-sm xl:col-span-2" id="sedes">
     <header><h2>Dónde están los planteles</h2>

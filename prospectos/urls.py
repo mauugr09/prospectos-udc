@@ -7,6 +7,7 @@ urlpatterns = [
     path('cola/', views.cola, name='cola'),
     path('familias/', views.familias_por_unir, name='familias'),
     path('publicar/', views.publicar_google, name='publicar'),
+    path('demo/borrar/', views.borrar_demo, name='borrar_demo'),
     path('calendario/', views.calendario, name='calendario'),
     path('encuestas/', views.encuestas, name='encuestas'),
     path('respuestas/', views.respuestas, name='respuestas'),

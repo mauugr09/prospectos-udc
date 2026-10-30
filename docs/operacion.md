@@ -102,6 +102,14 @@ distancia al plantel y botones para **programar visita**, **ver aspirantes** y e
 Para ver los planteles y los anillos de 5, 10 y 15 km, un administrador pega sus coordenadas en
 **Configuración → Mapa → Dónde están los planteles** (clic derecho sobre el plantel en Google Maps → clic en los números).
 
+## Antes de usarlo con datos reales
+
+Si al instalar elegiste la demostración, el Inicio muestra «Hay datos de demostración». Crea tu usuario administrador
+real, entra con él y pulsa **Borrar**: se guarda un respaldo y se borran los prospectos, respuestas, eventos, prepas y
+usuarios ficticios. Lo real no se toca.
+
+Las explicaciones de cada pantalla están en **¿Cómo funciona?** (botón «Cómo se usa» junto a cada título).
+
 ## Calendario
 
 **Visitas a preparatorias → Calendario** junta en un mes las visitas (punto de color según su estado: por

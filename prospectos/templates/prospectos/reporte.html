@@ -2,7 +2,7 @@
 {% load unfold %}
 {% block encabezado %}<header class="pagina-cabecera">
   <h1 class="titulo-grande">Reporte ejecutivo</h1>
-  <p class="subtitulo">Del {{ desde|date:"j \d\e F" }} al {{ hasta|date:"j \d\e F \d\e Y" }}. Solo aspirantes con permiso, en cifras agregadas, sin datos personales.</p>
+  <p class="subtitulo">Del {{ desde|date:"j \d\e F" }} al {{ hasta|date:"j \d\e F \d\e Y" }}.</p>
 </header>{% endblock %}
 {% block pagina %}
 <form method="get" class="udc-panel mb-6 no-imprimir"><div class="udc-cuerpo flex flex-wrap gap-3 items-end">

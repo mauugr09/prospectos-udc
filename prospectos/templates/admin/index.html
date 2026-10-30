@@ -28,6 +28,13 @@
   </div>
   {% endif %}
 
+  {% if hay_demo %}
+  <a class="aviso aviso-ambar" href="{% url 'prospectos:borrar_demo' %}">
+    <span class="material-symbols-outlined">science</span><div><b>Hay datos de demostración.</b> Bórralos antes de empezar con datos reales.</div>
+    <span class="aviso-accion">Borrar<span class="material-symbols-outlined">chevron_right</span></span>
+  </a>
+  {% endif %}
+
   {% for e in eventos_hoy %}
   <a class="aviso aviso-vivo" href="{% url 'prospectos:evento_vivo' e.pk %}">
     <span class="udc-pulso"></span><div><b>Evento en curso en {{ e.preparatoria }}</b> <span class="text-subtle">({{ e.codigo }})</span></div>

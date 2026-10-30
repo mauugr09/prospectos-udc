@@ -1,92 +1,280 @@
 {% extends "prospectos/base.html" %}
+{% block encabezado %}{% endblock %}
 {% block pagina %}
-<div class="ay-intro mb-6">
-  <span class="material-symbols-outlined">help</span>
-  <div><b>El programa en una frase:</b> junta lo que contestan el alumno y su mamá, papá o tutor en los Google Forms,
-  los pone en una sola ficha y te dice a quién conviene llamar primero.</div>
-</div>
-
-{# ---------------------------------------------------------------- flujo #}
-<h2 class="ay-h2">Cómo viaja una respuesta</h2>
-<ol class="ay-flujo mb-8">
-  <li><span class="material-symbols-outlined">edit_note</span><b>1. Contestan el Form</b><small>En la visita a la prepa, con el QR del Cuestionario Vocacional. Eligen plantel (Cuautitlán o Tultepec), carreras y cómo quieren que los contactemos.</small></li>
-  <li><span class="material-symbols-outlined">sync</span><b>2. Llega aquí sola</b><small>Cada minuto, mientras la ventana negra esté abierta. Aparece en <a href="{% url 'prospectos:respuestas' %}">Respuestas de los Forms</a>.</small></li>
-  <li><span class="material-symbols-outlined">verified_user</span><b>3. Se revisa el permiso</b><small>Mayor de edad que aceptó el aviso → lista. Menor → espera el permiso de su tutor.</small></li>
-  <li><span class="material-symbols-outlined">support_agent</span><b>4. Se le da seguimiento</b><small>Entra a <a href="{% url 'prospectos:cola' %}">A quién llamar hoy</a>, ordenada por prioridad.</small></li>
-</ol>
-
-{# ---------------------------------------------------------------- estados #}
-<h2 class="ay-h2">¿Contestaron y no aparece? Revisa el estado</h2>
-<div class="ay-estados mb-8">
-  <div class="tono-verde"><span class="rs-badge tono-verde">Lista para usar</span><p>Aceptó el aviso y es mayor de edad, o es menor y su tutor ya dio permiso. Aparece en prospectos, cola y reportes.</p></div>
-  <div class="tono-ambar"><span class="rs-badge tono-ambar">Esperando permiso</span><p>Es menor de edad (o su edad no se entiende) y falta el permiso de su tutor;
-    o es mayor pero el Form no le pidió aceptar el aviso de privacidad. Al abrir la respuesta dice exactamente qué falta y deja <b>registrar el permiso del tutor</b>.
-    Se guarda {{ cuarentena }} días; si el permiso no llega, se borra. <b>Es lo más común cuando “no aparece nada”.</b></p></div>
-  <div class="tono-rojo"><span class="rs-badge tono-rojo">Sin permiso</span><p>No aceptó el aviso de privacidad. No se usa para nada.</p></div>
-  <div class="tono-gris"><span class="rs-badge tono-gris">Borrada</span><p>Venció la espera o se pidió borrar los datos (derechos ARCO). Solo queda el registro de que existió.</p></div>
-</div>
-
-{# ---------------------------------------------------------------- prioridad #}
-<h2 class="ay-h2">La prioridad (0 a 100)</h2>
-<div class="grid gap-5 md:grid-cols-2 mb-8">
-  <div class="tb-card">
-    <p class="text-sm mb-3">Es una suma de puntos. No predice si se inscribe: solo ordena a quién llamar primero con lo que contestó.</p>
-    <ul class="ay-reglas">
-      {% for nombre, puntos in reglas %}<li><span>{{ nombre }}</span><b>+{{ puntos }}</b></li>{% endfor %}
-    </ul>
-    {% if perms.prospectos.configurar_scoring %}<a class="text-sm mt-3 inline-block" href="{% url 'prospectos:configuracion' %}">Cambiar los puntos en Reglas de prioridad →</a>{% endif %}
+<header class="gu-portada">
+  <div>
+    <h1>¿Cómo funciona?</h1>
+    <p>Guías cortas para cada tarea. Busca lo que necesitas o elige un tema.</p>
   </div>
-  <div class="tb-card">
-    <p class="text-sm mb-3"><b>Grupos (etiquetas automáticas)</b></p>
-    <dl class="ay-glosario">
-      <dt>Listo para inscribirse</dt><dd>Prioridad {{ listo }} o más <i>y</i> pidió información por WhatsApp o correo.</dd>
-      <dt>Busca beca o precio</dt><dd>Marcó colegiaturas o becas como lo más importante, o quiere conocer costos o becas.</dd>
-      <dt>Necesita horario flexible</dt><dd>Marcó horarios flexibles, o eligió sabatino o dominical.</dd>
-      <dt>Aún no decide carrera</dt><dd>Contestó «Aún no lo sé» o marcó {{ indeciso }} carreras o más.</dd>
-      <dt>Entraría en un año o más</dt><dd>La familia contestó que entraría dentro de un año o más. No es «no»: es «todavía no».</dd>
-      <dt>No quiere información</dt><dd>Contestó «No, gracias» (y su familia no pidió información). Sale de la lista de llamadas y no recibe correos.</dd>
-    </dl>
+  <label class="gu-buscar"><span class="material-symbols-outlined">search</span>
+    <input type="search" id="gu-buscar" placeholder="Por ejemplo: permiso, QR, beca, mapa…" autocomplete="off" aria-label="Buscar en las guías"></label>
+</header>
+
+<div class="gu-cuerpo">
+  <nav class="gu-indice" aria-label="Temas">
+    {% for id, icono, titulo in temas %}<a href="#{{ id }}"><span class="material-symbols-outlined">{{ icono }}</span>{{ titulo }}</a>{% endfor %}
+  </nav>
+
+  <div class="gu-guias">
+    <p class="gu-sin-resultados" id="gu-nada" hidden>No encontré nada con esa palabra. Prueba con otra o revisa el índice.</p>
+
+    {% if pasos %}
+    <section class="gu-guia gu-destacada" id="primeros-pasos" data-palabras="empezar inicio configurar instalar">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">flag</span></span><div><h2>Para empezar con datos reales</h2><p>Lo que falta en esta instalación. Se marca solo al terminar cada paso.</p></div></header>
+      <ul class="ay-pasos">
+        {% for p in pasos %}
+        <li class="{% if p.hecho %}hecho{% endif %}">
+          <span class="material-symbols-outlined">{% if p.hecho %}check_circle{% else %}radio_button_unchecked{% endif %}</span>
+          <div><b>{% if p.url and not p.hecho %}<a href="{{ p.url }}">{{ p.titulo }}</a>{% else %}{{ p.titulo }}{% endif %}</b><small>{{ p.como }}</small></div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% if pasos_ocultos %}
+      <form method="post" action="{% url 'prospectos:pasos' %}">{% csrf_token %}<input type="hidden" name="accion" value="mostrar"><input type="hidden" name="siguiente" value="{% url 'admin:index' %}">
+        <button class="gu-enlace">Volver a mostrar esta lista en el Inicio</button></form>
+      {% endif %}
+      {% if hay_demo and request.user.is_superuser %}<a class="gu-ir" href="{% url 'prospectos:borrar_demo' %}">Borrar los datos de demostración<span class="material-symbols-outlined">arrow_forward</span></a>{% endif %}
+    </section>
+    {% endif %}
+
+    <section class="gu-guia" id="empezar" data-palabras="flujo respuesta llega importar form google minuto ventana">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">route</span></span><div><h2>Cómo viaja una respuesta</h2><p>Del celular del alumno a la lista de llamadas.</p></div></header>
+      <ol class="gu-flujo">
+        <li><b>Contestan el Form</b><span>En la visita, con el QR. El alumno elige plantel, carreras y cómo quiere que lo contacten; su familia contesta otra encuesta.</span></li>
+        <li><b>Llega sola al programa</b><span>Cada minuto, <u>mientras la ventana negra esté abierta</u>. Aparece en Respuestas de los Forms.</span></li>
+        <li><b>Se revisa el permiso</b><span>Mayor de edad que aceptó el aviso: lista. Menor: espera el permiso de su familia.</span></li>
+        <li><b>Se le llama</b><span>Entra a «A quién llamar hoy», ordenado por prioridad.</span></li>
+      </ol>
+    </section>
+
+    <section class="gu-guia" id="respuestas" data-palabras="respuestas estado permiso esperando cuarentena menor no aparece borrada tutor">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">inbox</span></span><div><h2>Contestaron y no aparece</h2><p>Casi siempre es el permiso. Revisa el estado en Respuestas de los Forms.</p></div></header>
+      <div class="gu-estados">
+        <div><span class="rs-badge tono-verde">Lista para usar</span><p>Aceptó el aviso y es mayor, o es menor y su familia ya dio permiso. Aparece en prospectos, llamadas y reportes.</p></div>
+        <div><span class="rs-badge tono-ambar">Esperando permiso</span><p>Es menor (o su edad no se entiende) y falta el permiso de su familia. Al abrirla dice qué falta y deja registrar el permiso. Se guarda {{ cuarentena }} días.</p></div>
+        <div><span class="rs-badge tono-rojo">Sin permiso</span><p>No aceptó el aviso de privacidad. No se usa para nada.</p></div>
+        <div><span class="rs-badge tono-gris">Borrada</span><p>Venció la espera o se pidió borrar sus datos. Solo queda el registro de que existió.</p></div>
+      </div>
+      <a class="gu-ir" href="{% url 'prospectos:respuestas' %}">Ir a Respuestas de los Forms<span class="material-symbols-outlined">arrow_forward</span></a>
+    </section>
+
+    <section class="gu-guia" id="dia" data-palabras="llamar llamada cola asesor contacto whatsapp correo ficha seguimiento tarea estatus">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">support_agent</span></span><div><h2>El día a día del asesor</h2><p>A quién llamar, qué decir y cómo dejarlo registrado.</p></div></header>
+      <ol class="gu-pasos">
+        <li>Abre <b>A quién llamar hoy</b>. Arriba van los de mayor prioridad y, entre iguales, quien lleva más tiempo sin contacto.</li>
+        <li>Abre la ficha. Revisa primero <b>en qué no coinciden</b> el alumno y su familia (carrera, horario, quién paga): es lo primero que conviene aclarar.</li>
+        <li>Para ver teléfono o correo, pulsa <b>Mostrar</b>. Queda registrado quién lo consultó.</li>
+        <li>Al terminar, registra el contacto en la ficha (llamada, WhatsApp, correo) y cambia el estatus si avanzó.</li>
+      </ol>
+      <ul class="gu-saber">
+        <li>Quien contestó «No, gracias» no aparece en la lista y <b>no se le llama</b>.</li>
+        <li>Si alguien pasa {{ sin_contacto }} días sin contacto, se crea una llamada pendiente automática.</li>
+      </ul>
+      <a class="gu-ir" href="{% url 'prospectos:cola' %}">Ir a A quién llamar hoy<span class="material-symbols-outlined">arrow_forward</span></a>
+    </section>
+
+    <section class="gu-guia" id="familias" data-palabras="familia tutor mama papa unir duplicados alumno encuesta padres">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">family_restroom</span></span><div><h2>Unir al alumno con su familia</h2><p>La encuesta de la familia y la del alumno se juntan en una sola ficha.</p></div></header>
+      <ol class="gu-pasos">
+        <li>Cuando el programa está seguro, las une solo al importar.</li>
+        <li>Las dudosas aparecen en <b>Familias por unir</b> con sus puntos de parecido: pulsa <b>Son la misma familia</b> o <b>No son</b>.</li>
+        <li>Si una familia no tiene propuesta, búscale al alumno por nombre y únelos a mano.</li>
+      </ol>
+      <ul class="gu-saber">
+        <li>Si el alumno es menor, al unirlo con su familia ya cuenta con el permiso de ella.</li>
+        <li>Las <b>tarjetas familiares</b> del evento (dos QR con el mismo código) unen a la familia sin dudas.</li>
+        <li><b>Posibles duplicados</b> son dos fichas que parecen la misma persona; el programa nunca las une solo.</li>
+      </ul>
+      <a class="gu-ir" href="{% url 'prospectos:familias' %}">Ir a Familias por unir<span class="material-symbols-outlined">arrow_forward</span></a>
+    </section>
+
+    <section class="gu-guia" id="visitas" data-palabras="evento visita prepa qr tarjetas solicitud reporte en vivo carta beca folio imprimir permanente">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">qr_code_2</span></span><div><h2>Visitas a preparatorias</h2><p>Antes, durante y después de cada visita.</p></div></header>
+      <ol class="gu-pasos">
+        <li><b>Eventos y QR → +</b>: preparatoria, fecha, horario, promotor, meta y costo. El código del evento se crea solo.</li>
+        <li><b>Solicitud</b>: la carta de «Difusión educativa» en hoja membretada, con la fecha y lo que se pide a la prepa. Imprímela o guárdala como PDF.</li>
+        <li>Si se entregan becas: en el evento llena <b>Cartas de beca</b> (tipo, porcentaje, vigencia y cuántas). Se imprimen desde <b>Becas (N)</b>, cada una con folio.</li>
+        <li>El día de la visita: proyecta el <b>QR</b> o reparte <b>tarjetas</b>, y abre <b>En vivo</b> para ver los registros llegar.</li>
+        <li>Después: <b>Reporte</b> con registros, carreras de interés y costo por registro.</li>
+      </ol>
+      <ul class="gu-saber">
+        <li>El <b>QR permanente</b> de cada prepa no cambia: sirve para carteles y para todas sus visitas.</li>
+        <li>Si el Form no tiene la pregunta «Código de evento», las respuestas se asignan por preparatoria y fecha.</li>
+        <li>Las tarjetas cambian cada vez que las generas: imprime un solo lote por evento.</li>
+        <li>Para imprimir cartas: tamaño carta, sin «ajustar a la página».</li>
+      </ul>
+      <a class="gu-ir" href="{% url 'admin:prospectos_evento_changelist' %}">Ir a Eventos y QR<span class="material-symbols-outlined">arrow_forward</span></a>
+    </section>
+
+    <section class="gu-guia" id="calendario" data-palabras="calendario actividad open house examen inscripciones junta ics outlook agenda">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">calendar_month</span></span><div><h2>Calendario</h2><p>Visitas, actividades del equipo y llamadas que vencen, en un mes.</p></div></header>
+      <ol class="gu-pasos">
+        <li>Con <b>+</b> en un día agregas una actividad (open house, examen, inscripciones, junta…). Puede durar varios días.</li>
+        <li>Clic en una actividad para cambiarla o quitarla. Las visitas se cambian en Eventos y QR.</li>
+        <li><b>Descargar .ics</b> la pasa a Google Calendar u Outlook.</li>
+      </ol>
+      <ul class="gu-saber">
+        <li>El color de cada visita es su estado: gris por solicitar, naranja solicitada, verde confirmada, azul realizada.</li>
+        <li>El .ics es una copia: si algo cambia, descárgalo de nuevo.</li>
+      </ul>
+      <a class="gu-ir" href="{% url 'prospectos:calendario' %}">Ir al Calendario<span class="material-symbols-outlined">arrow_forward</span></a>
+    </section>
+
+    <section class="gu-guia" id="mapa" data-palabras="mapa cobertura ubicar preparatoria coordenadas google maps unir nombres circulo color distancia plantel">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">map</span></span><div><h2>Preparatorias y mapa</h2><p>De dónde vienen los aspirantes y a dónde conviene ir.</p></div></header>
+      <h3>Leer el mapa</h3>
+      <ul class="gu-saber">
+        <li>Cada círculo es una prepa; el número son sus aspirantes con permiso.</li>
+        <li><b>Respuesta</b>: verde 15 % o más de sus alumnos contestó, ámbar 5–15 %, rojo menos de 5 %, gris si no capturaste cuántos alumnos tiene.</li>
+        <li><b>Última visita</b>: azul ya programada, verde hace menos de 3 meses, ámbar 3–12 meses, rojo más de un año o nunca.</li>
+        <li><b>Plantel</b>: azul Cuautitlán, rosa Tultepec.</li>
+        <li>Al elegir una prepa ves su ficha y puedes programar visita, ver sus aspirantes o sacar su QR.</li>
+      </ul>
+      <h3>Ubicar y unir preparatorias</h3>
+      <ol class="gu-pasos">
+        <li>Los alumnos escriben su prepa a mano; las nuevas se dan de alta solas «por revisar» y sin ubicación.</li>
+        <li>Si dos nombres son la misma escuela: <b>Preparatorias</b> → selecciónalas → acción <b>Unir</b>. Los nombres quedan como alias.</li>
+        <li><b>Mapa → Ubicar</b>: elige la prepa, búscala o haz clic donde está, y guarda.</li>
+      </ol>
+      <p class="gu-truco"><span class="material-symbols-outlined">lightbulb</span><span><b>Truco:</b> si el buscador no la encuentra, ábrela en Google Maps, clic derecho sobre la escuela, clic en los números (se copian) y pégalos en el buscador. El pin se pone solo.</span></p>
+      <a class="gu-ir" href="{% url 'prospectos:mapa' %}">Ir al Mapa de cobertura<span class="material-symbols-outlined">arrow_forward</span></a>
+    </section>
+
+    <section class="gu-guia" id="encuestas" data-palabras="encuesta form pregunta agregar editar quitar opcion obligatoria google cambiar carreras">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">edit_note</span></span><div><h2>Cambiar las encuestas</h2><p>Las preguntas del Google Form se cambian desde el programa.</p></div></header>
+      <ol class="gu-pasos">
+        <li><b>Configuración → Encuestas</b>. Ves el Form como lo verá el alumno.</li>
+        <li><b>Agregar</b>: al final de la sección, elige el tipo, escribe la pregunta y sus opciones y pulsa «Agregar al Form».</li>
+        <li><b>Editar</b>: el lápiz de la tarjeta. Cambia texto, opciones u «Obligatoria» y guarda.</li>
+        <li><b>Quitar</b>: el bote de basura. Antes se importa lo pendiente.</li>
+        <li>Las carreras se cambian en <b>Configuración → Carreras</b>; luego el aviso de Encuestas las pasa al Form.</li>
+      </ol>
+      <ul class="gu-saber">
+        <li>Cada cambio se ve en el Form <b>al instante</b>, también para quien lo esté contestando. Antes se guarda una copia.</li>
+        <li>Las preguntas con candado las usa el programa: se pueden reescribir, no quitar.</li>
+        <li>Al quitar una pregunta, en Google dejan de verse sus respuestas; en el programa se conservan.</li>
+        <li>Validaciones (edad entre 12 y 99), imágenes y saltos entre secciones se hacen en «Abrir en Google».</li>
+      </ul>
+      {% if perms.prospectos.change_formulario %}<a class="gu-ir" href="{% url 'prospectos:encuestas' %}">Ir a Encuestas<span class="material-symbols-outlined">arrow_forward</span></a>{% endif %}
+    </section>
+
+    <section class="gu-guia" id="google" data-palabras="google conectar form registrar mapeo codigo cuenta servicio sincronizar">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">dynamic_form</span></span><div><h2>Conectar los Forms de Google</h2><p>Una sola vez, al instalar.</p></div></header>
+      <ol class="gu-pasos">
+        <li>Pon la llave de Google en la carpeta de datos, o ejecuta «{{ comando }} conectar_google».</li>
+        <li><b>Formularios de Google → +</b>: pega la dirección de edición del Form (la que termina en /edit).</li>
+        <li>Abre su <b>Mapeo</b> y revisa que cada pregunta tenga el código correcto. Un mapeo equivocado guarda respuestas donde no van.</li>
+      </ol>
+      <ul class="gu-saber">
+        <li>«Carrera» y «Modalidad» pueden asignarse dos veces: el Form las pregunta una vez por plantel.</li>
+        <li>Sin la pregunta de edad todos quedan «Esperando permiso». Sin la del aviso de privacidad, nadie queda listo salvo que lo marques en Reglas de permiso.</li>
+      </ul>
+      {% if perms.prospectos.view_formulario %}<a class="gu-ir" href="{% url 'admin:prospectos_formulario_changelist' %}">Ir a Formularios de Google<span class="material-symbols-outlined">arrow_forward</span></a>{% endif %}
+    </section>
+
+    <section class="gu-guia" id="prioridad" data-palabras="prioridad puntos score grupos segmento listo beca horario indeciso reglas">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">tune</span></span><div><h2>La prioridad y los grupos</h2><p>Por qué alguien aparece antes en la lista.</p></div></header>
+      <p class="gu-texto">La prioridad va de 0 a 100 y es una suma de puntos. No predice si se inscribe: solo ordena a quién llamar primero.</p>
+      <div class="gu-dos">
+        <ul class="ay-reglas">{% for nombre, puntos in reglas %}<li><span>{{ nombre }}</span><b>+{{ puntos }}</b></li>{% endfor %}</ul>
+        <dl class="ay-glosario">
+          <dt>Listo para inscribirse</dt><dd>Prioridad {{ listo }} o más y pidió información.</dd>
+          <dt>Busca beca o precio</dt><dd>Lo más importante para él son las colegiaturas o las becas.</dd>
+          <dt>Necesita horario flexible</dt><dd>Marcó horarios flexibles o eligió sabatino o dominical.</dd>
+          <dt>Aún no decide carrera</dt><dd>Contestó «Aún no lo sé» o marcó {{ indeciso }} carreras o más.</dd>
+          <dt>Entraría en un año o más</dt><dd>Lo dijo su familia. No es «no»: es «todavía no».</dd>
+          <dt>No quiere información</dt><dd>Contestó «No, gracias». Sale de la lista de llamadas.</dd>
+        </dl>
+      </div>
+      <p class="gu-truco"><span class="material-symbols-outlined">lightbulb</span><span>Los puntos son una suposición inicial: compáralos contra los inscritos reales al cerrar el primer ciclo.</span></p>
+      {% if perms.prospectos.configurar_scoring %}<a class="gu-ir" href="{% url 'prospectos:configuracion' %}">Cambiar los puntos<span class="material-symbols-outlined">arrow_forward</span></a>{% endif %}
+    </section>
+
+    <section class="gu-guia" id="reportes" data-palabras="reporte ejecutivo excel cifras costo embudo carreras rector">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">insights</span></span><div><h2>Reportes</h2><p>Cifras agregadas, sin datos personales.</p></div></header>
+      <ol class="gu-pasos">
+        <li><b>Reporte ejecutivo</b>: elige las fechas y pulsa Actualizar.</li>
+        <li><b>Excel</b> descarga las mismas cifras; <b>Imprimir / PDF</b> las deja listas para Rectoría.</li>
+        <li>Cada evento tiene su propio <b>Reporte final</b> en Eventos y QR.</li>
+      </ol>
+      <ul class="gu-saber"><li>Solo cuentan aspirantes con permiso.</li><li>El costo por aspirante necesita el costo capturado en cada evento.</li></ul>
+      {% if perms.prospectos.reporte_ejecutivo %}<a class="gu-ir" href="{% url 'prospectos:reporte' %}">Ir al Reporte ejecutivo<span class="material-symbols-outlined">arrow_forward</span></a>{% endif %}
+    </section>
+
+    <section class="gu-guia" id="configuracion" data-palabras="usuarios roles contraseña otras computadoras red respaldo copia config llave firma membrete">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">settings</span></span><div><h2>Configuración y cuidado del programa</h2><p>Usuarios, otras computadoras y respaldos.</p></div></header>
+      <h3>Usuarios y roles</h3>
+      <ul class="gu-saber"><li>Una cuenta por persona, con su rol; no compartan contraseñas.</li><li>Solo un administrador cambia roles o crea administradores.</li></ul>
+      <h3>Otras computadoras</h3>
+      <ol class="gu-pasos">
+        <li>El programa corre en <b>una sola</b> computadora. Instalarlo en otra crea datos separados.</li>
+        <li>En las demás, abre en el navegador la dirección de <b>Otras computadoras</b> e instala el certificado una vez.</li>
+      </ol>
+      <h3>Respaldos</h3>
+      <ul class="gu-saber">
+        <li>Cada día se guarda una copia en <code>datos\respaldos</code>. Cópiala a otro equipo: si el disco falla, se pierde junto con todo.</li>
+        <li>Guarda también <code>config.json</code> fuera de la computadora: sin sus llaves, los datos cifrados no se pueden leer.</li>
+      </ul>
+      <h3>Cartas</h3>
+      <ul class="gu-saber"><li>Quién firma se cambia arriba de cualquier Solicitud. Si cambia la dirección del pie, pon la nueva hoja en <code>datos\hoja-membretada.jpg</code>.</li></ul>
+      <h3 id="llave-google">Llave de Google Maps (opcional)</h3>
+      <p class="gu-texto">Sin llave se usa OpenStreetMap. Con llave, el buscador de «Ubicar» encuentra las escuelas por su nombre.</p>
+      <ol class="gu-pasos">
+        <li>Entra a <b>console.cloud.google.com</b> con la cuenta de la universidad y crea un proyecto.</li>
+        <li><b>Facturación</b>: Google pide ligar una tarjeta aunque no cobre por este uso. Pon una alerta de presupuesto (p. ej. $100 MXN).</li>
+        <li><b>APIs y servicios → Biblioteca</b>: habilita Maps JavaScript API, Places API (New) y Geocoding API.</li>
+        <li><b>Credenciales → Crear credenciales → Clave de API.</b></li>
+        <li>Restríngela: Sitios web → <code>{{ origen }}/*</code> y <code>http://localhost:8000/*</code>; APIs → solo las tres de arriba.</li>
+        <li>Copia la clave (empieza con AIza) y pégala en <b>Configuración → Mapa</b>.</li>
+      </ol>
+      <h3 id="sedes">Ubicar los planteles</h3>
+      <p class="gu-texto">En <b>Configuración → Mapa</b>, pega las coordenadas de cada plantel (clic derecho en Google Maps → clic en los números). Así el mapa muestra las sedes y las distancias.</p>
+    </section>
+
+    <section class="gu-guia" id="privacidad" data-palabras="privacidad datos personales cifrado menores permiso arco borrar retencion bitacora">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">verified_user</span></span><div><h2>Datos personales</h2><p>Lo que el programa hace para cuidarlos.</p></div></header>
+      <ul class="gu-saber">
+        <li><b>Menores</b>: no se les contacta sin permiso de su familia. El permiso queda con quién, cuándo y cómo.</li>
+        <li><b>Correo y teléfono</b> se guardan cifrados; solo los ven los roles con permiso, y cada consulta queda en la bitácora.</li>
+        <li><b>Retención</b>: tras {{ retencion }} meses sin actividad, los datos personales se borran solos; se conservan los números para reportes.</li>
+        <li><b>Derechos ARCO</b>: si alguien pide borrar sus datos, en Prospectos selecciónalo y usa la acción de anonimizar.</li>
+        <li>Al mapa de Google u OpenStreetMap solo se envían coordenadas, nunca datos de aspirantes.</li>
+      </ul>
+    </section>
+
+    <section class="gu-guia" id="glosario" data-palabras="glosario palabras significa aspirante prospecto">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">menu_book</span></span><div><h2>Palabras que vas a ver</h2></div></header>
+      <dl class="ay-glosario">
+        <dt>Aspirante / prospecto</dt><dd>Una persona interesada. Puede tener respuesta del alumno, de su familia o ambas.</dd>
+        <dt>Diferencias alumno–familia</dt><dd>Cuando contestan distinto: otra carrera, otra modalidad, quién paga.</dd>
+        <dt>Preparatoria «por revisar»</dt><dd>Una prepa escrita por un alumno que no se parece a ninguna registrada.</dd>
+        <dt>Evento</dt><dd>Una visita a una preparatoria, con su QR, tarjetas, cartas y reporte.</dd>
+        <dt>Llamadas pendientes</dt><dd>Tareas de los asesores; se crean solas tras {{ sin_contacto }} días sin contacto.</dd>
+        <dt>Folio</dt><dd>Número de cada carta de beca, para saber de qué visita viene.</dd>
+      </dl>
+    </section>
   </div>
 </div>
-
-{# ---------------------------------------------------------------- glosario #}
-<h2 class="ay-h2">Cambiar las opciones del programa</h2>
-<div class="tb-card mb-8 text-sm flex flex-col gap-2">
-  <p>En <b>Configuración</b>: <b>Carreras</b> (agregar, renombrar, apagar), <b>Preguntas y opciones</b> (textos, opciones y preguntas nuevas)
-    y <b>Usuarios</b>. Lo que cambies ahí se respeta siempre; el programa no lo regresa al abrirse.</p>
-  <p>Para una <b>pregunta nueva</b>: agrégala primero en el Google Form, luego aquí con el mismo texto, y después «Sincronizar con Google» en Formularios.
-    Se ve en fichas y reportes, pero no suma prioridad.</p>
-  <p>Quién puede editar depende de su <b>rol</b>. Solo un administrador cambia roles o crea administradores.</p>
-</div>
-
-<h2 class="ay-h2">Palabras que vas a ver</h2>
-<dl class="ay-glosario tb-card mb-8">
-  <dt>Aspirante / prospecto</dt><dd>Una persona interesada. Puede tener una respuesta de alumno, una de tutor o ambas.</dd>
-  <dt>Diferencias alumno–tutor</dt><dd>Cuando contestan distinto (otra carrera, otra modalidad, quién paga). Es lo primero que conviene aclarar en la llamada.</dd>
-  <dt>Preparatoria «nueva»</dt><dd>Los alumnos escriben su prepa a mano. Si no se parece a ninguna, se da de alta sola «por revisar». Si es la misma escrita distinto, se <b>unen</b> en Preparatorias; luego se <b>ubica</b> en el mapa.</dd>
-  <dt>Permiso del tutor</dt><dd>Para menores de edad. Llega con el cuestionario del tutor (si existe) o lo registra un asesor tras hablar con el tutor; queda quién, cuándo y cómo.</dd>
-  <dt>Posibles duplicados</dt><dd>Dos fichas que parecen la misma persona (mismo nombre y prepa, o mismo teléfono). El programa <i>no</i> las une solo: alguien decide.</dd>
-  <dt>Evento</dt><dd>Una visita a una preparatoria. Genera el QR y las tarjetas, y permite ver los registros en vivo.</dd>
-  <dt>Llamadas pendientes</dt><dd>Tareas de los asesores. Se crean solas si un aspirante activo pasa {{ sin_contacto }} días sin contacto.</dd>
-  <dt>Datos cifrados</dt><dd>Correo y teléfono se guardan cifrados; solo los ven los roles con permiso, y cada consulta queda en la bitácora.</dd>
-  <dt>Retención</dt><dd>Tras {{ retencion }} meses sin actividad, los datos personales se borran solos (se conservan los números para reportes).</dd>
-  <dt>Respaldos</dt><dd>Una copia diaria en <code>datos\respaldos</code>. Cópialos a otro equipo: si el disco falla, se pierden junto con la base.</dd>
-</dl>
-
-{% if pasos %}
-<h2 class="ay-h2" id="google">Para empezar con datos reales</h2>
-<ul class="ay-pasos tb-card mb-4">
-  {% for p in pasos %}
-  <li class="{% if p.hecho %}hecho{% endif %}">
-    <span class="material-symbols-outlined">{% if p.hecho %}check_circle{% else %}radio_button_unchecked{% endif %}</span>
-    <div><b>{% if p.url and not p.hecho %}<a href="{{ p.url }}">{{ p.titulo }}</a>{% else %}{{ p.titulo }}{% endif %}</b><small>{{ p.como }}</small></div>
-  </li>
-  {% endfor %}
-</ul>
-{% if pasos_ocultos %}
-<form method="post" action="{% url 'prospectos:pasos' %}">{% csrf_token %}<input type="hidden" name="accion" value="mostrar"><input type="hidden" name="siguiente" value="{% url 'admin:index' %}">
-  <button class="text-sm underline">Volver a mostrar esta lista en el Inicio</button></form>
-{% endif %}
-<p class="text-sm text-subtle">Guía completa: <code>docs\puesta-en-marcha.md</code> (Google: <code>docs\formularios.md</code>).</p>
-{% endif %}
+<script>
+(function () {
+  const caja = document.getElementById('gu-buscar'), guias = [...document.querySelectorAll('.gu-guia')], nada = document.getElementById('gu-nada');
+  const normal = (t) => (t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const textos = guias.map((g) => normal(g.textContent + ' ' + (g.dataset.palabras || '')));
+  caja.addEventListener('input', () => {
+    const q = normal(caja.value.trim()).split(/\s+/).filter(Boolean);
+    let vistas = 0;
+    guias.forEach((g, i) => { const si = q.every((w) => textos[i].includes(w)); g.hidden = !si; vistas += si; });
+    nada.hidden = vistas > 0;
+  });
+  // Si se llegó con #tema desde el botón «Cómo se usa», se resalta esa guía.
+  const marcar = () => {
+    document.querySelectorAll('.gu-guia.resaltada').forEach((g) => g.classList.remove('resaltada'));
+    const g = location.hash && document.querySelector(location.hash);
+    const guia = g && g.closest('.gu-guia');
+    if (guia) guia.classList.add('resaltada');
+    document.querySelectorAll('.gu-indice a').forEach((a) => a.classList.toggle('activo', guia && a.getAttribute('href') === '#' + guia.id));
+  };
+  addEventListener('hashchange', marcar); marcar();
+})();
+</script>
 {% endblock %}

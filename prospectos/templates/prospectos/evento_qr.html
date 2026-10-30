@@ -1,10 +1,10 @@
 {% extends "prospectos/base.html" %}
+{% block ayuda %}visitas{% endblock %}
 {% block pagina %}
-<div class="udc-nota mb-4 no-imprimir"><span class="material-symbols-outlined">info</span>
-  <div class="grow">QR de este evento, para proyectar o imprimir. Cada respuesta se cuenta en el evento por su código o, si el Form no tiene
-  la pregunta «Código de evento», porque el alumno escribe esta prepa y contesta este día. Para un QR que no cambie entre visitas, usa el
-  <a class="underline font-semibold" href="{% url 'prospectos:prepa_qr' evento.preparatoria_id %}">QR permanente de la prepa</a>.
-  Para unir alumno y familia con certeza, las <a class="underline font-semibold" href="{% url 'prospectos:tarjetas' evento.pk %}">tarjetas familiares</a>.</div>
+<div class="flex flex-wrap gap-2 mb-4 no-imprimir">
+  <a class="udc-btn secundario" href="{% url 'prospectos:prepa_qr' evento.preparatoria_id %}"><span class="material-symbols-outlined">qr_code_2</span>QR permanente de la prepa</a>
+  <a class="udc-btn secundario" href="{% url 'prospectos:tarjetas' evento.pk %}"><span class="material-symbols-outlined">style</span>Tarjetas familiares</a>
+  <span class="grow"></span>
   <button type="button" class="udc-btn" onclick="window.print()"><span class="material-symbols-outlined">print</span>Imprimir</button></div>
 <div class="grid gap-6 md:grid-cols-2">
   {% for titulo, icono, q in qrs %}

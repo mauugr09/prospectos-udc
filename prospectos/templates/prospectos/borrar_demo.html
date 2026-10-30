@@ -1,0 +1,26 @@
+{% extends "prospectos/base.html" %}
+{% block pagina %}
+<section class="grupo" style="max-width:640px">
+  <header class="grupo-cabecera"><h2>Esto se va a borrar</h2></header>
+  <ul class="lista">
+    <li class="fila"><span class="fila-texto">Prospectos de prueba</span><b>{{ inv.prospectos }}</b></li>
+    <li class="fila"><span class="fila-texto">Respuestas de los Forms de prueba</span><b>{{ inv.respuestas }}</b></li>
+    <li class="fila"><span class="fila-texto">Eventos de prueba</span><b>{{ inv.eventos }}</b></li>
+    <li class="fila"><span class="fila-texto">Preparatorias ficticias (solo si nada real las usa)</span><b>{{ inv.preparatorias }}</b></li>
+    <li class="fila"><span class="fila-texto">Usuarios @demo.local</span><b>{{ inv.usuarios }}</b></li>
+  </ul>
+  <div class="grupo-cuerpo">
+    <p class="text-sm text-subtle mb-3">No se toca nada real: carreras, preguntas, tus Forms de Google, usuarios reales ni prospectos que tengan una respuesta real. Antes se guarda un respaldo completo.</p>
+    {% if inv.quien_es_demo %}
+      <div class="aviso aviso-rojo"><span class="material-symbols-outlined">person_off</span><div>Entraste con un usuario de demostración. Crea tu usuario real en <a class="underline" href="{% url 'admin:auth_user_add' %}">Usuarios</a>, entra con él y vuelve aquí.</div></div>
+    {% elif not inv.otro_admin %}
+      <div class="aviso aviso-rojo"><span class="material-symbols-outlined">person_off</span><div>Primero crea un administrador real en <a class="underline" href="{% url 'admin:auth_user_add' %}">Usuarios</a>.</div></div>
+    {% else %}
+    <form method="post" class="flex flex-wrap gap-3 items-end">{% csrf_token %}
+      <label class="text-sm">Escribe <b>BORRAR</b> para confirmar<br><input name="confirmar" class="udc-campo" autocomplete="off" required></label>
+      <button class="udc-btn" style="background:var(--c-rojo)"><span class="material-symbols-outlined">delete_forever</span>Borrar la demostración</button>
+    </form>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

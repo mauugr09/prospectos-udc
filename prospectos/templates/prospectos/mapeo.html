@@ -1,13 +1,10 @@
 {% extends "prospectos/base.html" %}
+{% block ayuda %}google{% endblock %}
 {% block pagina %}
 {% if error %}<div class="udc-nota alerta mb-4"><span class="material-symbols-outlined">cloud_off</span><div><b>No se pudo leer el Form.</b> {{ error }} <br>Mientras tanto se muestra el mapeo guardado.</div></div>{% endif %}
-<div class="udc-nota mb-4"><span class="material-symbols-outlined">account_tree</span>
-  <div>Asigna a cada pregunta del Form el código interno que le corresponde. La propuesta compara los títulos; <b>revísala siempre</b>:
-  un mapeo equivocado guarda respuestas en el campo que no es.</div></div>
 {% if faltan %}<div class="udc-nota alerta mb-4"><span class="material-symbols-outlined">warning</span><div>Códigos sin pregunta asignada: {{ faltan|join:", " }}</div></div>{% endif %}
 {% if recomendadas %}<div class="udc-nota mb-4"><span class="material-symbols-outlined">lightbulb</span><div><b>Preguntas recomendadas que tu Form todavía no tiene:</b> {{ recomendadas|join:", " }}.
-  La más importante es la del <b>aviso de privacidad</b>; sin ella nadie queda «Lista para usar» salvo que lo marques en Reglas de permiso. Ver docs\formularios.md.</div></div>{% endif %}
-<p class="text-sm text-subtle mb-3">«Carrera» y «Modalidad» pueden asignarse dos veces: tu Form las pregunta una vez por plantel.</p>
+</div></div>{% endif %}
 <form method="post">{% csrf_token %}
 <div class="udc-panel overflow-x-auto"><table class="udc-tabla"><thead><tr><th>Pregunta del Form</th><th>Similitud</th><th>Código interno</th></tr></thead><tbody>
 {% for p in propuesta %}

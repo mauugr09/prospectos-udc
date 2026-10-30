@@ -18,7 +18,7 @@ from django.utils import timezone
 from . import catalogos
 from .models import (Actividad, etiqueta_segmento, ACTIVOS, Preparatoria, Configuracion, Cuestionario, Evento, Formulario, PosibleCoincidencia, Pregunta, Prospecto,
                      Segmento, Seguimiento, TipoSeguimiento)
-from .servicios import auditoria, importacion, inteligencia, reportes
+from .servicios import auditoria, demo, importacion, inteligencia, reportes
 
 
 def _ctx(request, titulo, **kw):
@@ -177,6 +177,8 @@ def contexto_tablero(request, context=None) -> dict:
         ultimo = Respaldo.objects.order_by('-creado_en').first()
         if ultimo and ultimo.estado != 'ok':
             ctx['respaldo_error'] = ultimo
+        from .servicios import demo
+        ctx['hay_demo'] = demo.hay_demo()
     if ctx['puede_reportes']:
         qs = _base_tablero(request)
         periodo = qs.filter(creado_en__gte=desde)
@@ -326,7 +328,20 @@ def ayuda(request):
         request, '¿Cómo funciona?', reglas=reglas,
         listo=inteligencia.umbral('listo_para_convertir_score'), indeciso=inteligencia.umbral('indeciso_desde_carreras'),
         cuarentena=p.get('CUARENTENA_DIAS', 30), sin_contacto=p.get('DIAS_SIN_CONTACTO', 5), retencion=p.get('RETENCION_MESES', 18),
-        pasos=primeros_pasos() if puede_config else None, pasos_ocultos=Configuracion.obtener('pasos.ocultos', False)))
+        pasos=primeros_pasos() if puede_config else None, pasos_ocultos=Configuracion.obtener('pasos.ocultos', False),
+        temas=TEMAS_AYUDA, comando=settings.COMANDO, origen=request.build_absolute_uri('/').rstrip('/'),
+        hay_demo=request.user.is_superuser and demo.hay_demo()))
+
+
+TEMAS_AYUDA = [  # (ancla, icono, título) del índice de «¿Cómo funciona?»
+    ('empezar', 'route', 'Cómo viaja una respuesta'), ('respuestas', 'inbox', 'Contestaron y no aparece'),
+    ('dia', 'support_agent', 'Día a día del asesor'), ('familias', 'family_restroom', 'Alumno y familia'),
+    ('visitas', 'qr_code_2', 'Visitas a prepas'), ('calendario', 'calendar_month', 'Calendario'),
+    ('mapa', 'map', 'Preparatorias y mapa'), ('encuestas', 'edit_note', 'Cambiar las encuestas'),
+    ('google', 'dynamic_form', 'Conectar Google'), ('prioridad', 'tune', 'Prioridad y grupos'),
+    ('reportes', 'insights', 'Reportes'), ('configuracion', 'settings', 'Configuración'),
+    ('privacidad', 'verified_user', 'Datos personales'), ('glosario', 'menu_book', 'Palabras'),
+]
 
 
 def huella() -> str:
@@ -870,6 +885,30 @@ def calendario(request):
     return render(request, 'prospectos/calendario.html', _ctx(
         request, 'Calendario', m=cal.mes(anio, num, promotor), agenda=cal.agenda(14, promotor), vencidas=cal.vencidas(),
         puede=puede, editar=editar, hoy=hoy, puede_tareas=request.user.has_perm('prospectos.change_prospecto')))
+
+
+# --------------------------------------------------------------------------- datos de demostración
+@staff_member_required
+def borrar_demo(request):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    from .servicios import demo
+    if request.method == 'POST':
+        if (request.POST.get('confirmar') or '').strip().upper() != 'BORRAR':
+            messages.error(request, 'Escribe BORRAR para confirmar.')
+            return redirect(request.path)
+        try:
+            r = demo.borrar(request.user)
+        except ValueError as e:
+            messages.error(request, str(e))
+            return redirect(request.path)
+        except RuntimeError as e:  # el respaldo previo falló: no se borró nada
+            messages.error(request, f'No se pudo hacer el respaldo previo, así que no se borró nada ({e}).')
+            return redirect(request.path)
+        messages.success(request, f"Listo: se borraron {r['prospectos']} prospectos, {r['respuestas']} respuestas, {r['eventos']} eventos "
+                                  f"y {r['usuarios']} usuarios de demostración. Antes se guardó un respaldo.")
+        return redirect('admin:index')
+    return render(request, 'prospectos/borrar_demo.html', _ctx(request, 'Borrar datos de demostración', inv=demo.inventario(request.user)))
 
 
 # --------------------------------------------------------------------------- uso desde otras computadoras

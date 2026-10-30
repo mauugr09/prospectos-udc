@@ -1,10 +1,6 @@
 {% extends "prospectos/base.html" %}
+{% block ayuda %}respuestas{% endblock %}
 {% block pagina %}
-<div class="ay-intro mb-5">
-  <span class="material-symbols-outlined">inbox</span>
-  <div><b>Aquí llega todo lo que contestan en los Google Forms</b>, alumno por alumno y tutor por tutor, aunque todavía no se pueda usar.
-  Cada respuesta tiene un estado que dice si ya se puede trabajar con ella.</div>
-</div>
 
 <div class="rs-estados mb-5">
   <a href="?" class="rs-estado {% if not f.estado %}activo{% endif %}"><b>{{ total }}</b><span>Todas</span></a>

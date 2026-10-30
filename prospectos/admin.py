@@ -27,6 +27,29 @@ admin.site.index_title = 'Inicio'
 
 
 # --------------------------------------------------------------------------- usuarios
+class AccionesFila:
+    """Botones de editar (o ver) y eliminar al final de cada fila, solo los que el rol permite."""
+
+    def get_list_display(self, request):
+        base = list(super().get_list_display(request))
+        admin_ = self
+        info = (self.model._meta.app_label, self.model._meta.model_name)
+
+        def acciones(obj):
+            botones = []
+            if admin_.has_change_permission(request, obj):
+                botones.append(('admin:%s_%s_change' % info, 'edit', 'Editar', ''))
+            elif admin_.has_view_permission(request, obj):
+                botones.append(('admin:%s_%s_change' % info, 'visibility', 'Ver', ''))
+            if admin_.has_delete_permission(request, obj):
+                botones.append(('admin:%s_%s_delete' % info, 'delete', 'Eliminar', ' peligro'))
+            return format_html('<span class="udc-fila-acciones">{}</span>', format_html_join(
+                '', '<a class="udc-fila-boton{}" href="{}" title="{}" aria-label="{}"><span class="material-symbols-outlined">{}</span></a>',
+                ((clase, reverse(url, args=[obj.pk]), texto, texto, icono) for url, icono, texto, clase in botones)))
+        acciones.short_description = ''
+        return base + [acciones]
+
+
 class PerfilInline(StackedInline):
     model = Perfil
     can_delete = False
@@ -39,7 +62,7 @@ admin.site.unregister(Group)
 
 
 @admin.register(Group)
-class RolAdmin(GroupAdmin, ModelAdmin):
+class RolAdmin(AccionesFila, GroupAdmin, ModelAdmin):
     """Solo administradores: quien edita roles puede darse a sí mismo cualquier permiso."""
 
     def has_module_permission(self, request):
@@ -62,7 +85,7 @@ ROLES_BASE = {'Administrador', 'Admisiones', 'Coordinación', 'Promotor', 'Direc
 
 
 @admin.register(User)
-class UsuarioAdmin(UserAdmin, ModelAdmin):
+class UsuarioAdmin(AccionesFila, UserAdmin, ModelAdmin):
     form = UserChangeForm
     add_form = NuevoUsuarioForm
     change_password_form = AdminPasswordChangeForm
@@ -155,7 +178,7 @@ class UsuarioAdmin(UserAdmin, ModelAdmin):
 
 # --------------------------------------------------------------------------- catálogos
 @admin.register(Preparatoria)
-class PreparatoriaAdmin(ModelAdmin):
+class PreparatoriaAdmin(AccionesFila, ModelAdmin):
     list_display = ['nombre', 'municipio', 'ubicada', 'por_revisar', 'prospectos', 'alumnos_estimados', 'qr', 'activo']
     list_filter = ['por_revisar', 'activo', 'municipio']
     search_fields = ['nombre', 'municipio', 'alias']
@@ -221,7 +244,7 @@ class AvisaPublicar:
 
 
 @admin.register(Carrera)
-class CarreraAdmin(AvisaPublicar, ModelAdmin):
+class CarreraAdmin(AccionesFila, AvisaPublicar, ModelAdmin):
     form = CarreraForm
     list_display = ['nombre', 'area', 'planteles_txt', 'interesados_n', 'activo']
     list_editable = ['activo']
@@ -256,7 +279,7 @@ class CarreraAdmin(AvisaPublicar, ModelAdmin):
 
 
 @admin.register(Etiqueta)
-class EtiquetaAdmin(ModelAdmin):
+class EtiquetaAdmin(AccionesFila, ModelAdmin):
     search_fields = ['nombre']
 
 
@@ -283,7 +306,7 @@ class OpcionInline(TabularInline):
 
 
 @admin.register(Pregunta)
-class PreguntaAdmin(AvisaPublicar, ModelAdmin):
+class PreguntaAdmin(AccionesFila, AvisaPublicar, ModelAdmin):
     form = PreguntaForm
     list_display = ['etiqueta_txt', 'cuestionario', 'tipo_txt', 'tema', 'opciones_n', 'origen', 'orden']
     list_display_links = ['etiqueta_txt']
@@ -352,7 +375,7 @@ class PreguntaAdmin(AvisaPublicar, ModelAdmin):
 
 # --------------------------------------------------------------------------- eventos
 @admin.register(Evento)
-class EventoAdmin(ModelAdmin):
+class EventoAdmin(AccionesFila, ModelAdmin):
     list_display = ['preparatoria', 'fecha', 'estado_label', 'promotor', 'registros', 'herramientas']
     list_fullwidth = True
     list_filter = ['estado', 'fecha', 'promotor', 'preparatoria']
@@ -421,7 +444,7 @@ class ImportacionInline(TabularInline):
 
 
 @admin.register(Formulario)
-class FormularioAdmin(ModelAdmin):
+class FormularioAdmin(AccionesFila, ModelAdmin):
     list_display = ['nombre', 'tipo', 'activo', 'ultima_importacion_en', 'ultima_respuesta_en', 'estado', 'mapeo']
     readonly_fields = ['ultima_respuesta_en', 'ultima_importacion_en', 'ultimo_error', 'errores_consecutivos']
     actions = ['sincronizar_google', 'importar_ahora']
@@ -573,7 +596,7 @@ def iniciales(nombre: str) -> str:
 
 
 @admin.register(Prospecto)
-class ProspectoAdmin(ModelAdmin):
+class ProspectoAdmin(AccionesFila, ModelAdmin):
     change_form_template = 'admin/prospectos/prospecto/change_form.html'
     list_display = ['aspirante', 'score_badge', 'familia', 'segmentos_txt', 'plantel', 'carrera', 'canal', 'estatus_label',
                     'ultimo_contacto_en', 'asesor']

@@ -1,8 +1,6 @@
 {% extends "prospectos/base.html" %}
+{% block ayuda %}prioridad{% endblock %}
 {% block pagina %}
-<div class="udc-nota mb-6"><span class="material-symbols-outlined">tune</span>
-  <div>La prioridad va de 0 a 100: suma de los puntos de las reglas que cumple el aspirante ÷ suma de todos los puntos.
-  <b>Son una suposición inicial</b>: compáralos contra los inscritos reales cuando cierre el primer ciclo.</div></div>
 <form method="post">{% csrf_token %}
 <div class="grid gap-6 xl:grid-cols-2">
   <section class="udc-panel"><header><span class="material-symbols-outlined">scoreboard</span>Puntos de cada regla</header>
@@ -21,7 +19,6 @@
       <div class="flex justify-between items-center gap-4 text-sm"><label for="u-{{ u.clave }}" class="font-semibold">{{ u.nombre }}</label>
         <input id="u-{{ u.clave }}" type="number" min="0" max="100" name="umbral_{{ u.clave }}" value="{{ u.valor }}" class="udc-campo w-24"></div>
     {% endfor %}
-    <p class="text-xs text-subtle">Quien contesta «No, gracias» a recibir información queda en «No quiere información» y sale de la lista de llamadas, sin importar sus puntos.</p>
     </div></section>
 </div>
 <div class="mt-6 flex justify-end"><button type="submit" class="udc-btn"><span class="material-symbols-outlined">save</span>Guardar y recalcular todos</button></div>

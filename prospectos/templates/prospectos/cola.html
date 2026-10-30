@@ -1,4 +1,5 @@
 {% extends "prospectos/base.html" %}
+{% block ayuda %}dia{% endblock %}
 {% block pagina %}
 <form method="get" class="udc-panel mb-4"><div class="udc-cuerpo flex flex-wrap gap-3 items-center">
   <div class="relative grow max-w-sm"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-subtle">search</span>
@@ -13,9 +14,7 @@
   <a class="udc-btn secundario" href="?">Limpiar</a>
 </div></form>
 
-<div class="udc-nota mb-4"><span class="material-symbols-outlined">info</span>
-  <div>Aspirantes con permiso que pidieron información, ordenados por <b>prioridad</b> y luego por quien lleva <b>más tiempo sin contacto</b>. {{ total }} en total{% if total > 200 %} (se muestran 200){% endif %}.
-  {% if no_quieren %}<br><span class="text-subtle">{{ no_quieren }} contestaron «No, gracias» a recibir información: no aparecen aquí y no se les debe llamar.</span>{% endif %}</div></div>
+<p class="text-sm text-subtle mb-3">{{ total }} por llamar{% if total > 200 %} (se muestran 200){% endif %}{% if no_quieren %} · {{ no_quieren }} no quieren información y no aparecen aquí{% endif %}.</p>
 
 <div class="udc-panel overflow-x-auto">
 <table class="udc-tabla">

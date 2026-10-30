@@ -152,7 +152,7 @@ def test_reporte_con_las_preguntas_reales(client, f_alumno, evento):
     r = c.get('/admin/herramientas/reporte/?desde=2026-01-01&hasta=2026-12-31&excel=1')
     assert r['Content-Type'].startswith('application/vnd.openxmlformats')
     html = c.get('/admin/herramientas/cola/').content.decode()
-    assert 'Ana Sofía' in html and 'Luis Pérez' not in html and 'No, gracias' in html
+    assert 'Ana Sofía' in html and 'Luis Pérez' not in html and 'no quieren información' in html
 
 
 # ------------------------------------------------------------- encuesta para padres de familia (real)
@@ -224,7 +224,7 @@ def test_configurar_google_maps_solo_admin_y_validando_la_llave(client):
     assert c.get('/admin/herramientas/mapa/configurar/').status_code == 403
     c.force_login(User.objects.create_superuser('r@x.mx', 'r@x.mx', 'Clave-de-prueba-123'))
     html = c.get('/admin/herramientas/mapa/configurar/').content.decode()
-    assert 'Places API (New)' in html and 'http://testserver/*' in html
+    assert 'Guía para sacar la llave' in html
     c.post('/admin/herramientas/mapa/configurar/', {'llave': 'mi-llave', 'tipo': 'roadmap'})
     assert not Configuracion.obtener('mapa.google')  # formato inválido: no se guarda
     c.post('/admin/herramientas/mapa/configurar/', {'llave': LLAVE, 'tipo': 'hybrid'})

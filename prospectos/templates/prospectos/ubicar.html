@@ -1,13 +1,8 @@
 {% extends "prospectos/base.html" %}
 {% load static %}
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'prospectos/vendor/leaflet/leaflet.css' %}">{% endblock %}
+{% block ayuda %}mapa{% endblock %}
 {% block pagina %}
-<div class="ay-intro mb-4">
-  <span class="material-symbols-outlined">add_location_alt</span>
-  <div><b>Elige una preparatoria, búscala o haz clic donde está, y guarda.</b> Las que tienen más aspirantes van primero.
-  Si dos nombres son la misma escuela, <a class="underline" href="{% url 'admin:prospectos_preparatoria_changelist' %}?por_revisar__exact=1">únelas en Preparatorias</a>
-  (acción «Unir») antes de ubicarlas.</div>
-</div>
 
 <div class="ub-rejilla">
   <section class="tb-card ub-lista">
@@ -41,10 +36,6 @@
       <label class="text-sm">Municipio<br><input id="ub-municipio" class="udc-campo" style="width:16rem"></label>
       <button id="ub-guardar" class="udc-btn" type="button" disabled><span class="material-symbols-outlined">save</span>Guardar ubicación</button>
     </div>
-    <p class="text-xs text-subtle mt-2">{% if tiles.google %}La búsqueda usa Google Maps.{% else %}La búsqueda usa OpenStreetMap, que en el Estado de México no tiene muchas
-      escuelas, calles ni colonias. Lo más rápido: botón <b>Google Maps</b> → clic derecho sobre la escuela → clic en los números (se copian) → pégalos en el buscador:
-      el pin se pone solo. Con una {% if request.user.is_superuser %}<a class="underline" href="{% url 'prospectos:configurar_mapa' %}">llave de Google Maps</a>{% else %}llave de Google Maps (la pone el administrador){% endif %} el buscador encuentra las escuelas por su nombre.{% endif %}
-      Solo se envía lo que escribes, nunca datos de aspirantes.</p>
   </section>
 </div>
 {% csrf_token %}{{ lista|json_script:"ub-lista" }}{{ ubicadas|json_script:"ub-ubicadas" }}{{ tiles|json_script:"tiles" }}

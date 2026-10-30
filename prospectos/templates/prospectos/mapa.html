@@ -1,7 +1,7 @@
 {% extends "prospectos/base.html" %}
 {% load static %}
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'prospectos/vendor/leaflet/leaflet.css' %}">{% endblock %}
-{% block subtitulo %}<p class="subtitulo">De qué preparatorias vienen los aspirantes, cuáles responden mejor y cuáles llevan tiempo sin visita.</p>{% endblock %}
+{% block ayuda %}mapa{% endblock %}
 {% block pagina %}
 <div class="mc-kpis">
   <div class="mc-kpi"><span class="material-symbols-outlined">apartment</span><div><b>{{ resumen.prepas }}</b><small>preparatorias con aspirantes</small></div></div>
@@ -27,6 +27,7 @@
       <button type="button" role="tab" data-modo="visita">Última visita</button>
       <button type="button" role="tab" data-modo="plantel">Plantel</button>
     </div>
+    {% if not sedes and request.user.is_superuser %}<a class="mc-interruptor mc-vidrio" href="{% url 'prospectos:configurar_mapa' %}#sedes"><span class="material-symbols-outlined" style="font-size:18px">school</span>Ubicar planteles</a>{% endif %}
     {% if sedes %}<label class="mc-interruptor mc-vidrio"><input type="checkbox" id="mc-radios" checked> Distancias</label>{% endif %}
   </div>
 
@@ -43,10 +44,6 @@
   <p id="sin-internet" class="mc-aviso mc-vidrio" hidden><span class="material-symbols-outlined">wifi_off</span>Sin internet: solo los estados y las preparatorias.</p>
 </div>
 
-<p class="text-xs text-subtle mt-3">Tamaño del círculo = aspirantes con permiso. Respuesta = aspirantes ÷ alumnos estimados de la prepa.
-{% if not sedes and request.user.is_superuser %}<a class="underline" href="{% url 'prospectos:configurar_mapa' %}#sedes">Ubica los planteles</a> para ver distancias.{% endif %}
-El detalle de calles viene de {% if tiles.google %}Google Maps{% else %}OpenStreetMap{% endif %}; solo se envían coordenadas del mapa, ningún dato de aspirantes.
-{% if request.user.is_superuser %}<a class="underline" href="{% url 'prospectos:configurar_mapa' %}">Cambiar el mapa</a>.{% endif %}</p>
 {{ puntos|json_script:"puntos" }}{{ tiles|json_script:"tiles" }}{{ sedes|json_script:"sedes" }}{{ acciones|json_script:"acciones" }}{{ hoy|json_script:"hoy" }}
 <script src="{% static 'prospectos/vendor/leaflet/leaflet.js' %}"></script>
 <script src="{% static 'prospectos/vendor/googlemutant/Leaflet.GoogleMutant.js' %}"></script>

@@ -1,5 +1,5 @@
 {% extends "prospectos/base.html" %}
-{% block subtitulo %}<p class="subtitulo">Lo que cambies aquí se cambia en el Google Form en ese momento, y el programa ya sabe leerlo.</p>{% endblock %}
+{% block ayuda %}encuestas{% endblock %}
 {% block pagina %}
 {% if not f %}
   <section class="grupo"><p class="lista-vacia">Todavía no hay un Google Form registrado. Agrégalo en Configuración → Formularios de Google.</p></section>
@@ -19,11 +19,6 @@
         <small>{{ s.preguntas|length }}</small></a></li>{% endfor %}
     </ol>
     {% endif %}
-    <div class="enc-consejos">
-      <p><span class="material-symbols-outlined">lock</span>Las preguntas con candado las usa el programa: se pueden reescribir, no quitar.</p>
-      <p><span class="material-symbols-outlined">bolt</span>Cada cambio se ve en el Form al instante. Antes se guarda una copia.</p>
-      <p><span class="material-symbols-outlined">open_in_new</span>Validaciones, imágenes y saltos entre secciones: en «Abrir en Google».</p>
-    </div>
   </aside>
 
   <div class="enc-hoja">

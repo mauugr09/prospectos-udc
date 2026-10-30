@@ -1,5 +1,5 @@
 {% extends "prospectos/base.html" %}
-{% block subtitulo %}<p class="subtitulo">Este QR no cambia: imprímelo en carteles o úsalo en todas las visitas a esta prepa. Las respuestas se asignan a la preparatoria y, si ese día hay un evento ahí, al evento.</p>{% endblock %}
+{% block ayuda %}visitas{% endblock %}
 {% block pagina %}
 {% if qrs.0.1.url and not qrs.0.1.con_codigo %}
 <div class="aviso mb-4"><span class="material-symbols-outlined" style="color:var(--c-naranja)">info</span>
