@@ -165,3 +165,19 @@ def test_busqueda_de_alumno_tolera_acentos_y_variantes_y_da_puntos(client, f_alu
     assert 'Pedro Ruiz Soto' in html and 'data-confirmar' in html  # sin nada en común: pide confirmar
     html = client.get('/admin/herramientas/familias/').content.decode()
     assert 'id="fm-q"' in html and 'Busca a su hijo(a)' in html
+
+
+def test_nombres_de_otro_sexo_no_se_unen():
+    assert familias._otro_sexo('Fernanda Hernández', 'Fernando García Hernández')
+    assert familias._otro_sexo('Daniel Ruiz', 'Daniela Ruiz')
+    assert familias._otro_sexo('Luisa Pérez', 'Luis Pérez')
+    assert not familias._otro_sexo('Fernanda Hernández', 'Fernanda Hernández Díaz')
+    assert not familias._otro_sexo('Andrea López', 'Andrés López')  # distinto, lo decide el parecido
+    assert not familias._otro_sexo('Ana Ruiz', 'Juan Ruiz')
+
+
+def test_fernanda_no_se_une_sola_con_fernando(f_alumno, f_tutor, evento):
+    importar(f_alumno, alumno('a1', 'Fernando García Hernández'))
+    importar(f_tutor, tutor('t1', 'Fernanda Hernández', evento='EV1', tutor_correo=None, tutor_telefono=None, tutor_nombre='Valeria Hernández'))
+    assert Prospecto.objects.filter(fusionado_en__isnull=True).count() == 2
+    assert not familias.pendientes().exists()

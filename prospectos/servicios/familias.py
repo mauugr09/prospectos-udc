@@ -90,6 +90,17 @@ def _contenido(corto: list[str], largo: list[str]) -> bool:
     return True
 
 
+def _otro_sexo(n1: str | None, n2: str | None) -> bool:
+    """El primer nombre es la versión del otro sexo: Fernanda/Fernando, Daniela/Daniel, Andrea/Andrés no; Luisa/Luis sí."""
+    a, b = (texto.normalizar(n1).split(' ') or [''])[0], (texto.normalizar(n2).split(' ') or [''])[0]
+    if not a or not b or a == b or len(a) < 3 or len(b) < 3:
+        return False
+    corto, largo = sorted((a, b), key=len)
+    if len(largo) - len(corto) == 1 and largo.startswith(corto) and largo[-1] == 'a':
+        return True  # Luis/Luisa, Daniel/Daniela, Manuel/Manuela
+    return len(a) == len(b) and a[:-1] == b[:-1] and {a[-1], b[-1]} == {'a', 'o'}  # Fernando/Fernanda, Mario/Maria
+
+
 def puntuar(familia: Lado, alumno: Lado) -> tuple[int, list[str]]:
     """Puntos e indicios de que `familia` (encuesta de padres) habla de `alumno`."""
     f, a = familia.p, alumno.p
@@ -98,6 +109,8 @@ def puntuar(familia: Lado, alumno: Lado) -> tuple[int, list[str]]:
     if familia.contacto_aspirante & {x for x in (a.correo_bi, a.telefono_bi) if x}:
         return 100, ['la familia dio el correo o teléfono del alumno']
     puntos, razones = 0, []
+    if _otro_sexo(f.nombre_aspirante, a.nombre_aspirante):
+        return 0, []  # Fernanda/Fernando, Daniela/Daniel: el apellido y el día no bastan para unirlos
     contactos_alumno = {x for x in (a.telefono_bi, a.correo_bi, a.tutor_telefono_bi, a.tutor_correo_bi) if x}
     if {x for x in (f.tutor_telefono_bi, f.tutor_correo_bi) if x} & contactos_alumno:
         puntos += 40
