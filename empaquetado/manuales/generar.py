@@ -15,7 +15,7 @@ MANUALES = [
     ('manual-instalacion-operacion.md', 'Manual-de-instalacion-y-operacion.pdf', 'Manual de instalación y operación',
      'Instalación, respaldos, actualización y recuperación', ['puesta-en-marcha.md', 'formularios.md', 'mariadb.md', 'seguridad.md']),
     ('tecnica.md', 'Documentacion-tecnica.pdf', 'Documentación técnica', 'Arquitectura, modelo de datos, mantenimiento y construcción',
-     ['decisiones.md', 'autoria.md']),
+     ['decisiones.md']),
 ]
 ANEXO_TITULO = {'puesta-en-marcha.md': 'Anexo A', 'formularios.md': 'Anexo B', 'mariadb.md': 'Anexo C', 'seguridad.md': 'Anexo D',
                 'decisiones.md': 'Anexo A', 'autoria.md': 'Anexo B'}
