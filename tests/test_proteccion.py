@@ -6,7 +6,7 @@ import pytest
 from django.contrib.auth.models import User
 from django.core.cache import cache
 
-from prospectos.models import Auditoria, Configuracion, PosibleCoincidencia, Prospecto, Respaldo
+from prospectos.models import Auditoria, Configuracion, Prospecto
 from prospectos.servicios import familias, respaldos, uniones
 from prospectos.servicios.inteligencia import fusionar
 

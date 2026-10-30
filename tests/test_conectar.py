@@ -36,7 +36,7 @@ def test_conectar_compara_el_codigo_e_instala(principal, tmp_path, monkeypatch):
     monkeypatch.setattr(cliente, 'instalar_certificado', lambda ruta: (instalados.append(ruta), (True, ''))[1])
     dicho = []
     carpeta = tmp_path / 'conectada'
-    servidor = cliente.configurar(carpeta, _respuestas('https://127.0.0.1:18444/admin/', 's'), dicho.append)
+    servidor = cliente.configurar(carpeta, _respuestas('https://127.0.0.1:18444/admin/', 's'), dicho.append, buscar_fn=lambda: [])
     assert servidor == 'https://127.0.0.1:18444/'
     assert red.codigo_ca(principal) in '\n'.join(dicho)  # el mismo código que muestra la principal
     assert cliente.leer(carpeta)['codigo'] == red.codigo_ca(principal)
@@ -51,7 +51,7 @@ def test_conectar_compara_el_codigo_e_instala(principal, tmp_path, monkeypatch):
 def test_si_el_codigo_no_coincide_no_se_conecta(principal, tmp_path, monkeypatch):
     monkeypatch.setattr(cliente, 'instalar_certificado', lambda ruta: pytest.fail('no debe instalar'))
     carpeta = tmp_path / 'conectada'
-    assert cliente.configurar(carpeta, _respuestas('127.0.0.1:18444', 'n'), lambda *_: None) is None
+    assert cliente.configurar(carpeta, _respuestas('127.0.0.1:18444', 'n'), lambda *_: None, buscar_fn=lambda: []) is None
     assert not cliente.leer(carpeta) and not (carpeta / cliente.CERTIFICADO).exists()
 
 
@@ -145,3 +145,29 @@ def test_abrir_al_iniciar_sesion(tmp_path, monkeypatch):
     assert arranque.activo() and '&amp;' in destino.read_text() or 'Prospectos' in destino.read_text()
     arranque.desactivar()
     assert not arranque.activo()
+
+
+def test_la_principal_se_encuentra_sola_en_la_red(tmp_path):
+    red.asegurar_certificados(tmp_path)
+    sock = red.responder_descubrimiento({'PUERTO_RED': 18444}, tmp_path, puerto_udp=18445)
+    try:
+        encontradas = cliente.buscar(tiempo=1, destinos=('127.0.0.1',), puerto=18445)
+    finally:
+        sock.close()
+    assert encontradas == [{'servidor': 'https://127.0.0.1:18444/', 'equipo': red.nombre_equipo(), 'codigo': red.codigo_ca(tmp_path)}]
+
+
+@pytest.mark.django_db(transaction=True)
+def test_conectar_eligiendo_la_encontrada(principal, tmp_path, monkeypatch):
+    monkeypatch.setattr(cliente, 'instalar_certificado', lambda ruta: (True, ''))
+    carpeta = tmp_path / 'conectada'
+    encontrada = [{'servidor': 'https://127.0.0.1:18444/', 'equipo': 'PC-ADMISIONES', 'codigo': 'X'}]
+    dicho = []
+    assert cliente.configurar(carpeta, _respuestas('', 's'), dicho.append, buscar_fn=lambda: encontrada) == 'https://127.0.0.1:18444/'
+    assert 'PC-ADMISIONES' in '\n'.join(dicho) and cliente.leer(carpeta)
+
+
+def test_sin_principal_en_la_red_pide_la_direccion(tmp_path):
+    dicho = []
+    assert cliente.configurar(tmp_path, _respuestas(''), dicho.append, buscar_fn=lambda: []) is None
+    assert any('VPN' in d for d in dicho)

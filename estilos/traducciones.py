@@ -29,9 +29,6 @@ T = {
     'Toggle sidebar': 'Mostrar u ocultar el menú',
     'Toggle password visibility': 'Mostrar u ocultar contraseña',
     'Toggle sorting': 'Cambiar orden',
-    'Light': 'Claro',
-    'Dark': 'Oscuro',
-    'System': 'Sistema',
     'No results found': 'Sin resultados',
     'Nothing matched your search': 'Nada coincide con tu búsqueda',
     'This page yielded into no results.': 'Esta página no tiene resultados.',
@@ -85,9 +82,9 @@ def escribir_mo(traducciones: dict, destino: pathlib.Path) -> None:
     inicio_k = 7 * 4 + 16 * n
     inicio_v = inicio_k + len(ids)
     tabla = []
-    for o1, l1, o2, l2 in offsets:
+    for o1, l1, _o2, _l2 in offsets:
         tabla += [l1, o1 + inicio_k]
-    for o1, l1, o2, l2 in offsets:
+    for _o1, _l1, o2, l2 in offsets:
         tabla += [l2, o2 + inicio_v]
     cabecera = array.array('I', [0x950412de, 0, n, 7 * 4, 7 * 4 + n * 8, 0, 0])
     destino.parent.mkdir(parents=True, exist_ok=True)

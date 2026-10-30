@@ -8,8 +8,7 @@ from collections import Counter
 from datetime import datetime, time, timedelta
 
 import segno
-from django.db.models import Count, F, Max, Q, Sum, Value
-from django.db.models.functions import Coalesce
+from django.db.models import Count, F, Max, Q, Sum
 from django.utils import timezone
 
 from .. import catalogos

@@ -78,7 +78,7 @@ def test_exportar_con_permiso_y_bitacora(client, datos):
     from openpyxl import load_workbook
     filas = list(load_workbook(BytesIO(b''.join(r.streaming_content) if r.streaming else r.content)).active.values)
     assert len(filas[0]) == len(filas[1])  # cada encabezado con su dato (no quedan columnas corridas)
-    assert dict(zip(filas[0], filas[1]))['Prioridad'] == datos.score
+    assert dict(zip(filas[0], filas[1], strict=True))['Prioridad'] == datos.score
     c = cliente(client, usuario('p9@x.mx', 'Promotor'))
     html = c.get('/admin/prospectos/prospecto/').content.decode()
     assert 'exportar_excel' not in html
@@ -158,7 +158,8 @@ def test_anonimizar_arco_pide_confirmacion(client, datos):
 def test_login_lleva_al_tablero_con_la_identidad_udc(client):
     User.objects.create_superuser('root@x.mx', 'root@x.mx', 'Clave-de-prueba-123')
     html = client.get('/admin/login/').content.decode()
-    assert 'acceso-titulo' in html and 'Universidad de Cuautitlán' in html
+    assert 'ac-tarjeta' in html and 'udc-edificio.jpg' in html and 'Universidad de Cuautitlán' in html
+    assert 'sign up' not in html.lower() and 'name="password"' in html  # sin registro público
     r = client.post('/admin/login/', {'username': 'root@x.mx', 'password': 'Clave-de-prueba-123'})
     assert r.status_code == 302 and r['Location'] == '/admin/'
     html = client.get('/admin/').content.decode()

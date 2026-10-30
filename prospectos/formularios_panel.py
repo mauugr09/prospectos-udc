@@ -7,10 +7,10 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from unfold.widgets import (UnfoldAdminCheckboxSelectMultipleWidget, UnfoldAdminEmailInputWidget, UnfoldAdminSelectWidget,
-                            UnfoldAdminTextareaWidget, UnfoldAdminTextInputWidget, UnfoldBooleanSwitchWidget)
+                            UnfoldAdminTextareaWidget, UnfoldAdminTextInputWidget)
 
 from . import catalogos
-from .models import Carrera, OpcionPregunta, Perfil, Preparatoria, Pregunta, TipoPregunta
+from .models import Carrera, Perfil, Preparatoria, Pregunta, TipoPregunta
 
 
 class LineasField(forms.CharField):

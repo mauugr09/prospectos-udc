@@ -11,7 +11,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from .. import catalogos
-from ..models import (Carrera, Cuestionario, EstadoRespuesta, Evento, Formulario, Importacion, Pregunta,
+from ..models import (Carrera, Cuestionario, EstadoRespuesta, Formulario, Importacion, Pregunta,
                       Preparatoria, Respuesta, RespuestaItem)
 from . import texto
 from .fuentes import fuente_por_defecto

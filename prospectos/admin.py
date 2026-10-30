@@ -14,7 +14,7 @@ from django.utils.safestring import mark_safe
 
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
 from unfold.decorators import display
-from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
+from unfold.forms import AdminPasswordChangeForm, UserChangeForm
 from unfold.widgets import UnfoldAdminTextareaWidget
 
 from .formularios_panel import CarreraForm, NuevoUsuarioForm, OpcionesFormSet, PreguntaForm, PreparatoriaForm
@@ -227,7 +227,7 @@ class PreparatoriaAdmin(AccionesFila, ModelAdmin):
     @display(description='En el mapa')
     def ubicada(self, obj):
         if obj.lat is not None and obj.lng is not None:
-            return mark_safe('<span class="udc-chip udc-seg-listo_para_convertir">Sí</span>')
+            return mark_safe('<span class="udc-chip udc-seg-listo_para_convertir">Sí</span>')  # nosec B308
         return format_html('<a class="udc-chip udc-seg-sensible_beca" href="{}?prepa={}">Ubicar</a>',
                            reverse('prospectos:ubicar'), obj.pk)
 
@@ -253,9 +253,9 @@ class AvisaPublicar:
         for t in self._tipos(obj):
             Configuracion.guardar(f'publicar.pendiente.{t}', True, request.user)
         if Formulario.objects.filter(activo=True).exclude(google_form_id__startswith='demo-').exists():
-            self.message_user(request, mark_safe(
-                f'El Google Form todavía no tiene este cambio. <a class="underline" href="{reverse("prospectos:encuestas")}">'
-                'Pásalo al Form en Encuestas</a>.'), messages.INFO)
+            self.message_user(request, format_html(
+                'El Google Form todavía no tiene este cambio. <a class="underline" href="{}">Pásalo al Form en Encuestas</a>.',
+                reverse('prospectos:encuestas')), messages.INFO)
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
@@ -325,7 +325,7 @@ class OpcionInline(TabularInline):
     @display(description='')
     def fija_txt(self, obj):
         if obj and obj.fija:
-            return mark_safe('<span class="udc-chip udc-seg-sensible_beca" title="La usan las reglas de prioridad: '
+            return mark_safe('<span class="udc-chip udc-seg-sensible_beca" title="La usan las reglas de prioridad: '  # nosec B308
                              'puedes cambiarle el texto, no borrarla">Usada por las reglas</span>')
         return ''
 
@@ -602,7 +602,7 @@ def pill_score(score: int):
 
 def chips_segmentos(segmentos, maximo=None):
     if not segmentos:
-        return mark_safe('<span class="text-subtle">—</span>')  # noqa: S308 - texto fijo
+        return mark_safe('<span class="text-subtle">—</span>')  # noqa: S308 - texto fijo  # nosec B308
     visibles = segmentos[:maximo] if maximo else segmentos
     resto = len(segmentos) - len(visibles)
     return format_html('<span class="udc-chips">{}{}</span>', format_html_join(

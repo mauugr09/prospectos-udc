@@ -7,7 +7,7 @@ from prospectos.models import (Auditoria, Configuracion, Cuestionario, EstadoRes
 from prospectos.servicios import importacion, preparatorias, semillas
 from prospectos.servicios.fuentes import FuenteMemoria
 
-from .conftest import alumno, api, importar, usuario
+from .conftest import alumno, importar, usuario
 
 # Títulos tal cual vienen del Form de la universidad (con sus faltas de ortografía).
 ESTRUCTURA = {

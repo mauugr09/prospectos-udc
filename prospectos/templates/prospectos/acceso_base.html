@@ -1,0 +1,29 @@
+{% extends 'unfold/layouts/unauthenticated.html' %}
+{% load static %}
+{% block title %}{{ title }} | {{ site_title }}{% endblock %}
+{% block bodyclass %}{{ block.super }} acceso-udc{% endblock %}
+{% block base %}
+<main class="ac-escena">
+  <div class="ac-fondo" aria-hidden="true"></div>
+  <section class="ac-tarjeta">
+    <div class="ac-foto" aria-hidden="true">
+      <div class="ac-foto-img" style="background-image:url('{% static 'prospectos/marca/udc-edificio.jpg' %}')"></div>
+      <div class="ac-nubes"></div>
+      <div class="ac-brillo"></div>
+    </div>
+    <div class="ac-lado">
+      <p class="ac-eyebrow">Universidad de Cuautitlán · Admisiones</p>
+      <h1 class="ac-lema">Cada aspirante,<br>a tiempo.</h1>
+      <div class="ac-chip"><span class="material-symbols-outlined">lock</span>
+        <span>¿Aún no tienes cuenta? Pídela a quien administra el programa.</span></div>
+    </div>
+    <div class="ac-panel">
+      <div class="ac-marca">
+        <img src="{% static 'prospectos/marca/favicon.svg' %}" alt="" width="40" height="40">
+        <div><b>Prospectos</b><small>UDC · Admisiones</small></div>
+      </div>
+      {% block panel %}{% endblock %}
+    </div>
+  </section>
+</main>
+{% endblock %}

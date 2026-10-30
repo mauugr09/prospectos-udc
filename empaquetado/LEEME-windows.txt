@@ -17,7 +17,7 @@ ANTES DE INSTALAR: ¿esta PC va a CORRER el programa o solo a USARLO?
 
 3. La primera vez pregunta el papel de esta computadora:
    P = PRINCIPAL: aquí se guardan los datos (solo UNA computadora de la oficina).
-   C = CONECTARME a la principal: escribe su dirección y compara el código que aparece con el de
+   C = CONECTARME a la principal: en la misma red la encuentra sola (si no, escribe su dirección) y compara el código que aparece con el de
        la principal (Configuración > Otras computadoras). Si coincide, escribe S y acepta el
        certificado. Desde entonces, doble clic en Prospectos.exe abre la principal.
    En la PRINCIPAL, después pide crear el ADMINISTRADOR (tu correo y una contraseña de 12 caracteres o más).

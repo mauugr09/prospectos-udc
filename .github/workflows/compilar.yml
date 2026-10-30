@@ -1,18 +1,45 @@
-# Pruebas y versiones para Windows y Mac (chip Apple) en computadoras reales de GitHub.
-# Cada ejecución deja descargables: Prospectos-windows (.zip) y Prospectos-mac (.dmg).
-# Con una etiqueta v1.2.3 además crea un «Release» con los dos archivos.
-name: Compilar Windows y Mac
+# Integración y entrega continuas (CI/CD).
+#  1. ITV: estilo, seguridad del código, dependencias con fallas conocidas, migraciones y pruebas con cobertura.
+#     Corre en cada push y en cada pull request; si no pasa, no se compila nada y el cambio no se puede unir a main.
+#  2. Pruebas con MariaDB.
+#  3. Solo en main o con una etiqueta v1.2.3: compila y prueba en Windows y Mac reales (Prospectos-windows.zip y .dmg).
+#     Con una etiqueta además publica un «Release» con los dos archivos (la entrega).
+name: ITV y compilación
 on:
   workflow_dispatch:
+  pull_request:
   push:
-    branches: [main]
+    branches: ['**']
     tags: ['v*']
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write   # solo para publicar el Release de una etiqueta
 
 jobs:
+  itv:
+    name: ITV (revisión del código)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.13', cache: pip }
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: ITV
+        shell: bash
+        env: { PYTHON: python }
+        run: |
+          set +eo pipefail
+          bash empaquetado/itv.sh 2>&1 | tee salida.txt; r=${PIPESTATUS[0]}
+          [ $r -eq 0 ] || grep -E '✗|FAILED|ERROR|error:' salida.txt | tail -15 | sed 's/^/::error::/'
+          exit $r
+
   pruebas:
+    name: Pruebas con MariaDB
+    needs: itv
     runs-on: ubuntu-24.04
     services:
       mariadb:
@@ -30,13 +57,6 @@ jobs:
         with: { python-version: '3.13', cache: pip }
       - run: pip install -r requirements.txt -r requirements-dev.txt
       # Los errores se repiten como «anotaciones» (::error::) para leerlos sin abrir el registro completo.
-      - name: Pruebas con SQLite
-        shell: bash
-        run: |
-          set +eo pipefail
-          pytest 2>&1 | tee salida.txt; r=${PIPESTATUS[0]}
-          [ $r -eq 0 ] || tail -10 salida.txt | sed 's/^/::error::/'
-          exit $r
       - name: Cliente de MariaDB (mariadb-dump para la prueba de respaldos)
         run: sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq mariadb-client
       - name: Pruebas con MariaDB
@@ -51,6 +71,7 @@ jobs:
 
   windows:
     needs: pruebas
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: windows-2025
     steps:
       - uses: actions/checkout@v5
@@ -95,8 +116,11 @@ jobs:
         shell: pwsh
         run: |
           Copy-Item empaquetado\LEEME-windows.txt dist\Prospectos\LEEME.txt
-          Copy-Item README.md dist\Prospectos\
-          Copy-Item docs dist\Prospectos\docs -Recurse
+          Copy-Item LICENSE, AVISOS-TERCEROS.md dist\Prospectos\
+          Copy-Item docs dist\Prospectos\docs -Recurse -Exclude diagramas
+          # Notas internas que no van a la UDC
+          Remove-Item dist\Prospectos\docs\autoria.md, dist\Prospectos\docs\decisiones.md -ErrorAction SilentlyContinue
+          Remove-Item dist\Prospectos\docs\diagramas -Recurse -ErrorAction SilentlyContinue
           (Get-FileHash dist\Prospectos\Prospectos.exe -Algorithm SHA256).Hash | Set-Content dist\Prospectos\SHA256-Prospectos.exe.txt
           Compress-Archive dist\Prospectos dist\Prospectos-windows.zip
       - uses: actions/upload-artifact@v5
@@ -104,6 +128,7 @@ jobs:
 
   mac:
     needs: pruebas
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: macos-15   # chip Apple (arm64)
     steps:
       - uses: actions/checkout@v5

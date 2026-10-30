@@ -39,7 +39,7 @@ class Command(BaseCommand):
                 from prospectos.views import huella
                 for puerto in range(int(settings.CONFIG.get('PUERTO', 8000)), int(settings.CONFIG.get('PUERTO', 8000)) + 20):
                     try:
-                        with urlopen(f'http://127.0.0.1:{puerto}/salud/', timeout=1) as r:
+                        with urlopen(f'http://127.0.0.1:{puerto}/salud/', timeout=1) as r:  # nosec B310
                             if r.read().decode() == f'prospectos-ok:{huella()}':
                                 raise CommandError('El programa está abierto. Ciérralo (cierra su ventana) y vuelve a ejecutar la restauración.')
                     except OSError:

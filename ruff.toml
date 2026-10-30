@@ -1,0 +1,13 @@
+# «ITV» del código: lo que revisa la integración continua antes de aceptar un cambio.
+line-length = 160
+extend-exclude = ["staticfiles", "build", "dist", "datos", "prospectos/migrations"]
+
+[lint]
+select = ["E", "F", "W", "B"]
+ignore = [
+  "E402",  # config/settings.py importa después de leer config.json, a propósito
+  "E501",  # largo de renglón: estilo, no defecto
+]
+
+[lint.per-file-ignores]
+"tests/*" = ["F811"]  # las fixtures de pytest se importan y se reciben con el mismo nombre

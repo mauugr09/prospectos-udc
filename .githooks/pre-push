@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Antes de subir a GitHub, la ITV en esta computadora. Para saltarla en una emergencia: git push --no-verify
+echo 'ITV antes de subir (git push)…'
+exec bash "$(git rev-parse --show-toplevel)/empaquetado/itv.sh"

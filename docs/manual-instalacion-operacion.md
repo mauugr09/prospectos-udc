@@ -146,7 +146,8 @@ expuestos a cualquiera que adivine una contraseña.
 ### 6.3 Conectar una computadora
 
 **Windows:** copia la carpeta del programa **sin** la carpeta `datos`, ábrelo y elige
-**C · Conectarme a la principal**. Escribe la dirección, compara el código con el de la principal y, si es
+**C · Conectarme a la principal**. En la misma red la **encuentra sola** (pulsa Enter); desde otro plantel
+o la VPN no se puede buscar, así que escribe la dirección fija. Compara el código con el de la principal y, si es
 igual, escribe **S**; Windows pregunta si instalas el certificado: **Sí**. Desde entonces, doble clic en
 `Prospectos.exe` comprueba que la principal responda y abre el navegador ahí. Si la principal está apagada,
 lo dice y reintenta durante 2 minutos. Para cambiar de principal: `Prospectos.exe conectar`.

@@ -24,8 +24,8 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
 from django.utils import timezone
 
-from ..models import (ACTIVOS, Actividad, Carrera, Configuracion, Estatus, Evento, Plantel, Preparatoria, Prospecto,
-                      Segmento, Seguimiento, TipoSeguimiento, etiqueta_segmento)
+from ..models import (ACTIVOS, Actividad, Configuracion, Estatus, Evento, Preparatoria, Prospecto,
+                      TipoSeguimiento, etiqueta_segmento)
 from . import auditoria, texto
 
 log = logging.getLogger('prospectos.asistente')
@@ -80,7 +80,7 @@ def h_embudo(user, args) -> dict:
     qs, desc, params = A.filtrar(A.base(user).filter(creado_en__range=(A._aware(desde), A._aware(hasta, True))), args)
     conteo = dict(qs.values_list('estatus').annotate(n=Count('id')).order_by())
     total = qs.count()
-    etapas, acumulado = [], total
+    etapas = []
     for e in Estatus:
         n = conteo.get(e.value, 0)
         etapas.append({'estatus': e.label, 'n': A._oculto(n) if n else 0, 'pct': round(n / total * 100) if total else None})
@@ -116,22 +116,22 @@ def _desenvolver(md: str) -> str:
     salida = []
     encabezado_tabla = True
     for linea in md.splitlines():
-        l = linea.rstrip()
-        if l.strip().startswith('|'):
-            celdas = [c.strip() for c in l.strip().strip('|').split('|')]
+        renglon = linea.rstrip()
+        if renglon.strip().startswith('|'):
+            celdas = [c.strip() for c in renglon.strip().strip('|').split('|')]
             if all(re.fullmatch(r':?-{2,}:?', c) for c in celdas if c):
                 continue
             if encabezado_tabla:
                 encabezado_tabla = False
                 continue  # la fila de títulos de la tabla
-            l = f'- {celdas[0]}: ' + ' — '.join(c for c in celdas[1:] if c)
+            renglon = f'- {celdas[0]}: ' + ' — '.join(c for c in celdas[1:] if c)
         else:
             encabezado_tabla = True
-        nuevo_bloque = not l.strip() or re.match(r'\s*([-*•>|#]|\d+[.)])\s', l + ' ')
+        nuevo_bloque = not renglon.strip() or re.match(r'\s*([-*•>|#]|\d+[.)])\s', renglon + ' ')
         if salida and not nuevo_bloque and salida[-1].strip():
-            salida[-1] += ' ' + l.strip()
+            salida[-1] += ' ' + renglon.strip()
         else:
-            salida.append(l)
+            salida.append(renglon)
     texto_plano = '\n'.join(salida)
     texto_plano = re.sub(r'(?<!\*)\*(?!\*)([^*\n]+)(?<!\*)\*(?!\*)', r'\1', texto_plano)
     return re.sub(r'\n{3,}', '\n\n', texto_plano).strip()

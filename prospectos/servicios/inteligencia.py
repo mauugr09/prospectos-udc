@@ -9,7 +9,6 @@ Orden del enlace de una respuesta:
   4. Si nada aplica → prospecto nuevo.
 """
 
-import re
 
 from django.conf import settings
 from django.db import transaction

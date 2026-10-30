@@ -13,7 +13,6 @@ from __future__ import annotations
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Q
 
 from ..models import Configuracion, Evento, Formulario, Preparatoria, Prospecto, Respuesta
 from . import auditoria
@@ -93,13 +92,13 @@ def borrar(quien) -> dict:
     with transaction.atomic():
         pros = list(_prospectos().values_list('pk', flat=True))
         eventos = list(_eventos(pros).values_list('pk', flat=True))
-        n_resp = Respuesta.objects.filter(formulario__in=_forms()).delete()[0]
-        n_pros = Prospecto.objects.filter(pk__in=pros).delete()[0]
-        n_ev = Evento.objects.filter(pk__in=eventos).delete()[0]
-        n_forms = _forms().delete()[0]
+        Respuesta.objects.filter(formulario__in=_forms()).delete()
+        Prospecto.objects.filter(pk__in=pros).delete()
+        Evento.objects.filter(pk__in=eventos).delete()
+        _forms().delete()
         # Prepas ficticias: solo si ya no tienen eventos ni prospectos.
         prepas = _prepas_demo().filter(eventos__isnull=True, prospectos__isnull=True)
-        n_prepas = prepas.delete()[0]
+        prepas.delete()
         usuarios = _usuarios(quien)
         n_us = usuarios.count()
         usuarios.delete()
