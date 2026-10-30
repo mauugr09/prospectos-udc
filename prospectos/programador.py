@@ -99,14 +99,15 @@ class Programador(threading.Thread):
                 self._correr('bienvenidas', seguimiento.reintentar_bienvenidas)
             if self._toca('tareas', 3600):
                 self._correr('tareas', seguimiento.generar_tareas_sin_contacto)
-            if self._toca('avisos', 300):
-                self._correr('avisos', avisos.revisar)
             if self._toca('respaldo', 300):
                 self._correr('respaldo', respaldar)
             if self._toca('verificar', 3600):
                 self._correr('verificar', verificar)
             if self._toca('retencion', 3600):
                 self._correr('retencion', retencion)
+            # Al final: así ve el respaldo recién hecho y no avisa en falso al abrir el programa.
+            if self._toca('avisos', 300):
+                self._correr('avisos', avisos.revisar)
             self.detener.wait(15)
 
 

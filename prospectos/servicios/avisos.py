@@ -203,6 +203,9 @@ def problemas_del_sistema() -> int:
             problemas.append((f'importacion:{f.pk}:{hoy}', f'No se pudieron traer las respuestas de «{f}»',
                               (ultima.mensaje or 'Error sin detalle.')[:200],
                               reverse('admin:prospectos_formulario_change', args=[f.pk])))
+    # Lo que ya se arregló solo (el respaldo volvió a salir bien, el Form volvió a leerse) deja de contar como pendiente.
+    Notificacion.objects.filter(tipo=TipoAviso.SISTEMA, leida_en__isnull=True).exclude(
+        clave__in=[p[0] for p in problemas]).update(leida_en=timezone.now())
     n = 0
     for u in _admins():
         for clave, titulo, detalle, url in problemas:

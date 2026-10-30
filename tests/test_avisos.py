@@ -123,6 +123,9 @@ def test_problemas_del_sistema_solo_a_administradores(promotor):
     assert not Notificacion.objects.filter(usuario=promotor).exists()
     assert set(Notificacion.objects.filter(usuario=jefa).values_list('tipo', flat=True)) == {'sistema'}
     assert avisos.problemas_del_sistema() == 0
+    Respaldo.objects.create(archivo='r2.gz', estado='ok')  # se arregló solo
+    avisos.problemas_del_sistema()
+    assert avisos.no_leidas(jefa) == 0 and Notificacion.objects.filter(usuario=jefa).count() == 2
 
 
 def test_limpiar_borra_los_viejos(promotor):
