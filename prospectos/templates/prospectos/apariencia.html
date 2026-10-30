@@ -4,12 +4,23 @@
   <header class="grupo-cabecera"><h2>Foto de fondo</h2></header>
   <div class="grupo-cuerpo flex flex-col gap-4">
     <input type="text" hidden aria-hidden="true" tabindex="-1">{# unfold escribe aquí el nombre del archivo elegido #}
-    <div class="ap-muestra"><span>{% if tiene_foto %}Foto actual{% else %}Degradado de la marca (sin foto){% endif %}</span></div>
+    <div class="ap-muestra" id="ap-muestra" style="--atm-pos:center {{ fondo_y }}%"><span>{% if tiene_foto %}Así se ve en una pantalla ancha{% else %}Degradado de la marca (sin foto){% endif %}</span></div>
+    {% if tiene_foto %}
+    <form method="post" class="flex flex-wrap gap-3 items-center">{% csrf_token %}<input type="hidden" name="accion" value="encuadre">
+      <label class="text-sm grow">Qué parte de la foto se ve (útil si es vertical)<br>
+        <input type="range" name="fondo_y" min="0" max="100" value="{{ fondo_y }}" class="w-full" id="ap-encuadre"
+               oninput="document.getElementById('ap-muestra').style.setProperty('--atm-pos', 'center ' + this.value + '%')"></label>
+      <button class="udc-btn secundario">Guardar encuadre</button>
+    </form>
+    {% endif %}
     <form method="post" enctype="multipart/form-data" class="flex flex-wrap gap-3 items-end">{% csrf_token %}
       <label class="text-sm">Foto de un plantel (JPG, PNG o WebP, hasta 8 MB)<br><input type="file" name="foto" accept="image/jpeg,image/png,image/webp" class="udc-campo" required></label>
       <button class="udc-btn"><span class="material-symbols-outlined">upload</span>Usar esta foto</button>
     </form>
-    {% if tiene_foto %}<form method="post">{% csrf_token %}<button class="udc-btn secundario" name="accion" value="quitar">Quitar la foto</button></form>{% endif %}
+    <form method="post" class="flex flex-wrap gap-2">{% csrf_token %}
+      {% if propia or sin_foto %}<button class="udc-btn secundario" name="accion" value="original">Usar la foto del edificio de la UDC</button>{% endif %}
+      {% if tiene_foto %}<button class="udc-btn secundario" name="accion" value="quitar">Sin foto (solo el degradado)</button>{% endif %}
+    </form>
     <p class="text-sm text-subtle">Funciona mejor una foto horizontal, de unos 2000 píxeles de ancho, sin texto. Se ve completa en el Inicio y muy tenue en las demás pantallas.</p>
   </div>
 </section>

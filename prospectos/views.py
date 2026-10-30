@@ -1,6 +1,7 @@
 """Pantallas extra del panel: tablero, cola de asesores, evento en vivo, QR, mapa, reporte ejecutivo, scoring, mapeo."""
 
 import json
+from pathlib import Path
 from datetime import date, datetime, time, timedelta
 from io import BytesIO
 
@@ -120,6 +121,14 @@ def _actividad(qs, dias: int, hoy):
     return {'etiquetas': etiquetas, 'valores': valores, 'total': actual, 'previo': previo, 'crecimiento': crecimiento}
 
 
+def _fondo_y() -> int:
+    """Qué parte de la foto de fondo se ve (0 = arriba, 100 = abajo): importa con fotos verticales."""
+    try:
+        return max(0, min(100, int(Configuracion.obtener('apariencia.fondo_y', 40))))
+    except (TypeError, ValueError):
+        return 40
+
+
 def _saludo() -> str:
     h = timezone.localtime().hour
     return 'Buenos días' if 5 <= h < 12 else 'Buenas tardes' if 12 <= h < 19 else 'Buenas noches'
@@ -140,7 +149,7 @@ def contexto_tablero(request, context=None) -> dict:
         'hoy': hoy, 'dias': dias, 'periodos': PERIODOS, 'periodo_txt': dict(PERIODOS)[dias].replace('12 meses', 'año'),
         'puede_reportes': u.has_perm('prospectos.ver_reportes'),
         'eventos_hoy': Evento.objects.filter(fecha=hoy).select_related('preparatoria'),
-        'saludo': _saludo(), 'nombre_corto': (u.first_name or u.get_username().split('@')[0]).split()[0].capitalize(),
+        'saludo': _saludo(), 'fondo_y': _fondo_y(), 'nombre_corto': (u.first_name or u.get_username().split('@')[0]).split()[0].capitalize(),
     })
     tarjetas = []
     if u.has_perm('prospectos.change_prospecto'):
@@ -374,12 +383,25 @@ _FORMATOS_FONDO = {b'\xff\xd8\xff': ('jpg', 'image/jpeg'), b'\x89PNG': ('png', '
 _PIXEL = b'GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;'
 
 
-def _fondo_actual():
+def _fondo_propio():
     for ext, tipo in (('jpg', 'image/jpeg'), ('png', 'image/png'), ('webp', 'image/webp')):
         ruta = settings.DATA_DIR / f'{FONDO_ARCHIVO}.{ext}'
         if ruta.exists():
             return ruta, tipo
     return None, None
+
+
+def _fondo_actual():
+    """La foto que se ve: la que subieron en Apariencia; si no, la del edificio de la UDC que trae el programa;
+    ninguna si eligieron solo el degradado."""
+    ruta, tipo = _fondo_propio()
+    if ruta:
+        return ruta, tipo
+    if Configuracion.obtener('apariencia.sin_foto', False):
+        return None, None
+    from django.contrib.staticfiles import finders
+    incluida = finders.find('prospectos/marca/fondo-udc.jpg')
+    return (Path(incluida), 'image/jpeg') if incluida else (None, None)
 
 
 def fondo(request):
@@ -399,11 +421,25 @@ def apariencia(request):
     if not request.user.is_superuser:
         raise PermissionDenied
     if request.method == 'POST':
-        actual, _ = _fondo_actual()
+        actual, _ = _fondo_propio()
+        if request.POST.get('accion') == 'encuadre':
+            try:
+                Configuracion.guardar('apariencia.fondo_y', max(0, min(100, int(request.POST.get('fondo_y', 50)))), request.user)
+            except ValueError:
+                pass
+            messages.success(request, 'Encuadre guardado.')
+            return redirect('admin:index')
         if request.POST.get('accion') == 'quitar':
             if actual:
                 actual.unlink()
+            Configuracion.guardar('apariencia.sin_foto', True, request.user)
             messages.success(request, 'Se quitó la foto; queda el degradado de la marca.')
+            return redirect(request.path)
+        if request.POST.get('accion') == 'original':
+            if actual:
+                actual.unlink()
+            Configuracion.guardar('apariencia.sin_foto', False, request.user)
+            messages.success(request, 'Se usa otra vez la foto del edificio de la UDC.')
             return redirect(request.path)
         archivo = request.FILES.get('foto')
         if not archivo:
@@ -420,13 +456,16 @@ def apariencia(request):
         if actual:
             actual.unlink()
         archivo.seek(0)
+        Configuracion.guardar('apariencia.sin_foto', False, request.user)
         with open(settings.DATA_DIR / f'{FONDO_ARCHIVO}.{formato[0]}', 'wb') as f:
             for trozo in archivo.chunks():
                 f.write(trozo)
         auditoria.registrar('cambiar_fondo', None, {'bytes': archivo.size}, request=request)
         messages.success(request, 'Foto guardada. Así se ve el Inicio.')
         return redirect('admin:index')
-    return render(request, 'prospectos/apariencia.html', _ctx(request, 'Apariencia', tiene_foto=bool(_fondo_actual()[0])))
+    propia = bool(_fondo_propio()[0])
+    return render(request, 'prospectos/apariencia.html', _ctx(request, 'Apariencia', tiene_foto=bool(_fondo_actual()[0]), propia=propia,
+                                                              sin_foto=bool(Configuracion.obtener('apariencia.sin_foto', False)), fondo_y=_fondo_y()))
 
 
 def logo(request):

@@ -1095,7 +1095,7 @@ button.mc-kpi:hover, a.mc-kpi:hover { transform: translateY(-2px); box-shadow: v
   --vidrio-sombra: 0 12px 36px rgba(0, 0, 0, .40);
 }
 body:not(.login)::before { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background: var(--atm-velo), url("/marca/fondo") center / cover no-repeat, var(--atm-base); }
+  background: var(--atm-velo), url("/marca/fondo") var(--atm-pos, center) / cover no-repeat, var(--atm-base); }
 body:has(.tb) { --atm-velo: linear-gradient(180deg, rgba(242, 242, 247, .22) 0%, rgba(242, 242, 247, .55) 45%, rgba(242, 242, 247, .78) 100%); }
 .dark body:has(.tb) { --atm-velo: linear-gradient(180deg, rgba(4, 7, 14, .30) 0%, rgba(4, 7, 14, .58) 50%, rgba(4, 7, 14, .76) 100%); }
 
@@ -1141,7 +1141,8 @@ body:has(.tb) { --atm-velo: linear-gradient(180deg, rgba(242, 242, 247, .22) 0%,
   .tb-kpi-linea { display: none; } .tb-kpi-chip.neutro { display: none; } .tb-kpi-flecha { top: 12px; right: 12px; }
 }
 .ap-muestra { height: 180px; border-radius: 16px; display: flex; align-items: flex-end; padding: 12px;
-  background: linear-gradient(180deg, transparent 50%, rgba(0, 0, 0, .35)), url("/marca/fondo") center / cover no-repeat, var(--atm-base); }
+  aspect-ratio: 16 / 9; height: auto;
+  background: linear-gradient(180deg, transparent 50%, rgba(0, 0, 0, .35)), url("/marca/fondo") var(--atm-pos, center) / cover no-repeat, var(--atm-base); }
 .ap-muestra span { color: #fff; font-weight: 600; font-size: 13px; text-shadow: 0 1px 6px rgba(0, 0, 0, .5); }
 @media (prefers-reduced-transparency: reduce) {
   .tb .grupo, .tb .aviso, .tb-kpi, .tb-boton-vidrio { background: var(--c-superficie) !important; -webkit-backdrop-filter: none; backdrop-filter: none; }

@@ -3,7 +3,7 @@
 
 {% block title %}Inicio | {{ site_title }}{% endblock %}
 {% block branding %}{% include "unfold/helpers/site_branding.html" %}{% endblock %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'prospectos/vendor/leaflet/leaflet.css' %}"><meta name="mx-estados" content="{% static 'prospectos/geo/mx-estados.geojson' %}">{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'prospectos/vendor/leaflet/leaflet.css' %}"><meta name="mx-estados" content="{% static 'prospectos/geo/mx-estados.geojson' %}"><style>body{--atm-pos:center {{ fondo_y|default:50 }}%}</style>{% endblock %}
 
 {% block content %}
 <div class="tb">
