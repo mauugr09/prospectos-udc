@@ -546,9 +546,46 @@ def mapa(request):
         p['tasa'] = round(100 * p['total'] / p['estimados'], 1) if p['estimados'] else None
     puntos.sort(key=lambda p: -p['total'])
     sin_ubicar = list(reportes.Metricas.sin_ubicar().filter(total__gt=0)[:50])
+    con = [p for p in puntos if p['total']]
+    estimados = sum(p['estimados'] or 0 for p in con if p['estimados'])
+    resumen = {
+        'prepas': len(con), 'aspirantes': sum(p['total'] for p in con),
+        'tasa': round(100 * sum(p['total'] for p in con if p['estimados']) / estimados, 1) if estimados else None,
+        'sin_visita': sum(1 for p in con if p['dias_sin_visita'] is None or p['dias_sin_visita'] > 180),
+        'sin_ubicar': len(sin_ubicar),
+    }
+    u = request.user
+    acciones = {
+        'aspirantes': reverse('admin:prospectos_prospecto_changelist') if u.has_perm('prospectos.view_prospecto') else None,
+        'evento': reverse('admin:prospectos_evento_add') if u.has_perm('prospectos.add_evento') else None,
+        'qr': reverse('prospectos:prepa_qr', args=[0]) if u.has_perm('prospectos.view_preparatoria') else None,
+        'prepa': reverse('admin:prospectos_preparatoria_change', args=[0]) if u.has_perm('prospectos.view_preparatoria') else None,
+    }
     return render(request, 'prospectos/mapa.html', _ctx(
         request, 'Mapa de cobertura', puntos=puntos, plantel=plantel, planteles=catalogos.PLANTELES_CORTO.items(),
-        sin_ubicar=sin_ubicar, puede_ubicar=request.user.has_perm('prospectos.change_preparatoria'), tiles=TILES()))
+        sin_ubicar=sin_ubicar, puede_ubicar=u.has_perm('prospectos.change_preparatoria'), tiles=TILES(),
+        resumen=resumen, acciones=acciones, sedes=sedes_udc(), hoy=timezone.localdate().isoformat()))
+
+
+def sedes_udc() -> list[dict]:
+    """Ubicación de los planteles de la UDC (Configuración → Mapa). Sin ella el mapa no dibuja las sedes ni las distancias."""
+    guardadas = Configuracion.obtener('mapa.sedes') or {}
+    res = []
+    for clave, nombre in catalogos.PLANTELES_CORTO.items():
+        d = guardadas.get(clave) or {}
+        if d.get('lat') is not None and d.get('lng') is not None:
+            res.append({'clave': clave, 'nombre': nombre, 'lat': float(d['lat']), 'lng': float(d['lng'])})
+    return res
+
+
+def _coordenadas(texto: str):
+    """«19.6693, -99.1795» (lo que copia Google Maps con clic derecho) → (lat, lng), o None si no se entiende."""
+    import re
+    m = re.fullmatch(r'\s*(-?\d{1,2}(?:\.\d+)?)\s*[, ]\s*(-?\d{1,3}(?:\.\d+)?)\s*', texto or '')
+    if not m:
+        return None
+    lat, lng = float(m.group(1)), float(m.group(2))
+    return (lat, lng) if 14 <= lat <= 33 and -119 <= lng <= -86 else None
 
 
 OSM = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
@@ -583,6 +620,20 @@ def configurar_mapa(request):
     """Elegir el mapa: Google Maps (con llave) u OpenStreetMap (sin llave)."""
     if not request.user.is_superuser:
         raise PermissionDenied
+    if request.method == 'POST' and request.POST.get('accion') == 'sedes':
+        sedes = {}
+        for clave, nombre in catalogos.PLANTELES_CORTO.items():
+            texto = (request.POST.get(f'sede_{clave}') or '').strip()
+            if not texto:
+                continue
+            c = _coordenadas(texto)
+            if not c:
+                messages.error(request, f'No entendí las coordenadas de {nombre}. Cópialas de Google Maps: clic derecho sobre el plantel → clic en los números.')
+                return redirect(request.path)
+            sedes[clave] = {'lat': c[0], 'lng': c[1]}
+        Configuracion.guardar('mapa.sedes', sedes, request.user)
+        messages.success(request, 'Ubicación de los planteles guardada.')
+        return redirect(request.path)
     if request.method == 'POST':
         import re
         llave = (request.POST.get('llave') or '').strip()
@@ -597,6 +648,8 @@ def configurar_mapa(request):
     g = mapa_google()
     return render(request, 'prospectos/configurar_mapa.html', _ctx(
         request, 'Mapa: Google Maps u OpenStreetMap', g=g, tiles=TILES(),
+        sedes=[(c, n, next((f"{d['lat']}, {d['lng']}" for d in sedes_udc() if d['clave'] == c), ''))
+               for c, n in catalogos.PLANTELES_CORTO.items()],
         origen=request.build_absolute_uri('/').rstrip('/'), desde_config=bool(settings.CONFIG.get('GOOGLE_MAPS_API_KEY'))))
 
 

@@ -194,12 +194,23 @@ class Metricas:
         filtro = Q(prospectos__consentimiento=True, prospectos__fusionado_en__isnull=True)
         if base is not None:
             filtro &= Q(prospectos__in=base)
+        from django.db.models import Max, Min, OuterRef, Subquery
+        hoy = timezone.localdate()
+        visitas = Evento.objects.filter(preparatoria=OuterRef('pk')).exclude(estado='cancelado')
         qs = (Preparatoria.objects.exclude(lat=None).exclude(lng=None)
               .annotate(total=Count('prospectos', filter=filtro),
                         cuautitlan=Count('prospectos', filter=filtro & Q(prospectos__plantel='cuautitlan')),
-                        tultepec=Count('prospectos', filter=filtro & Q(prospectos__plantel='tultepec'))))
+                        tultepec=Count('prospectos', filter=filtro & Q(prospectos__plantel='tultepec')),
+                        # Subconsultas: un Max/Min junto a los Count multiplicaría filas (join con prospectos).
+                        ultima_visita=Subquery(visitas.filter(fecha__lte=hoy).values('preparatoria')
+                                               .annotate(m=Max('fecha')).values('m')[:1]),
+                        proxima_visita=Subquery(visitas.filter(fecha__gt=hoy).values('preparatoria')
+                                                .annotate(m=Min('fecha')).values('m')[:1])))
         return [{'id': p.pk, 'nombre': p.nombre, 'municipio': p.municipio, 'lat': float(p.lat), 'lng': float(p.lng),
-                 'estimados': p.alumnos_estimados, 'total': p.total, 'cuautitlan': p.cuautitlan, 'tultepec': p.tultepec}
+                 'estimados': p.alumnos_estimados, 'total': p.total, 'cuautitlan': p.cuautitlan, 'tultepec': p.tultepec,
+                 'ultima_visita': p.ultima_visita.isoformat() if p.ultima_visita else None,
+                 'proxima_visita': p.proxima_visita.isoformat() if p.proxima_visita else None,
+                 'dias_sin_visita': (hoy - p.ultima_visita).days if p.ultima_visita else None}
                 for p in qs]
 
     @staticmethod

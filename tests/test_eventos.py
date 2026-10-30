@@ -15,7 +15,8 @@ DIA = BASE.date()
 
 def _evento(prepa, **kw):
     kw.setdefault('estado', 'confirmado')
-    return Evento.objects.create(preparatoria=prepa, fecha=DIA, **kw)
+    kw.setdefault('fecha', DIA)
+    return Evento.objects.create(preparatoria=prepa, **kw)
 
 
 def test_sin_codigo_se_asigna_por_prepa_y_fecha(f_alumno, f_tutor, prepa, prepa2):
@@ -120,3 +121,29 @@ def test_cartas_de_beca_con_folio(client, prepa, promotor):
     from .conftest import usuario
     client.force_login(usuario('otro2@x.mx', 'Promotor', 'P09'))
     assert client.get(f'/admin/herramientas/evento/{e.pk}/becas/').status_code == 403
+
+
+def test_mapa_de_cobertura_con_visitas_y_planteles(client, prepa, prepa2, promotor):
+    from django.utils import timezone
+    from prospectos.models import Configuracion, Prospecto
+    from prospectos.servicios.reportes import Metricas
+    hoy = timezone.localdate()
+    Prospecto.objects.create(nombre_aspirante='Ana López', consentimiento=True, preparatoria=prepa, plantel='tultepec')
+    _evento(prepa, promotor=promotor, fecha=hoy - dt.timedelta(days=40), estado='realizado')
+    _evento(prepa, promotor=promotor, fecha=hoy - dt.timedelta(days=400), estado='realizado')
+    _evento(prepa, promotor=promotor, fecha=hoy + dt.timedelta(days=9), estado='confirmado')
+    _evento(prepa, promotor=promotor, fecha=hoy + dt.timedelta(days=3), estado='cancelado')
+    datos = {p['id']: p for p in Metricas.cobertura()}
+    uno, dos = datos[prepa.pk], datos[prepa2.pk]
+    assert uno['total'] == 1 and uno['tultepec'] == 1  # los eventos no multiplican el conteo
+    assert uno['dias_sin_visita'] == 40 and uno['proxima_visita'] == (hoy + dt.timedelta(days=9)).isoformat()
+    assert dos['ultima_visita'] is None and dos['proxima_visita'] is None
+
+    client.force_login(User.objects.create_superuser('m@x.mx', 'm@x.mx', 'Clave-de-prueba-123'))
+    r = client.post('/admin/herramientas/mapa/configurar/', {'accion': 'sedes', 'sede_cuautitlan': '19.6693, -99.1795', 'sede_tultepec': 'no sé'})
+    assert Configuracion.obtener('mapa.sedes') in (None, {})  # nada se guarda si una no se entiende
+    client.post('/admin/herramientas/mapa/configurar/', {'accion': 'sedes', 'sede_cuautitlan': '19.6693, -99.1795', 'sede_tultepec': ''})
+    assert Configuracion.obtener('mapa.sedes') == {'cuautitlan': {'lat': 19.6693, 'lng': -99.1795}}
+    html = client.get('/admin/herramientas/mapa/').content.decode()
+    assert 'cobertura.js' in html and '"clave": "cuautitlan"' in html and 'sin visita en 6 meses' in html
+    assert f'/admin/prospectos/prospecto/' in html  # acciones de la ficha

@@ -87,7 +87,20 @@ El mapa muestra los 32 estados aunque no haya internet; con internet agrega call
 **Truco sin llave:** si el buscador no encuentra una escuela, búscala en Google Maps, haz clic derecho
 sobre ella, haz clic en las coordenadas (se copian) y pégalas en el buscador de «Ubicar». También
 funciona pegar el enlace largo de Google Maps; los enlaces cortos (maps.app.goo.gl) no.
-Cada círculo dice cuántos aspirantes vienen de esa prepa y cuántos eligieron Cuautitlán o Tultepec.
+
+**Cómo se lee el mapa de cobertura.** Cada círculo es una prepa: su tamaño y el número son los aspirantes con
+permiso. Arriba se elige cómo colorearlos:
+
+- **Respuesta:** qué parte de los alumnos de la prepa contestó (verde 15 % o más, ámbar 5–15 %, rojo menos de 5 %;
+  gris si no se capturó cuántos alumnos tiene).
+- **Última visita:** azul si ya hay una programada; verde si fue hace menos de 3 meses, ámbar de 3 a 12, rojo más de
+  un año o nunca. Sirve para decidir a dónde ir.
+- **Plantel:** el círculo se parte en azul (Cuautitlán) y rosa (Tultepec).
+
+A la derecha está la lista con buscador. Al elegir una prepa se ve su ficha: respuesta, última y próxima visita,
+distancia al plantel y botones para **programar visita**, **ver aspirantes** y el **QR permanente**.
+Para ver los planteles y los anillos de 5, 10 y 15 km, un administrador pega sus coordenadas en
+**Configuración → Mapa → Dónde están los planteles** (clic derecho sobre el plantel en Google Maps → clic en los números).
 
 ## Calendario
 

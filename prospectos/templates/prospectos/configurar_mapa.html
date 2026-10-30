@@ -52,6 +52,18 @@
     <p class="mt-2 text-subtle">Qué se envía a Google: las coordenadas del mapa que estás viendo y lo que escribes en el buscador de
       «Ubicar». Nunca datos de aspirantes.</p>
   </section>
+  <section class="tb-card text-sm xl:col-span-2" id="sedes">
+    <header><h2>Dónde están los planteles</h2>
+      <span class="rs-badge {% if sedes.0.2 or sedes.1.2 %}tono-verde{% else %}tono-gris{% endif %}">{% if sedes.0.2 or sedes.1.2 %}Ubicados{% else %}Sin ubicar{% endif %}</span></header>
+    <p class="text-subtle mb-3">Con esto el mapa de cobertura marca cada plantel y dibuja a qué distancia está cada prepa (5, 10 y 15 km).
+      En Google Maps, haz clic derecho sobre el plantel y luego clic en los números: se copian. Pégalos aquí.</p>
+    <form method="post" class="grid gap-4 md:grid-cols-3 items-end">{% csrf_token %}<input type="hidden" name="accion" value="sedes">
+      {% for clave, nombre, valor in sedes %}
+      <label>Plantel {{ nombre }}<br><input name="sede_{{ clave }}" value="{{ valor }}" class="udc-campo w-full font-mono" placeholder="19.6693, -99.1795" autocomplete="off"></label>
+      {% endfor %}
+      <div><button class="udc-btn" type="submit"><span class="material-symbols-outlined">save</span>Guardar</button></div>
+    </form>
+  </section>
 </div>
 {{ tiles|json_script:"tiles" }}
 <script src="{% static 'prospectos/vendor/leaflet/leaflet.js' %}"></script>
