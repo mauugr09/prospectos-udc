@@ -288,6 +288,11 @@ def badge_esperando(request):
     return _respuestas_visibles(request).filter(estado=EstadoRespuesta.CUARENTENA).count() or None
 
 
+def _disco_cifrado() -> bool:
+    from .servicios import disco
+    return disco.estado(settings.DATA_DIR)['estado'] == 'si'
+
+
 def primeros_pasos() -> list[dict]:
     """Lista de lo que falta para usar el programa con datos reales. Cada paso dice cómo resolverlo."""
     from django.contrib.auth import get_user_model
@@ -322,6 +327,9 @@ def primeros_pasos() -> list[dict]:
          'url': reverse('prospectos:otras_computadoras'), 'marcable': 'solo_esta_pc', 'boton': 'Solo usaremos esta computadora',
          'como': 'Si más de una persona va a trabajar (u otro plantel), activa el acceso por red: todos ven los mismos datos, '
                  'usuarios y perfiles. No instales el programa con datos en cada computadora.'},
+        {'titulo': 'Cifrar el disco de esta computadora', 'hecho': _disco_cifrado(),
+         'url': reverse('prospectos:proteccion') + '#disco',
+         'como': 'BitLocker (Windows) o FileVault (Mac): si se roban la computadora, nadie puede leer los datos de los aspirantes.'},
         {'titulo': 'Guardar copia de config.json fuera de esta computadora', 'hecho': bool(Configuracion.obtener('pasos.config_copiado', False)),
          'url': None, 'marcable': 'config_copiado',
          'como': 'Tiene las llaves de cifrado. Si se pierde, los teléfonos y correos guardados no se recuperan nunca.'},
@@ -1080,6 +1088,24 @@ def otras_computadoras(request):
             auditoria.registrar('dos_pasos_todos', None, {'activa': valor}, request=request)
             messages.success(request, 'Desde ahora todos deben activar la verificación en 2 pasos al entrar.' if valor
                              else 'Ahora solo los administradores están obligados a usar la verificación en 2 pasos.')
+        elif accion == 'instalador':
+            from django.http import HttpResponse
+
+            from .servicios import instalador
+            ca = settings.DATA_DIR / 'red' / 'ca.crt'
+            if not settings.EN_RED or not ca.exists():
+                messages.error(request, 'Primero activa el acceso por red y reinicia el programa.')
+                return redirect(request.path)
+            try:
+                contenido = instalador.generar(red.direcciones(settings.CONFIG), ca, red.codigo_ca(settings.DATA_DIR))
+            except ValueError as e:
+                messages.error(request, str(e))
+                return redirect(request.path)
+            auditoria.registrar('acceso_red', None, {'instalador': True}, request=request)
+            r = HttpResponse(contenido.encode('ascii'), content_type='application/octet-stream')
+            r['Content-Disposition'] = 'attachment; filename="Conectar a Prospectos.cmd"'
+            r['Cache-Control'] = 'no-store'
+            return r
         elif accion == 'arranque' and arranque.disponible():
             try:
                 arranque.activar() if request.POST.get('valor') == '1' else arranque.desactivar()

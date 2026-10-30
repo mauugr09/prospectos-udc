@@ -189,6 +189,11 @@ def importar(formulario: Formulario, fuente=None) -> Importacion:
         return registro
 
     conteo = {NUEVA: 0, ACTUALIZADA: 0, OMITIDA: 0}
+    if not formulario.mapeo_campos and not formulario.google_form_id.startswith('demo-'):
+        try:  # registrado pero sin leer todavía (p. ej. los Forms que trae el programa): se lee la primera vez que hay conexión
+            sincronizar(formulario, fuente)
+        except Exception:  # noqa: BLE001 - sin conexión: la importación de abajo registra el error
+            pass
     marca = formulario.ultima_respuesta_en
     desde = marca - timedelta(minutes=settings.PROSPECTOS['TRASLAPE_MINUTOS']) if marca else None
     try:
@@ -294,6 +299,14 @@ def sincronizar(formulario: Formulario, fuente=None) -> dict:
     if hasattr(fuente, 'info') and not formulario.google_form_id.startswith('demo-'):
         info = fuente.info(formulario)
         resumen['titulo'] = (info.get('info') or {}).get('title') or (info.get('info') or {}).get('documentTitle')
+        from .semillas import FORMS_UDC, tipo_por_titulo
+        tipo = tipo_por_titulo(resumen['titulo'])
+        if tipo and tipo != formulario.tipo and formulario.google_form_id in {f['google_form_id'] for f in FORMS_UDC}:
+            # Los Forms que trae el programa: si se registraron al revés, el título manda.
+            formulario.tipo, formulario.url_publica = tipo, info.get('responderUri') or ''
+            formulario.mapeo_campos, formulario.campos_prellenado = {}, {}
+            formulario.save()
+            resumen['tipo_corregido'] = tipo
         if info.get('responderUri') and not formulario.url_publica:
             formulario.url_publica = info['responderUri']
             resumen['url_publica'] = info['responderUri']

@@ -163,7 +163,7 @@ def test_login_lleva_al_tablero_con_la_identidad_udc(client):
     r = client.post('/admin/login/', {'username': 'root@x.mx', 'password': 'Clave-de-prueba-123'})
     assert r.status_code == 302 and r['Location'] == '/admin/'
     html = client.get('/admin/').content.decode()
-    assert 'titulo-grande' in html and 'Universidad de Cuautitlán' in html and 'prospectos/css/udc.css' in html
+    assert 'titulo-grande' in html and 'escudos.svg' in html and 'Cuautitlán · Tultepec' in html and 'prospectos/css/udc.css' in html
 
 
 def test_logo_opcional(client, settings, tmp_path):

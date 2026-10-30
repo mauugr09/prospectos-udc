@@ -42,6 +42,11 @@
   solo como hash. Un código no se acepta dos veces y 5 equivocados bloquean la cuenta 15 minutos.
   Al entrar con contraseña, cada sesión vuelve a pedir el código. Quitarla a otra persona (acción de
   administrador o `quitar_dos_pasos` en la consola de la PC) queda en la bitácora.
+- **Computadoras de confianza** (2 pasos): opcional al escribir el código; 30 días; cookie `HttpOnly` con un token
+  cuyo hash se guarda en la base. Se vuelve a pedir el código con otra red (/24), intentos fallidos previos o
+  contraseña cambiada. Riesgo aceptado: en una PC de confianza compartida, la contraseña sola basta.
+- **Cifrado del disco**: el programa revisa BitLocker/FileVault (sin permisos de administrador) y lo muestra en
+  Protección de datos y en Primeros pasos. Nombres y cifras no se cifran en la base (búsqueda y unión de familias).
 - **Cuentas de demostración** (`@demo.local`, contraseña publicada en los manuales): no pueden entrar en cuanto
   existe un administrador real, y la demostración se niega a cargarse en una carpeta con datos reales.
 - **Bitácora de auditoría** de solo inserción (el modelo rechaza editar o borrar): ver ficha,

@@ -12,7 +12,11 @@
       <div class="ac-brillo"></div>
     </div>
     <div class="ac-lado">
-      <p class="ac-eyebrow">Universidad de Cuautitlán · Admisiones</p>
+      <div class="ac-escudos">
+        <div class="ac-escudo">{% include "prospectos/_escudo_aguila.svg.html" %}<span>Universidad de<br><b>Cuautitlán</b></span></div>
+        <div class="ac-escudo">{% include "prospectos/_escudo_toro.svg.html" %}<span>Universidad de<br><b>Tultepec</b></span></div>
+      </div>
+      <p class="ac-eyebrow">Admisiones · Prospectos</p>
       <h1 class="ac-lema">Cada aspirante,<br>a tiempo.</h1>
       <div class="ac-chip"><span class="material-symbols-outlined">lock</span>
         <span>¿Aún no tienes cuenta? Pídela a quien administra el programa.</span></div>
@@ -20,7 +24,7 @@
     <div class="ac-panel">
       <div class="ac-marca">
         <img src="{% static 'prospectos/marca/favicon.svg' %}" alt="" width="40" height="40">
-        <div><b>Prospectos</b><small>UDC · Admisiones</small></div>
+        <div><b>Prospectos</b><small>Cuautitlán · Tultepec</small></div>
       </div>
       {% block panel %}{% endblock %}
     </div>

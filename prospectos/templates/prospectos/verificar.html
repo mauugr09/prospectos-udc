@@ -1,12 +1,15 @@
 {% extends 'prospectos/acceso_base.html' %}
 {% block panel %}
   <h2 class="ac-titulo">Verificación en 2 pasos</h2>
+  {% if motivo %}<p class="ac-aviso"><b>Por seguridad.</b> {{ motivo }}</p>{% endif %}
   {% for m in messages %}<p class="ac-aviso {{ m.tags }}" role="status">{{ m }}</p>{% endfor %}
   <form method="post" id="verificar-form" class="ac-form">{% csrf_token %}
     <input type="hidden" name="next" value="{{ next }}">
     <label class="ac-campo"><span>Código de la app</span>
       <input id="id_codigo" name="codigo" maxlength="9" autocomplete="one-time-code" inputmode="text" required autofocus placeholder="123 456" class="ac-codigo"></label>
     <p class="ac-ayuda">Abre Google o Microsoft Authenticator y escribe el código de «Prospectos UDC». ¿Perdiste tu teléfono? Usa un código de recuperación (como ABCD-2345).</p>
+    <label class="ac-check"><input type="checkbox" name="confiar" value="1" checked>
+      <span>No volver a pedirlo en esta computadora durante {{ dias }} días (solo si algo se ve raro). No lo marques en una computadora pública.</span></label>
     <button type="submit" class="ac-boton">Entrar</button>
   </form>
   <form method="post" action="{% url 'admin:logout' %}" class="ac-salir">{% csrf_token %}

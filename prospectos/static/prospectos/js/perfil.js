@@ -78,3 +78,26 @@
     p.textContent = texto;
   }
 })();
+
+/* Preferencias de avisos: probar el sonido y pedir permiso para los avisos del sistema operativo. */
+(function () {
+  const probar = document.getElementById('pf-probar-sonido');
+  if (probar) probar.addEventListener('click', () => {
+    const a = new (window.AudioContext || window.webkitAudioContext)(), t = a.currentTime;
+    [[880, 0], [1318.5, 0.12]].forEach(([f, d]) => {
+      const o = a.createOscillator(), g = a.createGain();
+      o.frequency.value = f; g.gain.setValueAtTime(0.0001, t + d);
+      g.gain.exponentialRampToValueAtTime(0.18, t + d + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.45);
+      o.connect(g).connect(a.destination); o.start(t + d); o.stop(t + d + 0.5);
+    });
+  });
+  const permiso = document.getElementById('pf-permiso-so');
+  if (!permiso) return;
+  const pintar = () => {
+    if (!('Notification' in window)) { permiso.textContent = 'Este navegador no permite avisos del sistema'; permiso.disabled = true; }
+    else if (Notification.permission === 'granted') { permiso.textContent = 'Avisos del sistema activados'; permiso.disabled = true; }
+    else if (Notification.permission === 'denied') { permiso.textContent = 'El navegador los bloqueó (cámbialo en el candado de la barra de direcciones)'; permiso.disabled = true; }
+  };
+  pintar();
+  permiso.addEventListener('click', () => Notification.requestPermission().then(pintar));
+})();

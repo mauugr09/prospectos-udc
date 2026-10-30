@@ -12,6 +12,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from .. import catalogos
+from . import texto
 from ..models import (Carrera, Cuestionario, Estatus, Evento, Formulario, Perfil, Pregunta, Preparatoria, Prospecto,
                       TipoSeguimiento)
 
@@ -140,6 +141,37 @@ def preparar() -> None:
     crear_roles()
     actualizar_por_catalogo()
     mejoras_unicas()
+
+
+# Los Forms reales de la UDC (los de producción). Se registran solos al crear el administrador real;
+# el tipo se confirma con el título del Form al conectar Google (importacion.sincronizar).
+FORMS_UDC = [
+    {'nombre': 'Cuestionario vocacional (alumno)', 'tipo': 'ALUMNO', 'google_form_id': '15yKpCaIUBX98tBvfdVcd7uqPXEppT6jfOjc9BSM2XgU',
+     'url_publica': 'https://docs.google.com/forms/d/e/1FAIpQLSebI1Qa5nzAUCj36XNA0ZQL5AruA_JpT3SSzfoyW9NQ6kIThg/viewform'},
+    {'nombre': 'Encuesta para padres de familia', 'tipo': 'TUTOR', 'google_form_id': '1BCtE0gVnEPGF-nNZw5ePRhsyeaOpgdHzoLoWNwf8UvI',
+     'url_publica': 'https://docs.google.com/forms/d/e/1FAIpQLSedhaCrlP8lMTzcBbgFguxsqOGWpqW-qAzflOsFRS9-Bl2pOQ/viewform'},
+]
+
+
+def forms_predeterminados() -> int:
+    """Registra los Forms de la UDC una sola vez (si alguien los quita, no vuelven). Devuelve cuántos creó."""
+    from ..models import Configuracion
+    if Configuracion.obtener('forms.predeterminados'):
+        return 0
+    creados = 0
+    if not Formulario.objects.exclude(google_form_id__startswith='demo-').exists():
+        for f in FORMS_UDC:
+            _, nuevo = Formulario.objects.get_or_create(google_form_id=f['google_form_id'], defaults=f)
+            creados += nuevo
+    Configuracion.guardar('forms.predeterminados', True)
+    return creados
+
+
+def tipo_por_titulo(titulo: str | None) -> str | None:
+    t = texto.normalizar(titulo or '')
+    if not t:
+        return None
+    return 'TUTOR' if any(p in t for p in ('padre', 'madre', 'tutor', 'familia')) else 'ALUMNO'
 
 
 def mejoras_unicas() -> None:

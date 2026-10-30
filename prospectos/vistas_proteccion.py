@@ -10,7 +10,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .models import Prospecto, Respaldo
-from .servicios import auditoria, respaldos, uniones
+from .servicios import auditoria, disco, respaldos, uniones
 from .views import _ctx
 
 
@@ -76,7 +76,7 @@ def proteccion(request):
     return render(request, 'prospectos/proteccion.html', _ctx(
         request, 'Protección de datos', ultimo=ultimo, verificado=verificado, carpeta=carpeta or '',
         copia=copia, copia_fecha=copia_fecha, pendiente=respaldos.copia_pendiente(), uniones_lista=uniones.recientes(),
-        llave_descargada=_llave_descargada()))
+        llave_descargada=_llave_descargada(), disco=disco.estado(settings.DATA_DIR, refrescar=request.GET.get('revisar') == '1')))
 
 
 def _llave_descargada():

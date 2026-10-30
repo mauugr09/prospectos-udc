@@ -67,6 +67,10 @@ El camino de una respuesta:
 - ¿El código no sirve? La hora del teléfono y la de la computadora deben estar en automático.
 - ¿Perdiste el teléfono y los códigos? Otro administrador te la quita en **Configuración → Usuarios**.
 - **5 códigos equivocados** bloquean la cuenta 15 minutos.
+- **No en cada entrada:** al escribir el código, deja marcado *«No volver a pedirlo en esta computadora durante 30 días»*.
+  Desde entonces solo se pide si algo se ve raro: entras desde **otra red**, hubo **contraseñas equivocadas** antes de entrar,
+  **cambió tu contraseña** o pasaron los 30 días. No lo marques en una computadora pública o compartida con gente de fuera.
+  En **Mi perfil → Seguridad** ves esas computadoras y puedes **Olvidarlas**.
 
 **Qué ve cada rol**
 
@@ -108,6 +112,11 @@ Arriba a la derecha. El número rojo indica cuántos avisos no has leído.
 - Los avisos no muestran nombres ni teléfonos y se borran solos a los 60 días.
 
 ![Bandeja de avisos](img/avisos.jpg)
+
+**Avisos nuevos:** aparece una ventanita en la esquina inferior derecha con **Ver** y suena un tono corto. Si el
+programa está en una pestaña de fondo, el título de la pestaña parpadea. En **Mi perfil → Preferencias** puedes
+apagar el sonido, probarlo, y activar *«Avisarme aunque esté en otra ventana»* para recibirlos como avisos de Windows.
+(El navegador solo deja sonar después de que hiciste al menos un clic en la página.)
 
 ## 5. Kuali, el asistente
 

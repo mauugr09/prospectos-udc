@@ -74,7 +74,13 @@ def panel(request):
 
 @staff_member_required
 def contador(request):
-    return JsonResponse({'sin_leer': avisos.no_leidas(request.user)})
+    """La cifra y los avisos sin leer más recientes, para la ventanita flotante (sin datos de aspirantes: solo cifras)."""
+    from django.urls import reverse
+    recientes = list(_mios(request).filter(leida_en__isnull=True).order_by('-actualizada_en')[:3])
+    return JsonResponse({'sin_leer': avisos.no_leidas(request.user), 'recientes': [
+        {'marca': int(n.actualizada_en.timestamp() * 1000), 'titulo': n.titulo, 'detalle': n.detalle,
+         'icono': ICONOS.get(n.tipo, 'notifications'), 'tipo': n.tipo, 'url': reverse('prospectos:aviso_abrir', args=[n.pk])}
+        for n in recientes]})
 
 
 @staff_member_required

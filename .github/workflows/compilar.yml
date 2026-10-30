@@ -111,6 +111,13 @@ jobs:
           $r = curl.exe --fail -sS --ssl-no-revoke -o NUL -w "%{http_code}" --cacert $ca https://localhost:8443/admin/login/ 2>&1
           if ($LASTEXITCODE) { Falla "Login por HTTPS: $r" }
           Write-Output "HTTPS en red: login $r"
+          # El archivo de un clic «Conectar a Prospectos.cmd» con Windows PowerShell 5.1 real (sin instalar el certificado).
+          & $exe instalador_conexion --salida "$env:RUNNER_TEMP\conectar.cmd" --direccion https://no-existe.invalid:8443/ --direccion https://localhost:8443/
+          if ($LASTEXITCODE) { Falla 'No se generó Conectar a Prospectos.cmd' }
+          $env:PROSPECTOS_SIN_INSTALAR = '1'
+          $salida = cmd /c "echo.| `"$env:RUNNER_TEMP\conectar.cmd`"" 2>&1 | Out-String
+          Write-Output $salida
+          if ($salida -notmatch 'Certificado comprobado') { Falla 'Conectar a Prospectos.cmd no comprobó el certificado' }
           Stop-Process $script:p -Force
       - name: Empaquetar
         shell: pwsh

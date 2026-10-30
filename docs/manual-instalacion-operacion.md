@@ -47,6 +47,12 @@
 
 ## 3. Primeros pasos con datos reales
 
+Al crear el administrador, el programa **ya registra los dos Forms de la UDC** (Cuestionario vocacional del alumno y
+Encuesta para padres de familia). En cuanto se conecta Google (anexo B), los lee, ajusta las preguntas y empieza a
+importar; si se registraron al revés, el título del Form lo corrige.
+
+
+
 El Inicio del administrador muestra una lista de **Primeros pasos** hasta que todo está configurado:
 
 1. **Conectar Google** (anexo B): una cuenta de servicio, o tu propia cuenta de Google si la universidad
@@ -56,7 +62,11 @@ El Inicio del administrador muestra una lista de **Primeros pasos** hasta que to
 4. **Ubicar los planteles y las prepas** en el mapa.
 5. **Crear los usuarios** (sección 5).
 6. **Configurar la protección de datos** (sección 7). No lo dejes para después.
-7. **Para capacitar** sin tocar los datos reales, usa otra carpeta (por ejemplo `C:\Capacitacion`) y ahí
+7. **Cifrar el disco** con BitLocker (Windows Pro) o «Cifrado del dispositivo» (Windows Home). El programa cifra correos,
+   teléfonos, CURP y las respuestas, pero los nombres no (se necesitan para buscar y unir familias) y las llaves están
+   en `datos\config.json`: si se roban la PC, solo el cifrado del disco protege todo. **Protección de datos** muestra
+   si está activo.
+8. **Para capacitar** sin tocar los datos reales, usa otra carpeta (por ejemplo `C:\Capacitacion`) y ahí
    ejecuta `Prospectos.exe demo`: carga aspirantes ficticios (usuario `admin@demo.local`, contraseña
    `Demo-Prospectos-2026!`). El programa se niega a cargar la demostración en una carpeta que ya tiene
    usuarios o respuestas reales.
@@ -145,7 +155,13 @@ expuestos a cualquiera que adivine una contraseña.
 
 ### 6.3 Conectar una computadora
 
-**Windows:** copia la carpeta del programa **sin** la carpeta `datos`, ábrelo y elige
+**Windows, lo más fácil:** en la principal, **Otras computadoras → Descargar «Conectar a Prospectos.cmd»**. Lleva ese
+archivo a la otra computadora (memoria USB, carpeta compartida o correo interno) y dale doble clic: busca la
+principal, comprueba su certificado con la huella que ya trae escrita, lo instala (Windows pregunta: **Sí**) y deja
+el acceso directo **Prospectos UDC** en el Escritorio. No hay que copiar el programa ni comparar códigos. Si la
+huella no coincide, se detiene sin instalar nada. Es un archivo de texto: se puede abrir para ver qué hace.
+
+**Windows, con el programa:** copia la carpeta del programa **sin** la carpeta `datos`, ábrelo y elige
 **C · Conectarme a la principal**. En la misma red la **encuentra sola** (pulsa Enter); desde otro plantel
 o la VPN no se puede buscar, así que escribe la dirección fija. Compara el código con el de la principal y, si es
 igual, escribe **S**; Windows pregunta si instalas el certificado: **Sí**. Desde entonces, doble clic en

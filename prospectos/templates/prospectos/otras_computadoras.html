@@ -65,16 +65,22 @@
     <section class="grupo">
       <header class="grupo-cabecera"><h2>Conectar otra computadora</h2></header>
       <div class="grupo-cuerpo text-sm">
-        <p class="mb-2"><b>Windows (lo más fácil)</b></p>
+        <p class="mb-2"><b>Windows: un archivo de un clic (lo más fácil)</b></p>
+        {% if activa_ahora %}
+        <form method="post" class="mb-3">{% csrf_token %}<input type="hidden" name="accion" value="instalador">
+          <button class="udc-btn"><span class="material-symbols-outlined">download</span>Descargar «Conectar a Prospectos.cmd»</button></form>
+        {% endif %}
         <ol class="ay-pasos">
-          <li><span class="material-symbols-outlined">counter_1</span><div><b>Copia el programa a la otra computadora</b>
-            <small>El mismo zip, descomprimido en <code>C:\Prospectos</code>. Sin la carpeta <code>datos</code> de esta computadora.</small></div></li>
-          <li><span class="material-symbols-outlined">counter_2</span><div><b>Ábrelo y elige «C · Conectarme a la principal»</b>
-            <small>En la misma red la encuentra sola: pulsa Enter. Desde otro plantel o la VPN, escribe la dirección fija.</small></div></li>
-          <li><span class="material-symbols-outlined">counter_3</span><div><b>Compara el código y acepta el certificado</b>
-            <small>Si coincide con el de esta pantalla, escribe S. Windows pregunta si instalas el certificado: «Sí». Desde entonces, doble clic en Prospectos.exe abre directo.</small></div></li>
+          <li><span class="material-symbols-outlined">counter_1</span><div><b>Llévalo a la otra computadora</b>
+            <small>Con una memoria USB, la carpeta compartida de la oficina o el correo interno. No hace falta copiar el programa.</small></div></li>
+          <li><span class="material-symbols-outlined">counter_2</span><div><b>Doble clic</b>
+            <small>Busca la principal, comprueba su certificado (la huella ya viene escrita adentro) y lo instala. Windows pregunta si instalas el certificado: «Sí».</small></div></li>
+          <li><span class="material-symbols-outlined">counter_3</span><div><b>Listo</b>
+            <small>Queda el acceso directo «Prospectos UDC» en el Escritorio. Si Windows avisa que el archivo viene de internet: «Más información → Ejecutar de todas formas».</small></div></li>
         </ol>
-        <p class="mb-2 mt-4"><b>Mac, o sin copiar el programa</b></p>
+        <p class="mb-2 mt-4"><b>O con el programa</b></p>
+        <p class="text-subtle mb-2">Copia el programa sin la carpeta <code>datos</code>, ábrelo y elige «C · Conectarme»: en la misma red encuentra la principal sola.</p>
+        <p class="mb-2 mt-4"><b>Mac</b></p>
         <ol class="ay-pasos">
           <li><span class="material-symbols-outlined">counter_1</span><div><b>En el navegador, abre la dirección seguida de <code>conectar/</code></b>
             <small>La primera vez dirá que la conexión no es privada: «Configuración avanzada» → continuar.</small></div></li>

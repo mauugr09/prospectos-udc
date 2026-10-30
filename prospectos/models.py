@@ -90,6 +90,7 @@ class Perfil(models.Model):
     foto = models.BinaryField(null=True, blank=True, editable=False)  # JPEG cuadrado, pequeño
     foto_version = models.PositiveIntegerField(default=0, editable=False)
     kuali_oculto = models.BooleanField('ocultar a la mascota del menú', default=False)
+    avisos_sonido = models.BooleanField('sonido al llegar un aviso', default=True)
     # Verificación en 2 pasos (TOTP, RFC 6238)
     dos_pasos_secreto = CampoCifrado(null=True, blank=True, editable=False)
     dos_pasos_activo = models.BooleanField('verificación en 2 pasos', default=False, editable=False)
@@ -111,6 +112,28 @@ class Perfil(models.Model):
 
     def __str__(self):
         return str(self.usuario)
+
+
+class DispositivoConfianza(models.Model):
+    """Una computadora (navegador) donde la persona ya escribió su código de 2 pasos y pidió no volver a escribirlo.
+    Guarda solo el hash del token de la cookie. Se vuelve a pedir el código si algo se ve sospechoso
+    (otra red, intentos fallidos, contraseña cambiada) o cuando vence."""
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='dispositivos')
+    token_hash = models.CharField(max_length=64, unique=True)
+    nombre = models.CharField(max_length=80, blank=True)
+    red = models.CharField(max_length=45, blank=True)
+    clave_huella = models.CharField(max_length=16, blank=True)
+    creado_en = models.DateTimeField(default=timezone.now)
+    usado_en = models.DateTimeField(default=timezone.now)
+    vence_en = models.DateTimeField()
+
+    class Meta:
+        verbose_name = 'computadora de confianza'
+        verbose_name_plural = 'computadoras de confianza'
+        ordering = ['-usado_en']
+
+    def __str__(self):
+        return f'{self.usuario} · {self.nombre}'
 
 
 class Preparatoria(models.Model):

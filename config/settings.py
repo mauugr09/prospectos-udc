@@ -274,11 +274,13 @@ def _permiso(codigo):
 
 UNFOLD = {
     'SITE_TITLE': 'Prospectos UDC',
-    'SITE_HEADER': 'Universidad de Cuautitlán',
+    'SITE_HEADER': 'Cuautitlán · Tultepec',
     'SITE_SUBHEADER': 'Admisiones · Prospectos',
     'SITE_URL': None,
     'SITE_SYMBOL': 'school',
     'SITE_LOGO': _logo,
+    # Los escudos de las dos universidades (Cuautitlán y Tultepec) junto al nombre, en el menú.
+    'SITE_ICON': {'light': lambda r: static('prospectos/marca/escudos.svg'), 'dark': lambda r: static('prospectos/marca/escudos-oscuro.svg')},
     'SITE_FAVICONS': [{'rel': 'icon', 'sizes': 'any', 'type': 'image/svg+xml', 'href': lambda r: static('prospectos/marca/favicon.svg')}],
     'SHOW_HISTORY': True,
     'SHOW_VIEW_ON_SITE': False,

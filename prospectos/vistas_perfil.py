@@ -11,6 +11,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from unfold.widgets import UnfoldAdminTextInputWidget
@@ -111,14 +112,25 @@ def perfil(request):
                 auditoria.registrar('perfil_clave', u, {}, request=request)
                 messages.success(request, 'Tu contraseña cambió. Úsala la próxima vez que entres.')
                 return redirect(request.path + '#seguridad')
+        if accion == 'olvidar':
+            from .models import DispositivoConfianza
+            qs = DispositivoConfianza.objects.filter(usuario=u)
+            if request.POST.get('id'):
+                qs = qs.filter(pk=request.POST['id'])
+            n = qs.delete()[0]
+            auditoria.registrar('dos_pasos_olvidar', u, {'computadoras': n}, request=request)
+            messages.success(request, 'Listo: en esa computadora se pedirá el código otra vez.' if n == 1 else
+                             f'Listo: se olvidaron {n} computadoras; en todas se pedirá el código otra vez.')
+            return redirect(request.path + '#seguridad')
         if accion == 'preferencias':
             avisos.guardar_preferencias(u, set(request.POST.getlist('tipo')))
             p.kuali_oculto = request.POST.get('kuali_visible') != '1'
-            p.save(update_fields=['kuali_oculto'])
+            p.avisos_sonido = request.POST.get('avisos_sonido') == '1'
+            p.save(update_fields=['kuali_oculto', 'avisos_sonido'])
             messages.success(request, 'Preferencias guardadas.')
             return redirect(request.path + '#preferencias')
     return render(request, 'prospectos/perfil.html', _ctx(
-        request, 'Mi perfil', perfil=p, form_clave=form_clave, tipos=_tipos_de_aviso(u),
+        request, 'Mi perfil', perfil=p, form_clave=form_clave, dispositivos=list(u.dispositivos.filter(vence_en__gt=timezone.now())), tipos=_tipos_de_aviso(u),
         obligatoria=dos_pasos.obligatoria(u), es_demo=dos_pasos.es_demo(u),
         codigos_restantes=len(p.dos_pasos_codigos or [])))
 
@@ -167,19 +179,26 @@ def verificar(request):
         tipo = dos_pasos.verificar(p, request.POST.get('codigo', ''))
         if tipo:
             _paso_aprobado(request)
-            auditoria.registrar('dos_pasos_entrada', request.user, {'con': tipo}, request=request)
+            confiar = request.POST.get('confiar') == '1' and tipo == 'codigo'
+            auditoria.registrar('dos_pasos_entrada', request.user, {'con': tipo, 'confiar': confiar}, request=request)
             if tipo == 'recuperacion':
                 quedan = len(p.dos_pasos_codigos)
                 messages.warning(request, f'Entraste con un código de recuperación; te quedan {quedan}. '
                                           'Si perdiste tu teléfono, configura la verificación otra vez en Mi perfil.')
-            return _ir(request)
+            respuesta = _ir(request)
+            if confiar:
+                dos_pasos.confiar(request, respuesta)
+            return respuesta
         if fallo_de_codigo(request):
             messages.error(request, 'Demasiados códigos equivocados. Espera 15 minutos antes de volver a entrar.')
             return redirect('admin:login')
         messages.error(request, 'Ese código no es correcto o ya se usó. Revisa que la hora de esta computadora y la del teléfono estén bien.')
     from django.contrib import admin
+    motivos = {'otra red': 'Entras desde una red distinta a la de siempre.', 'intentos fallidos': 'Hubo contraseñas equivocadas antes de entrar.',
+               'contraseña cambiada': 'Tu contraseña cambió.', 'nueva': None}
     return render(request, 'prospectos/verificar.html', admin.site.each_context(request) | {
-        'title': 'Verificación en 2 pasos', 'next': request.GET.get('next', ''), 'form': FormCodigo()})
+        'title': 'Verificación en 2 pasos', 'next': request.GET.get('next', ''), 'form': FormCodigo(),
+        'motivo': motivos.get(dos_pasos.motivo_para_pedir(request)), 'dias': dos_pasos.DIAS_CONFIANZA})
 
 
 @staff_member_required
