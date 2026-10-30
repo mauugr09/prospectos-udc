@@ -1,0 +1,26 @@
+flowchart LR
+  subgraph Google["Google"]
+    F1["Form del alumno"]
+    F2["Form de la familia"]
+  end
+  subgraph PC["PC del sistema (Prospectos.exe)"]
+    L["lanzador.py<br/>preparar · primer arranque"]
+    W["waitress<br/>127.0.0.1:8000"]
+    H["cheroot HTTPS<br/>:8443 (opcional)"]
+    D["Django + unfold<br/>admin.py · views.py"]
+    P["programador.py<br/>hilo de tareas"]
+    S["servicios/<br/>importacion · inteligencia · familias<br/>avisos · respaldos · uniones"]
+    DB[("datos/prospectos.sqlite3<br/>o MariaDB")]
+    K["datos/config.json<br/>llaves"]
+    R["datos/respaldos"]
+  end
+  USB["Memoria USB / carpeta de red<br/>copias cifradas"]
+  N["Navegadores<br/>(esta PC y otras)"]
+  F1 & F2 -- "Forms API cada minuto" --> P
+  L --> W & P
+  N --> W
+  N -. red local .-> H --> D
+  W --> D --> S --> DB
+  P --> S
+  S --> R -- "cifrado con config.json" --> USB
+  K -.-> S

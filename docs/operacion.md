@@ -1,5 +1,7 @@
 # Guía de operación para Admisiones
 
+> Esta guía se conserva como referencia. La versión completa y al día está en **manual-usuario.md** (y su PDF).
+
 ## Roles
 
 | Rol | Puede | No puede |

@@ -9,6 +9,20 @@ con `Prospectos.exe`.
 > [Configurar los Google Forms](docs/formularios.md) · [MariaDB y acceso a la base](docs/mariadb.md) ·
 > [Guía para Admisiones](docs/operacion.md) · [Seguridad y LFPDPPP](docs/seguridad.md) · [Decisiones de diseño](docs/decisiones.md)
 
+## Documentación
+
+| Para quién | Documento |
+|---|---|
+| Admisiones, promotores, directivos | [Manual de usuario](docs/manual-usuario.md) · [PDF](docs/Manual-de-usuario.pdf) |
+| Quien instala, respalda y actualiza | [Manual de instalación y operación](docs/manual-instalacion-operacion.md) · [PDF](docs/Manual-de-instalacion-y-operacion.pdf) |
+| Quien da mantenimiento | [Documentación técnica](docs/tecnica.md) · [PDF](docs/Documentacion-tecnica.pdf) · [Decisiones](docs/decisiones.md) |
+| Autores | [Autoría, registro y licencia](docs/autoria.md) |
+
+Los PDF se regeneran con `python empaquetado/manuales/generar.py`.
+
+© 2026 NullSpace Studio. Todos los derechos reservados. Programa propietario: ver [LICENSE](LICENSE) y
+[AVISOS-TERCEROS.md](AVISOS-TERCEROS.md).
+
 ## Usarlo (Windows 10/11)
 
 1. Descomprime `Prospectos-windows.zip` en **`C:\Prospectos`** (no en Descargas ni en OneDrive:
@@ -147,7 +161,7 @@ Requiere Python 3.13.
 
 ```bash
 python -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-dev.txt
-.venv/bin/pytest                          # 192 pruebas (SQLite)
+.venv/bin/pytest                          # 193 pruebas (SQLite)
 .venv/bin/pytest --ds=config.settings_pruebas_mariadb   # las mismas contra MariaDB 10.11+
 .venv/bin/python lanzador.py              # igual que el .exe (datos en ./datos)
 .venv/bin/python manage.py demo           # datos ficticios

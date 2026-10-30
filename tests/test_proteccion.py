@@ -227,3 +227,16 @@ def test_inactividad_redirige_al_acceso(client):
     s.save()
     r = client.get('/admin/herramientas/familias/')
     assert r.status_code == 302 and r.url.startswith('/admin/login/')
+
+
+def test_restablecer_la_clave_quita_el_bloqueo(client, promotor):
+    jefa = _admin()
+    for _ in range(5):
+        client.post('/admin/login/', {'username': promotor.username, 'password': 'mal'})
+    from prospectos.middleware import bloqueado
+    assert bloqueado(promotor.username, '127.0.0.1')
+    client.force_login(jefa)
+    nueva = 'Otra-Clave-Larga-2026!'
+    r = client.post(f'/admin/auth/user/{promotor.pk}/password/', {'password1': nueva, 'password2': nueva, 'usable_password': 'true'})
+    assert r.status_code == 302
+    assert not bloqueado(promotor.username, '127.0.0.1')

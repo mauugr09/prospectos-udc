@@ -1,0 +1,26 @@
+erDiagram
+  FORMULARIO ||--o{ RESPUESTA : "trae"
+  FORMULARIO ||--o{ IMPORTACION : "registra"
+  RESPUESTA ||--|{ RESPUESTAITEM : "valores por pregunta"
+  PROSPECTO ||--o{ RESPUESTA : "alumno y/o familia"
+  PROSPECTO ||--o{ SEGUIMIENTO : "contactos, tareas, notas"
+  PROSPECTO }o--o| PROSPECTO : "fusionado_en"
+  PROSPECTO ||--o{ POSIBLECOINCIDENCIA : "duplicado o familia"
+  PREPARATORIA ||--o{ PROSPECTO : ""
+  PREPARATORIA ||--o{ EVENTO : ""
+  EVENTO ||--o{ PROSPECTO : "llegó por QR"
+  USUARIO ||--o{ EVENTO : "promotor"
+  USUARIO ||--o{ PROSPECTO : "asesor / promotor"
+  USUARIO ||--|| PERFIL : ""
+  USUARIO ||--o{ NOTIFICACION : "avisos"
+  PREGUNTA ||--o{ OPCIONPREGUNTA : ""
+  CARRERA }o--o{ PROSPECTO : "carreras de interés"
+  PROSPECTO {
+    texto nombre_aspirante
+    cifrado correo_telefono_curp
+    hmac indices_ciegos
+    bool consentimiento
+    int score
+    json segmentos_brechas
+    texto estatus
+  }

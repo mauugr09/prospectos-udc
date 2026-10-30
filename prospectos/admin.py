@@ -172,7 +172,10 @@ class UsuarioAdmin(AccionesFila, UserAdmin, ModelAdmin):
         respuesta = super().user_change_password(request, id, form_url)
         if request.method == 'POST' and respuesta.status_code == 302 and str(id) != str(request.user.pk):
             Perfil.objects.update_or_create(usuario_id=id, defaults={'debe_cambiar_clave': True})
-            auditoria.registrar('usuario_restablecer_clave', User.objects.get(pk=id), None, request=request)
+            u = User.objects.get(pk=id)
+            from django.core.cache import cache
+            cache.delete(f'acceso:u:{u.get_username().strip().lower()[:150]}')  # quita el bloqueo por intentos
+            auditoria.registrar('usuario_restablecer_clave', u, None, request=request)
         return respuesta
 
 
