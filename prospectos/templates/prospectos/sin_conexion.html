@@ -1,0 +1,48 @@
+{% load static %}<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<title>Sin conexión · Prospectos</title>
+<style>
+  /* Página autónoma: el teléfono la guarda para mostrarla sin red, así que no depende de ningún otro archivo. */
+  :root { --fondo: #f2f2f7; --superficie: #fff; --texto: #000; --texto-2: rgba(60,60,67,.64); --acento: #2447b8; color-scheme: light dark; }
+  @media (prefers-color-scheme: dark) { :root { --fondo: #000; --superficie: #1c1c1e; --texto: #fff; --texto-2: rgba(235,235,245,.62); --acento: #6f8ff2; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px;
+         background: var(--fondo); color: var(--texto); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         -webkit-text-size-adjust: 100%; }
+  main { max-width: 420px; width: 100%; background: var(--superficie); border-radius: 16px; padding: 28px 22px; text-align: center; }
+  svg { width: 56px; height: 56px; }
+  h1 { font-size: 22px; margin: 14px 0 6px; letter-spacing: -.01em; }
+  p { margin: 0 0 10px; color: var(--texto-2); font-size: 15px; }
+  ul { text-align: left; padding-left: 20px; margin: 14px 0 20px; color: var(--texto-2); font-size: 14.5px; }
+  li + li { margin-top: 6px; }
+  button { font: inherit; font-weight: 600; border: 0; border-radius: 12px; padding: 12px 20px; width: 100%; min-height: 48px;
+           background: var(--acento); color: #fff; cursor: pointer; }
+</style>
+</head>
+<body>
+<main>
+  <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#172852"/><path d="M32 15 6 27l26 12 20-9.2V42h4V27z" fill="#fff"/><path d="M16 35v8c0 4 7.2 7 16 7s16-3 16-7v-8l-16 7.4z" fill="#A5B3DF"/></svg>
+  <h1>Sin conexión con Prospectos</h1>
+  {% if publico %}
+  <p>Este equipo no alcanza al servidor de Prospectos.</p>
+  <ul>
+    <li>Revisa que tengas <b>internet</b> (Wi‑Fi o datos móviles).</li>
+    <li>Si nadie puede entrar, avisa a quien administra el servidor.</li>
+  </ul>
+  {% else %}
+  <p>Este equipo no alcanza a la computadora de Admisiones.</p>
+  <ul>
+    <li>Conéctate al <b>Wi‑Fi de la oficina</b> (con datos móviles no se llega).</li>
+    <li>Revisa que la computadora de Admisiones esté <b>encendida y con el programa abierto</b>.</li>
+    <li>Si cambió su dirección, vuelve a abrir la que te dieron en <b>Configuración → Otras computadoras</b>.</li>
+  </ul>
+  {% endif %}
+  <button type="button" onclick="location.reload()">Reintentar</button>
+</main>
+</body>
+</html>

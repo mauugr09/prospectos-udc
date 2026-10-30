@@ -90,8 +90,9 @@
   <section class="udc-panel">
     <header><span class="material-symbols-outlined">contact_phone</span>Contacto</header>
     <div class="udc-cuerpo flex flex-col gap-2">
-      {% for etiqueta, valor in contacto %}
+      {% for etiqueta, valor, acciones in contacto %}
       <div class="flex justify-between gap-3 text-sm"><span class="text-subtle">{{ etiqueta }}</span><b class="text-important {% if not contacto_revelado %}tracking-widest{% endif %}">{{ valor|default:"—" }}</b></div>
+      {% if acciones %}<div class="contacto-acciones">{% for icono, texto, enlace in acciones %}<a class="udc-btn secundario chico" href="{{ enlace }}"{% if enlace|slice:":4" == "http" %} target="_blank" rel="noopener noreferrer"{% endif %}><span class="material-symbols-outlined">{{ icono }}</span>{{ texto }}</a>{% endfor %}</div>{% endif %}
       {% endfor %}
       {% if puede_ver_contacto and not contacto_revelado %}
         <a class="udc-btn mt-1 justify-center" href="?contacto=1"><span class="material-symbols-outlined">visibility</span>Mostrar</a>

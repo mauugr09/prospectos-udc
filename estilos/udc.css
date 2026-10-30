@@ -1930,3 +1930,48 @@ button.mc-ubicar-sede { cursor: pointer; border: 0; font: inherit; }
 .sl-hecho .material-symbols-outlined { font-size: 30px; }
 .sl-texto { font-size: 14.5px; line-height: 1.5; opacity: .9; margin-bottom: 8px; }
 a.sl-volver { display: block; text-align: center; text-decoration: none; }
+
+/* =====================================================================================================
+ * TELÉFONOS Y TABLETAS (Android, iPhone, iPad)
+ * El mismo panel en cualquier pantalla: nada se sale por los lados, los campos no hacen zoom al tocarlos
+ * y lo que se usa con el dedo tiene tamaño de dedo. Instalable como app (ver prospectos/servicios/movil.py).
+ * ===================================================================================================== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+/* iPhone y iPad hacen zoom al enfocar un campo con letra menor a 16 px; Android lo respeta igual. */
+@media (pointer: coarse) {
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]), select, textarea {
+    font-size: 16px !important;
+  }
+  a, button, summary, label, [role=button] { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  .udc-btn:not(.chico) { min-height: 40px; }
+  /* En pantallas táctiles no existe «pasar el mouse»: el resaltado de fila se quedaría pegado. */
+  .udc-tabla tbody tr:hover td { background: transparent; }
+}
+
+/* Ficha: llamar, WhatsApp y correo con un toque. */
+.contacto-acciones { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin: -2px 0 4px; }
+.contacto-acciones .udc-btn .material-symbols-outlined { font-size: 17px; }
+@media (pointer: coarse) { .contacto-acciones .udc-btn.chico { min-height: 36px; padding: 6px 12px; } }
+
+/* Tablas que en teléfono se vuelven tarjetas (cada columna con su nombre a la izquierda). */
+@media (max-width: 640px) {
+  .tabla-tarjetas thead { display: none; }
+  .tabla-tarjetas, .tabla-tarjetas tbody { display: block; width: 100%; }
+  .tabla-tarjetas tbody tr { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 12px;
+    padding: 12px 16px; border-bottom: .5px solid var(--c-separador); }
+  .tabla-tarjetas tbody tr:last-child { border-bottom: 0; }
+  .tabla-tarjetas td { display: block; padding: 0 !important; border: 0 !important; min-width: 0 !important; background: none !important; }
+  .tabla-tarjetas td.tt-score { grid-column: 1; }
+  .tabla-tarjetas td.tt-principal { grid-column: 2; }
+  .tabla-tarjetas td[data-et], .tabla-tarjetas td[colspan] { grid-column: 1 / -1; }
+  .tabla-tarjetas td[data-et] { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 13.5px;
+    text-align: right; white-space: normal !important; }
+  .tabla-tarjetas td[data-et]::before { content: attr(data-et); flex: none; color: var(--c-texto-2); text-align: left; }
+  .tabla-tarjetas td[data-et] br { display: none; }
+  .tabla-tarjetas td[data-et] small { margin-right: 6px; }
+  .tabla-tarjetas .udc-chips { justify-content: flex-end; }
+}
+
+/* Abierto desde el icono de la pantalla de inicio (sin barra del navegador). */
+.app-instalada body { overscroll-behavior-y: none; }

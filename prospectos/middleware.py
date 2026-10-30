@@ -29,7 +29,7 @@ class CambioDeClaveObligatorio:
 
     def __call__(self, request):
         u = getattr(request, 'user', None)
-        if u is not None and u.is_authenticated and not request.path.startswith(('/static/', '/salud/', '/marca/')):
+        if u is not None and u.is_authenticated and not request.path.startswith(('/static/', '/salud/', '/marca/', '/sw.js', '/manifest.webmanifest', '/sin-conexion/')):
             from .models import Perfil
             pendiente = Perfil.objects.filter(usuario=u, debe_cambiar_clave=True)
             cambio, listo, salir = reverse('admin:password_change'), reverse('admin:password_change_done'), reverse('admin:logout')
@@ -108,7 +108,8 @@ class ProteccionDeAcceso:
       la pantalla «En vivo» de un evento sí (se proyecta durante horas).
     """
     SIN_CONTAR = ('/static/', '/salud/', '/marca/', '/admin/herramientas/avisos/contador/', '/favicon',
-                  '/admin/herramientas/sesion-cerrada/')
+                  '/admin/herramientas/sesion-cerrada/',
+                  '/sw.js', '/manifest.webmanifest', '/sin-conexion/')  # el teléfono los pide solo: no es «uso»
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -150,7 +151,8 @@ class VerificacionEnDosPasos:
     A un administrador sin ella (obligatoria) se le lleva a activarla; mientras tanto puede cambiar su contraseña temporal.
     Se revisa una vez por sesión: al pasar, la sesión queda marcada con el id del usuario.
     """
-    LIBRES = ('/static/', '/salud/', '/marca/', '/favicon')
+    LIBRES = ('/static/', '/salud/', '/marca/', '/favicon',
+              '/sw.js', '/manifest.webmanifest', '/sin-conexion/')  # lo que el teléfono pide solo (app instalable)
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -176,8 +178,9 @@ class VerificacionEnDosPasos:
                 if request.path not in permitidas:
                     if request.headers.get('x-requested-with') == 'fetch':
                         return JsonResponse({'ok': False, 'mensaje': 'Activa la verificación en 2 pasos. Recarga la página.'}, status=401)
-                    messages.info(request, 'Por seguridad, las cuentas de administrador necesitan la verificación en 2 pasos. '
-                                           'Actívala para continuar (toma un minuto).')
+                    messages.info(request, ('Por seguridad, las cuentas de administrador necesitan la verificación en 2 pasos. '
+                                            if u.is_superuser else 'Por seguridad, tu cuenta necesita la verificación en 2 pasos. ')
+                                  + 'Actívala para continuar (toma un minuto).')
                     return redirect(reverse('prospectos:dos_pasos'))
             else:
                 request.session[SESION_DOS_PASOS] = u.pk

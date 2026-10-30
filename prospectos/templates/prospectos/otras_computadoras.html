@@ -1,6 +1,63 @@
 {% extends "prospectos/base.html" %}
 {% block ayuda %}red{% endblock %}
 {% block pagina %}
+{% if url_publica %}
+<div class="tb-hoy">
+  <div class="flex flex-col gap-5">
+    <section class="grupo">
+      <header class="grupo-cabecera"><h2>{% if tunel_rapido %}Compartido por internet{% else %}Un solo Prospectos para todos{% endif %}</h2><span class="rs-badge tono-verde">En internet</span></header>
+      <div class="grupo-cuerpo text-sm" style="line-height:1.55">
+        <p>{% if tunel_rapido %}El programa y su base de datos siguen en esta computadora.{% else %}Este programa corre en un servidor central con una sola base de datos.{% endif %}
+          Desde cualquier computadora, teléfono o tableta, en cualquier lugar, se entra por:</p>
+        <p class="mt-3 mb-3" style="font-size:17px;font-weight:600;overflow-wrap:anywhere">{{ url_publica }}</p>
+        <p class="text-subtle">Con HTTPS de verdad: no hay que instalar ningún certificado. Todos ven la misma información al instante.</p>
+        {% if tunel_rapido %}
+        <div class="aviso mt-3" style="background:var(--c-relleno-2)"><span class="material-symbols-outlined" style="color:var(--c-naranja)">schedule</span>
+          <div><b>Enlace temporal:</b> cambia cada vez que abres el programa y solo funciona mientras esta computadora esté encendida con el programa abierto. Ideal para presentar; para el uso diario, un servidor central (docs/servidor.md).</div></div>
+        <form method="post" class="mt-4">{% csrf_token %}<button class="udc-btn secundario" name="accion" value="internet_apagar">Dejar de compartir por internet</button></form>
+        {% if not internet_guardado %}<p class="text-subtle mt-2">Guardado: al volver a abrir el programa ya no se compartirá.</p>{% endif %}
+        {% endif %}
+      </div>
+    </section>
+    <section class="grupo">
+      <header class="grupo-cabecera"><h2>Desde un teléfono o tableta</h2></header>
+      <div class="grupo-cuerpo text-sm" style="line-height:1.55">
+        <div class="flex flex-wrap items-center gap-4">
+          <span class="udc-qr"><img src="{{ qr_publico }}" alt="QR para abrir Prospectos en el teléfono" width="168" height="168"></span>
+          <div style="flex:1 1 200px">
+            <p>Apunta la cámara al código, entra con tu usuario y agrégalo a la pantalla de inicio:</p>
+            <p class="mt-2"><b>iPhone/iPad:</b> Compartir → Agregar a inicio.<br><b>Android:</b> menú ⋮ → Instalar app.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="flex flex-col gap-5">
+    <section class="grupo">
+      <header class="grupo-cabecera"><h2>En las computadoras</h2></header>
+      <div class="grupo-cuerpo text-sm"><ul class="ay-pasos">
+        <li><span class="material-symbols-outlined">bookmark</span><div><b>Guarda la dirección en favoritos</b>
+          <small>Con Chrome o Edge también se puede instalar como app: icono de instalar en la barra de direcciones.</small></div></li>
+        <li><span class="material-symbols-outlined">warning</span><div><b>No instales el programa en otra computadora</b>
+          <small>Crearía una base de datos aparte.{% if tunel_rapido %} En las demás computadoras basta el navegador con el enlace de arriba (como cambia cada vez, no lo guardes en Prospectos.exe).{% else %} Si alguien prefiere el icono de Prospectos, al abrirlo por primera vez elige «C · Conectarme» y escribe
+          <b style="overflow-wrap:anywhere">{{ servidor }}</b>: solo abrirá este servidor.{% endif %}</small></div></li>
+      </ul></div>
+    </section>
+    <section class="grupo">
+      <header class="grupo-cabecera"><h2>Seguridad en red</h2></header>
+      <div class="grupo-cuerpo text-sm" style="line-height:1.55">
+        <p class="mb-3">Con el acceso abierto a otro plantel o a una VPN, una contraseña adivinada basta para ver datos de menores desde lejos.
+          La <b>verificación en 2 pasos para todos</b> lo evita.</p>
+        <form method="post">{% csrf_token %}<input type="hidden" name="accion" value="dos_pasos_todos">
+          {% if dos_pasos_todos %}<p class="mb-2"><span class="rs-badge tono-verde">Obligatoria para todos</span></p>
+            <button class="udc-btn secundario chico" name="valor" value="0">Solo para administradores</button>
+          {% else %}<button class="udc-btn chico" name="valor" value="1"><span class="material-symbols-outlined">verified_user</span>Pedirla a todos</button>{% endif %}
+        </form>
+      </div>
+    </section>
+  </div>
+</div>
+{% else %}
 <div class="tb-hoy">
   <div class="flex flex-col gap-5">
     <section class="grupo">
@@ -29,6 +86,40 @@
         </form>
       </div>
     </section>
+
+    <section class="grupo">
+      <header class="grupo-cabecera"><h2>Compartir por internet</h2>
+        {% if internet_guardado %}<span class="rs-badge tono-verde">Al abrir</span>{% else %}<span class="rs-badge tono-gris">Apagado</span>{% endif %}</header>
+      <div class="grupo-cuerpo text-sm" style="line-height:1.55">
+        <p>Para presentar el proyecto o entrar desde cualquier lugar sin VPN: un enlace <b>https://…trycloudflare.com</b> gratuito, sin dominio ni servidor
+          y <b>sin abrir puertos del módem</b>. La base de datos se queda aquí; se entra con usuario, contraseña y verificación en 2 pasos.</p>
+        {% if not cloudflared %}
+        <div class="aviso mt-3" style="background:var(--c-relleno-2)"><span class="material-symbols-outlined" style="color:var(--c-naranja)">download</span>
+          <div style="min-width:0;overflow-wrap:anywhere"><b>Primero instala cloudflared</b> (una sola vez). {{ instalar_cloudflared }}</div></div>
+        {% endif %}
+        <form method="post" class="mt-4">{% csrf_token %}
+          {% if internet_guardado %}<button class="udc-btn secundario" name="accion" value="internet_apagar">No compartir por internet</button>
+          <p class="text-subtle mt-2">Cierra la ventana del programa y vuélvelo a abrir: el enlace aparece en esa ventana y aquí, con su QR.</p>
+          {% else %}<button class="udc-btn" name="accion" value="internet_activar"><span class="material-symbols-outlined">public</span>Compartir por internet</button>
+          <p class="text-subtle mt-2">Al activarlo, la verificación en 2 pasos se vuelve obligatoria para todos.</p>{% endif %}
+        </form>
+      </div>
+    </section>
+
+    {% if qr_conectar %}
+    <section class="grupo">
+      <header class="grupo-cabecera"><h2>Desde un teléfono o tableta</h2></header>
+      <div class="grupo-cuerpo text-sm" style="line-height:1.55">
+        <div class="flex flex-wrap items-center gap-4">
+          <span class="udc-qr"><img src="{{ qr_conectar.1 }}" alt="QR para conectar un teléfono" width="168" height="168"></span>
+          <div style="flex:1 1 200px">
+            <p>Con el teléfono en la misma red, apunta la cámara a este código. Abre la página para conectarse, con los pasos para Android o iPhone/iPad.</p>
+            <p class="text-subtle mt-2" style="overflow-wrap:anywhere">{{ qr_conectar.0 }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    {% endif %}
 
     {% if codigo %}
     <section class="grupo">
@@ -80,12 +171,12 @@
         </ol>
         <p class="mb-2 mt-4"><b>O con el programa</b></p>
         <p class="text-subtle mb-2">Copia el programa sin la carpeta <code>datos</code>, ábrelo y elige «C · Conectarme»: en la misma red encuentra la principal sola.</p>
-        <p class="mb-2 mt-4"><b>Mac</b></p>
+        <p class="mb-2 mt-4"><b>Mac, celulares y tabletas</b></p>
         <ol class="ay-pasos">
           <li><span class="material-symbols-outlined">counter_1</span><div><b>En el navegador, abre la dirección seguida de <code>conectar/</code></b>
             <small>La primera vez dirá que la conexión no es privada: «Configuración avanzada» → continuar.</small></div></li>
           <li><span class="material-symbols-outlined">counter_2</span><div><b>Instala el certificado</b>
-            <small>La página explica los pasos para Windows o Mac y muestra el código para compararlo.</small></div></li>
+            <small>La página explica los pasos para Windows, Mac, Android o iPhone/iPad y muestra el código para compararlo. En el teléfono, después, agrégalo a la pantalla de inicio.</small></div></li>
         </ol>
       </div>
     </section>
@@ -125,4 +216,5 @@
     </section>
   </div>
 </div>
+{% endif %}
 {% endblock %}

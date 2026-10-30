@@ -1,0 +1,6 @@
+{% extends "unfold/layouts/skeleton.html" %}
+{% comment %}
+  Extiende la plantilla original de unfold (Django salta esta misma al buscar la «padre») y solo cambia el bloque
+  del viewport: agrega lo necesario para teléfonos y tabletas (app instalable en Android, iPhone y iPad).
+{% endcomment %}
+{% block responsive %}{% include "prospectos/_movil_head.html" %}{% endblock %}

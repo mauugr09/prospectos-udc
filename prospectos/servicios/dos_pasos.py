@@ -127,10 +127,11 @@ def es_demo(usuario) -> bool:
 
 
 def obligatoria(usuario) -> bool:
-    """Administradores siempre (salvo que se apague en config.json); todos, si se pidió en Otras computadoras."""
+    """Administradores siempre (salvo que se apague en config.json); todos, si se pidió en Otras computadoras o si el
+    programa está en internet (enlace de Cloudflare o servidor central con dirección pública)."""
     if es_demo(usuario):
         return False
-    if settings.CONFIG.get('DOS_PASOS_TODOS'):
+    if settings.CONFIG.get('DOS_PASOS_TODOS') or getattr(settings, 'URL_PUBLICA', None):
         return True
     return bool(usuario.is_superuser and settings.CONFIG.get('DOS_PASOS_ADMINS', True))
 

@@ -22,6 +22,7 @@ from .models import (etiqueta_segmento, Auditoria, Carrera, Configuracion, Cuest
                      PosibleCoincidencia, Pregunta, Preparatoria, Prospecto, Respaldo, Segmento, Seguimiento, TipoSeguimiento)
 from .servicios import auditoria, familias, importacion, inteligencia, reportes, respaldos, seguimiento
 from .servicios.cifrado import enmascarar_correo, enmascarar_telefono
+from .servicios.movil import acciones_contacto
 
 admin.site.index_title = 'Inicio'
 
@@ -740,11 +741,15 @@ class ProspectoAdmin(AccionesFila, ModelAdmin):
                 'historial': obj.seguimientos.select_related('usuario').order_by('-fecha')[:100],
                 'puede_ver_contacto': puede, 'contacto_revelado': revelar,
                 'contacto': [
-                    ('Correo del alumno', obj.correo if revelar else enmascarar_correo(obj.correo)),
-                    ('Teléfono del alumno', obj.telefono if revelar else enmascarar_telefono(obj.telefono)),
-                    ('Correo del tutor', obj.tutor_correo if revelar else enmascarar_correo(obj.tutor_correo)),
-                    ('Teléfono del tutor', obj.tutor_telefono if revelar else enmascarar_telefono(obj.tutor_telefono)),
-                ] + ([('CURP', obj.curp if revelar else obj.curp[:4] + '••••••••••••••')] if obj.curp else []),
+                    ('Correo del alumno', obj.correo if revelar else enmascarar_correo(obj.correo),
+                     acciones_contacto(correo=obj.correo) if revelar else []),
+                    ('Teléfono del alumno', obj.telefono if revelar else enmascarar_telefono(obj.telefono),
+                     acciones_contacto(telefono=obj.telefono) if revelar else []),
+                    ('Correo del tutor', obj.tutor_correo if revelar else enmascarar_correo(obj.tutor_correo),
+                     acciones_contacto(correo=obj.tutor_correo) if revelar else []),
+                    ('Teléfono del tutor', obj.tutor_telefono if revelar else enmascarar_telefono(obj.tutor_telefono),
+                     acciones_contacto(telefono=obj.tutor_telefono) if revelar else []),
+                ] + ([('CURP', obj.curp if revelar else obj.curp[:4] + '••••••••••••••', [])] if obj.curp else []),
                 'familia_posible': familias.candidatos(obj, maximo=2) if obj.tiene_alumno != obj.tiene_tutor else [],
                 'absorbidos': list(obj.absorbidos.filter(anonimizado_en__isnull=True).only('pk', 'nombre_aspirante', 'tutor_nombre')),
                 'coincidencias': PosibleCoincidencia.objects.filter(Q(prospecto=obj) | Q(candidato=obj), estado='pendiente')

@@ -76,6 +76,18 @@ ALLOWED_HOSTS = list(CONFIG.get('HOSTS_PERMITIDOS', ['127.0.0.1', 'localhost']))
 if EN_RED:
     ALLOWED_HOSTS += [n for n in _red.nombres_servidor(_red.nombres_fijos(CONFIG)) if n not in ALLOWED_HOSTS]
 
+# Un solo programa para todos, desde cualquier lugar (ver prospectos/servicios/publico.py y docs/servidor.md):
+#   "URL_PUBLICA": "https://prospectos.udcm.mx"  → este equipo ES el servidor, detrás de Caddy o Cloudflare.
+#   En las demás computadoras: «C · Conectarme» con la dirección https://… (prospectos/servicios/cliente.py).
+from prospectos.servicios import publico as _publico  # noqa: E402
+
+URL_PUBLICA = _publico.url_publica(CONFIG)
+TUNEL_RAPIDO = False  # True cuando lanzador.py abrió un túnel rápido de Cloudflare (servicios/tunel.py)
+if URL_PUBLICA:
+    _ajustes_publicos = _publico.ajustes_django(URL_PUBLICA)
+    ALLOWED_HOSTS += [h for h in _ajustes_publicos.pop('ALLOWED_HOSTS') if h not in ALLOWED_HOSTS]
+    globals().update(_ajustes_publicos)
+
 INSTALLED_APPS = [
     'prospectos',  # primero: sus plantillas sustituyen a las del admin
     'unfold',      # tema moderno del panel (antes de django.contrib.admin)
@@ -132,7 +144,7 @@ _SQLITE = {
 # Base de datos: SQLite (un archivo, predeterminado) o MariaDB 10.11+ (servidor), según datos/config.json:
 #   "BASE_DATOS": {"MOTOR": "mariadb", "HOST": "127.0.0.1", "PUERTO": 3306, "NOMBRE": "prospectos",
 #                  "USUARIO": "prospectos", "CLAVE": "...", "BIN": "C:\\Program Files\\MariaDB 11.4\\bin"}
-BD = {'MOTOR': 'sqlite', **CONFIG.get('BASE_DATOS', {})}
+BD = {'MOTOR': 'sqlite', **CONFIG.get('BASE_DATOS', {}), **_publico.bd_desde_entorno()}  # Docker: por variables de entorno
 if os.environ.get('PROSPECTOS_BD_JSON'):  # para pruebas
     BD.update(json.loads(os.environ['PROSPECTOS_BD_JSON']))
 ES_MARIADB = BD['MOTOR'].lower() in ('mariadb', 'mysql')

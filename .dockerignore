@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+datos
+staticfiles
+build
+dist
+node_modules
+**/__pycache__
+.pytest_cache
+.env
+empaquetado
+docs/*.pdf
+docs/img

@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#e6e7ec">
 <title>{{ title }}</title>
 <link rel="icon" href="{% static 'prospectos/marca/favicon.svg' %}">
 <style>
@@ -14,6 +15,7 @@
   :root { --tinta: #1a1a1a; --gris: #5b5d63; --linea: #d5d7dd; --marino: #133863; --fondo: #e6e7ec;
           --alto: 27.94cm; --ancho: 21.59cm; --lado: 2.54cm; --arriba: 3.9cm; --abajo: 2.9cm; }
   * { box-sizing: border-box; }
+  html { background: var(--fondo); }
   body { margin: 0; background: var(--fondo); color: var(--tinta);
          font: 10pt/1.37 Montserrat, "Segoe UI", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
   .barra { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 16px;
@@ -72,18 +74,29 @@
   .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
   .lineas div { border-bottom: .5px solid #bbb; height: 24px; }
 
-  .config { width: var(--ancho); margin: 24px auto 0; background: #fff; border-radius: 12px; padding: 14px 18px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .config { width: var(--ancho); max-width: calc(100% - 16px); margin: 24px auto 0; background: #fff; border-radius: 12px; padding: 14px 18px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
   .config summary { cursor: pointer; font-weight: 600; }
   .config form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin-top: 12px; }
   .config label { display: flex; flex-direction: column; gap: 3px; color: var(--gris); font-size: 12.5px; }
   .config input, .config select { font: inherit; padding: 6px 10px; border: 0; border-radius: 8px; background: rgba(118,118,128,.12); color: var(--tinta); }
   .config button { grid-column: 1 / -1; justify-self: start; font: inherit; border: 0; border-radius: 8px; padding: 6px 14px; background: #2447b8; color: #fff; cursor: pointer; }
   .config p { margin: 8px 0 0; color: var(--gris); }
-  .mensaje { width: var(--ancho); margin: 16px auto 0; padding: 10px 14px; border-radius: 10px; background: #e8f5ec; color: #1d6b34; }
+  .mensaje { width: var(--ancho); max-width: calc(100% - 16px); margin: 16px auto 0; padding: 10px 14px; border-radius: 10px; background: #e8f5ec; color: #1d6b34; }
   .mensaje.error { background: #fdecec; color: #a3141f; }
   @media (max-width: 860px) {
-    .carta, .documento, .config, .mensaje { margin-left: 8px; margin-right: 8px; }
+    .config, .mensaje { margin-left: auto; margin-right: auto; }
     .vista { overflow-x: auto; }
+  }
+  /* Teléfono o tableta vertical: la hoja carta se ve completa, a escala (como la vista previa de impresión).
+     Solo en pantalla: al imprimir sale a tamaño real. --escala la calcula el script de abajo. */
+  @media screen and (max-width: 860px) {
+    .vista.a-escala { zoom: var(--escala, 1); overflow-x: visible; }
+    .vista.a-escala .carta, .vista.a-escala .documento { margin-left: auto; margin-right: auto; }
+    .barra small { flex-basis: 100%; order: 9; }
+  }
+  @media (max-width: 560px) {
+    .config form { grid-template-columns: 1fr; }
+    .config input, .config select { font-size: 16px; }
   }
 
   @page { size: letter; margin: 0; }
@@ -135,7 +148,20 @@
       c.closest('.carta').classList.toggle('no-cabe', sobra() > 0);
     });
   }
-  (document.fonts ? document.fonts.ready : Promise.resolve()).then(ajustar);
+  // En teléfono o tableta, la hoja (21.59 cm) se reduce para caber a lo ancho; al imprimir sale a tamaño real.
+  function escalar() {
+    const vista = document.querySelector('.vista');
+    const hoja = vista && vista.querySelector('.carta, .documento');
+    if (!vista || !hoja) return;
+    const ancho = 816 + 16;  // 21.59 cm = 816 px CSS, más un margen de 8 px por lado (constante: no depende del zoom)
+    const escala = Math.min(1, document.documentElement.clientWidth / ancho);
+    vista.style.setProperty('--escala', escala.toFixed(4));
+    vista.classList.toggle('a-escala', escala < 1);
+  }
+  window.addEventListener('beforeprint', () => { document.querySelector('.vista')?.classList.remove('a-escala'); });
+  window.addEventListener('afterprint', escalar);
+  window.addEventListener('resize', escalar);
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => { ajustar(); escalar(); });
 </script>
 </body>
 </html>

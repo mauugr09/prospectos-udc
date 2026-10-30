@@ -10,19 +10,48 @@ Tareas periódicas dentro del mismo programa (sustituye al cron/scheduler):
 
 Limitación honesta: solo corre mientras el programa está abierto. Si la PC está apagada,
 lo pendiente se hace al volver a abrirlo (la importación es incremental y no pierde nada).
+
+Un solo programador por base de datos: si dos procesos o dos equipos usan la misma base (servidor y una PC,
+o dos réplicas), solo uno tiene el «turno» (fila programador.turno en Configuración, que se renueva cada
+15 s y vence a los 2 min). Así no se importan las respuestas dos veces ni se hacen dos respaldos.
 """
 
 import logging
+import os
+import socket
 import threading
 import time
+import uuid
 from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.db import close_old_connections
+from django.db import IntegrityError, close_old_connections, transaction
 from django.utils import timezone
 
 log = logging.getLogger('prospectos.programador')
+
+TURNO = 'programador.turno'
+VIGENCIA_TURNO = 120  # segundos sin renovarse para que otro proceso tome el turno
+
+
+def tomar_turno(ident: str, ahora: float | None = None) -> bool:
+    """True si este proceso tiene (o acaba de tomar) el turno de correr las tareas."""
+    from .models import Configuracion
+    ahora = time.time() if ahora is None else ahora
+    try:
+        with transaction.atomic():
+            fila, _ = Configuracion.objects.select_for_update().get_or_create(clave=TURNO, defaults={'valor': {}})
+            actual = fila.valor or {}
+            if actual.get('id') != ident and float(actual.get('hasta') or 0) > ahora:
+                return False
+            if actual.get('id') != ident:
+                log.info('Este proceso toma el turno de las tareas automáticas (antes: %s).', actual.get('equipo') or 'nadie')
+            fila.valor = {'id': ident, 'equipo': f'{socket.gethostname()} pid {os.getpid()}', 'hasta': ahora + VIGENCIA_TURNO}
+            fila.save(update_fields=['valor', 'actualizado_en'])
+            return True
+    except IntegrityError:  # otro proceso creó la fila en el mismo instante: que gane él esta vuelta
+        return False
 
 
 class Programador(threading.Thread):
@@ -30,6 +59,8 @@ class Programador(threading.Thread):
         super().__init__(daemon=True, name='programador')
         self.detener = threading.Event()
         self.ultimo: dict[str, float] = {}
+        self.id_turno = uuid.uuid4().hex
+        self._esperando = False
 
     def _toca(self, nombre: str, cada_segundos: float) -> bool:
         ahora = time.monotonic()
@@ -125,6 +156,19 @@ class Programador(threading.Thread):
 
         time.sleep(5)  # deja arrancar el servidor web primero
         while not self.detener.is_set():
+            close_old_connections()
+            try:
+                turno = tomar_turno(self.id_turno)
+            except Exception:  # noqa: BLE001 - base caída un momento: se reintenta en la siguiente vuelta
+                log.exception('No se pudo revisar el turno del programador')
+                turno = False
+            if not turno:
+                if not self._esperando:
+                    log.info('Otro proceso ya corre las tareas automáticas con esta base de datos; este espera.')
+                    self._esperando = True
+                self.detener.wait(15)
+                continue
+            self._esperando = False
             if self._toca('importar', cada_import):
                 self._correr('importar', importar)
             if self._toca('ia', 600):

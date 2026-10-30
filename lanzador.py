@@ -2,6 +2,8 @@
 Punto de entrada del programa: Prospectos.exe en Windows, Prospectos.app en Mac (y `python lanzador.py` en desarrollo).
 
 Sin argumentos: prepara la base, arranca el servidor en esta computadora y abre el navegador.
+En otra computadora, «C · Conectarme» deja este icono como acceso a la principal o a un servidor central
+en internet (https://…, ver docs/servidor.md): no guarda datos propios.
 Con argumentos: ejecuta un comando de administración, p. ej.
     Prospectos.exe respaldo crear                                       (Windows)
     /Applications/Prospectos.app/Contents/MacOS/Prospectos crear_admin  (Mac, en Terminal)
@@ -105,7 +107,8 @@ def _modo_conectado() -> bool:
             print('=' * 70)
             print(' PRIMERA VEZ EN ESTA COMPUTADORA. ¿Cuál es su papel?')
             print('  [P] PRINCIPAL: aquí se guardan los datos (solo UNA computadora de la oficina)')
-            print('  [C] CONECTARME a la principal: ver los mismos datos, usuarios y perfiles')
+            print('  [C] CONECTARME a la principal o al servidor central: ver los mismos datos,')
+            print('      usuarios y perfiles (sin datos propios en esta computadora)')
             print('=' * 70)
             opcion = ''
             try:
@@ -158,7 +161,7 @@ def main():
     for p in range(preferido, preferido + 20):
         if _escuchando(p) == f'prospectos-ok:{huella()}':
             print('Este programa ya está abierto; abriendo el navegador…')
-            webbrowser.open(f'http://127.0.0.1:{p}/admin/')
+            webbrowser.open(f'{settings.URL_PUBLICA}/admin/' if settings.URL_PUBLICA else f'http://127.0.0.1:{p}/admin/')
             time.sleep(2)
             return
 
@@ -172,6 +175,9 @@ def main():
     call_command('preparar')
     _primera_vez()
 
+    puerto = _puerto_libre(preferido)
+    tunel = _compartir_en_internet(settings, puerto)  # antes de importar wsgi: cambia la dirección pública
+
     from waitress import serve
 
     from config.wsgi import application
@@ -179,11 +185,23 @@ def main():
 
     iniciar()
     _no_dormir()
-    puerto = _puerto_libre(preferido)
     url = f'http://127.0.0.1:{puerto}/admin/'
-    threading.Timer(1.5, lambda: webbrowser.open(url)).start()
+    # PC de la oficina publicada con Cloudflare Tunnel: todos (esta PC incluida) entran por la dirección pública.
+    abrir = f'{settings.URL_PUBLICA}/admin/' if settings.URL_PUBLICA else url
+    threading.Timer(1.5, lambda: webbrowser.open(abrir)).start()
     print()
-    print(f'Listo: {url}')
+    print(f'Listo: {abrir}')
+    if tunel:
+        print()
+        print('=' * 70)
+        print(' COMPARTIDO POR INTERNET. Desde cualquier computadora, celular o tableta:')
+        print(f'    {abrir}')
+        print('  (El QR está en Configuración → Otras computadoras. El enlace cambia cada vez que')
+        print('   abres el programa.)')
+        print('=' * 70)
+    elif settings.URL_PUBLICA:
+        print(f'Desde cualquier lugar (computadoras, celulares, tabletas): {abrir}')
+        print(f'   El túnel (cloudflared) debe apuntar a http://127.0.0.1:{puerto}. Ver docs/servidor.md, opción C.')
     if settings.EN_RED:
         _iniciar_red(application, settings)
     print('Deja esta ventana abierta mientras usas el sistema (aquí corren la importación y los respaldos).')
@@ -191,11 +209,31 @@ def main():
     print(f'IMPORTANTE: guarda una copia de {settings.CONFIG_FILE} fuera de esta computadora '
           '(sin sus llaves los datos cifrados se pierden).')
     # En esta computadora siempre por HTTP local: no sale de la máquina.
-    serve(application, host='127.0.0.1', port=puerto, threads=8, ident='Prospectos', _quiet=True)
+    from prospectos.servicios import publico
+    # Con túnel, cloudflared llega desde esta misma PC (127.0.0.1) y dice la IP real y que fue HTTPS.
+    proxy = publico.waitress_proxy('127.0.0.1') if settings.URL_PUBLICA else {}
+    serve(application, host='127.0.0.1', port=puerto, threads=8, ident='Prospectos', _quiet=True, **proxy)
+
+
+def _compartir_en_internet(settings, puerto: int):
+    """«Compartir por internet» (Configuración → Otras computadoras): túnel rápido de Cloudflare, gratis y sin dominio.
+    Si falla, el programa sigue funcionando en esta computadora."""
+    from prospectos.servicios import tunel
+    if settings.URL_PUBLICA or not tunel.activo(settings.CONFIG):
+        return None
+    print('Abriendo el enlace para entrar por internet (Cloudflare)…')
+    try:
+        url, proceso = tunel.abrir(puerto, settings.DATA_DIR, bitacora=settings.DATA_DIR / 'cloudflared.log')
+    except tunel.ErrorTunel as e:
+        print(f'AVISO: no se pudo compartir por internet. {e}')
+        print('El programa sigue funcionando en esta computadora.')
+        return None
+    tunel.aplicar_a_django(settings, url)
+    return proceso
 
 
 def _iniciar_red(application, settings):
-    """HTTPS para las demás computadoras de la red (Windows o Mac, con el navegador)."""
+    """HTTPS para los demás equipos de la red (Windows, Mac, Android, iPhone o iPad, con el navegador)."""
     from prospectos.servicios import red
     try:
         srv = red.servidor_https(application, settings.DATA_DIR, settings.CONFIG)
@@ -238,7 +276,7 @@ def _explicar_error_bd(e) -> str | None:
         return ('No se pudo conectar a MariaDB. Revisa que el servicio esté encendido y HOST/PUERTO en '
                 f'{_config()} → BASE_DATOS.\nDetalle: ' + texto)
     if 'Access denied' in texto or '1045' in texto:
-        return f'MariaDB rechazó el usuario o la contraseña de {_config()} → BASE_DATOS.\nDetalle: ' + texto
+        return f'MariaDB rechazó el usuario o la contraseña de {_config()} → BASE_DATOS (o de las variables PROSPECTOS_BD_* en Docker).\nDetalle: ' + texto
     if 'Unknown database' in texto or '1049' in texto:
         return 'No existe la base de datos indicada en BASE_DATOS.NOMBRE. Créala primero (ver docs\\mariadb.md).\nDetalle: ' + texto
     return None

@@ -24,7 +24,16 @@
   Las configuraciones viejas con `"ESCUCHAR_EN": "0.0.0.0"` ya no abren HTTP en claro: se convierten en HTTPS.
   Si alguien roba `ca.key` puede hacerse pasar por el programa ante los equipos que confían en él: la carpeta
   de datos se protege igual que `config.json`. Para revocar, borra `datos/red/` (se crea otra autoridad) y
-  quita el certificado viejo de cada computadora.
+  quita el certificado viejo de cada computadora (y de cada teléfono o tableta).
+- **Servidor central en internet** (`URL_PUBLICA`, ver [servidor.md](servidor.md)): HTTPS real detrás de Caddy o
+  Cloudflare, HSTS, cookies `Secure`, IP real de cada persona tomada solo del proxy confiable (waitress
+  `trusted_proxy`), la base de datos sin publicar y un solo programador por base (turno en `Configuracion`).
+  Pendiente: segundo factor propio; mientras tanto, Cloudflare Access delante. Los datos quedan en un servidor
+  de un tercero si se usa la nube: revisar aviso de privacidad y contrato con el proveedor.
+- Teléfonos y tabletas entran por el mismo HTTPS. El *service worker* (`/sw.js`) **no guarda respuestas del
+  programa** en el teléfono: solo la pantalla «Sin conexión» y un icono (prueba en `tests/test_movil.py`).
+  Instalar la autoridad en un teléfono hace que confíe en lo que ella firme: misma razón para proteger
+  `ca.key`; al dar de baja un teléfono, quitarle el certificado (pasos en [moviles.md](moviles.md)).
 - Sin CDN: Chart.js y Leaflet van dentro del programa. Solo salen a internet: Google (Forms API),
   el SMTP configurado y los mosaicos del mapa.
 - Llaves generadas al primer arranque en `datos\config.json`; la del índice ciego debe ser

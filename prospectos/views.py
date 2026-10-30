@@ -1116,12 +1116,13 @@ def borrar_demo(request):
 # --------------------------------------------------------------------------- uso desde otras computadoras
 @staff_member_required
 def otras_computadoras(request):
-    """Acceso por red (HTTPS): las demás computadoras ven los mismos datos, usuarios y perfiles que esta."""
+    """Acceso por red (HTTPS): las demás computadoras, teléfonos y tabletas ven los mismos datos, usuarios y perfiles
+    que esta. También: compartir por internet (túnel de Cloudflare) y servidor central con dirección pública."""
     if not request.user.is_superuser:
         raise PermissionDenied
     import json as _json
 
-    from .servicios import arranque, red
+    from .servicios import arranque, red, tunel
     if request.method == 'POST':
         accion = request.POST.get('accion')
         if accion in ('activar', 'apagar'):
@@ -1130,6 +1131,16 @@ def otras_computadoras(request):
                 red.asegurar_certificados(settings.DATA_DIR, red.nombres_fijos(settings.CONFIG))
             auditoria.registrar('acceso_red', None, {'activa': accion == 'activar'}, request=request)
             messages.success(request, 'Guardado. Cierra la ventana del programa y vuélvelo a abrir para que tome el cambio.')
+        elif accion in ('internet_activar', 'internet_apagar'):
+            compartir = accion == 'internet_activar'
+            if compartir:  # en internet, una contraseña adivinada no debe bastar: 2 pasos para todos
+                red.guardar_config(settings.CONFIG_FILE, COMPARTIR_EN_INTERNET=True, DOS_PASOS_TODOS=True)
+                settings.CONFIG['DOS_PASOS_TODOS'] = True
+            else:
+                red.guardar_config(settings.CONFIG_FILE, COMPARTIR_EN_INTERNET=False)
+            auditoria.registrar('compartir_internet', None, {'activo': compartir}, request=request)
+            messages.success(request, 'Guardado. Cierra la ventana del programa y vuélvelo a abrir para que tome el cambio.'
+                             + (' La verificación en 2 pasos ya es obligatoria para todos.' if compartir else ''))
         elif accion == 'direccion':
             texto = (request.POST.get('direccion') or '').strip()
             nombre = red.normalizar_nombre(texto) if texto else ''
@@ -1172,27 +1183,68 @@ def otras_computadoras(request):
             except OSError as e:
                 messages.error(request, f'No se pudo: {e}')
         return redirect(request.path)
+    import segno
     guardado = _json.loads(settings.CONFIG_FILE.read_text(encoding='utf-8'))
+    internet_guardado = tunel.activo(guardado, {})
+    comunes = dict(sistema=settings.SISTEMA, internet_guardado=internet_guardado,
+                   dos_pasos_todos=bool(settings.CONFIG.get('DOS_PASOS_TODOS')), arranque_disponible=arranque.disponible(),
+                   arranque_activo=arranque.activo(), comando=settings.COMANDO)
+    if settings.URL_PUBLICA:  # servidor central o enlace de internet: todos entran por la misma dirección, sin certificado
+        publica = settings.URL_PUBLICA + '/admin/'
+        return render(request, 'prospectos/otras_computadoras.html', _ctx(
+            request, 'Usar desde otras computadoras, teléfonos y tabletas', url_publica=publica, servidor=settings.URL_PUBLICA,
+            qr_publico=segno.make(publica, error='m').svg_data_uri(scale=5, border=2), base_datos=settings.BD['MOTOR'],
+            tunel_rapido=settings.TUNEL_RAPIDO, **comunes))
+    direcciones = red.direcciones(settings.CONFIG)
+    qr_conectar = None
+    if settings.EN_RED and direcciones:  # el teléfono lo escanea con la cámara y abre la página para conectarse
+        qr_conectar = (direcciones[0] + 'conectar/', segno.make(direcciones[0] + 'conectar/', error='m').svg_data_uri(scale=5, border=2))
     return render(request, 'prospectos/otras_computadoras.html', _ctx(
-        request, 'Usar desde otras computadoras', activa_ahora=settings.EN_RED, guardado=red.activa(guardado),
-        direcciones=red.direcciones(settings.CONFIG), huella=red.huella_ca(settings.DATA_DIR), codigo=red.codigo_ca(settings.DATA_DIR),
-        puerto=red.puerto(settings.CONFIG), sistema=settings.SISTEMA, direccion_fija=(red.nombres_fijos(guardado) or [''])[0],
+        request, 'Usar desde otras computadoras, teléfonos y tabletas', activa_ahora=settings.EN_RED, guardado=red.activa(guardado),
+        direcciones=direcciones, qr_conectar=qr_conectar, huella=red.huella_ca(settings.DATA_DIR), codigo=red.codigo_ca(settings.DATA_DIR),
+        puerto=red.puerto(settings.CONFIG), direccion_fija=(red.nombres_fijos(guardado) or [''])[0],
         direccion_cambio=red.nombres_fijos(guardado) != red.nombres_fijos(settings.CONFIG),
-        dos_pasos_todos=bool(settings.CONFIG.get('DOS_PASOS_TODOS')), arranque_disponible=arranque.disponible(),
-        arranque_activo=arranque.activo(), comando=settings.COMANDO))
+        cloudflared=bool(tunel.buscar_cloudflared(settings.DATA_DIR)), instalar_cloudflared=tunel.como_instalar(), **comunes))
 
 
 def conectar(request):
-    """Página pública (solo con el acceso por red activo): cómo instalar el certificado en Windows o Mac."""
+    """Página pública (solo con el acceso por red activo): cómo instalar el certificado en Windows, Mac, Android o iPhone/iPad."""
     from django.http import Http404
     from .servicios import red
     if not settings.EN_RED:
         raise Http404
-    agente = request.META.get('HTTP_USER_AGENT', '')
-    so = 'mac' if 'Macintosh' in agente else 'movil' if ('iPhone' in agente or 'iPad' in agente or 'Android' in agente) else 'windows'
+    from .servicios import movil
+    so = movil.sistema(request.META.get('HTTP_USER_AGENT', ''))
     return render(request, 'prospectos/conectar.html', {
         'so': so, 'huella': red.huella_ca(settings.DATA_DIR), 'codigo': red.codigo_ca(settings.DATA_DIR), 'equipo': red.nombre_equipo(),
         'admin': request.build_absolute_uri('/admin/')})
+
+
+# --------------------------------------------------------------------------- teléfonos y tabletas (app instalable)
+def manifiesto(request):
+    """Manifiesto de la app web: con él Android, iPhone y iPad la «instalan» en la pantalla de inicio."""
+    import json as _json
+    from django.templatetags.static import static
+    from .servicios import movil
+    r = HttpResponse(_json.dumps(movil.manifiesto(static), ensure_ascii=False), content_type='application/manifest+json; charset=utf-8')
+    r['Cache-Control'] = 'no-cache'
+    return r
+
+
+def service_worker(request):
+    """Service worker en la raíz (para que abarque /admin/). Solo da la pantalla «sin conexión»; no guarda datos."""
+    from django.templatetags.static import static
+    from .servicios import movil
+    r = HttpResponse(movil.service_worker('/sin-conexion/', static('prospectos/marca/icono-192.png')),
+                     content_type='text/javascript; charset=utf-8')
+    r['Cache-Control'] = 'no-cache'
+    r['Service-Worker-Allowed'] = '/'
+    return r
+
+
+def sin_conexion(request):
+    """Pantalla que el teléfono muestra cuando no alcanza a la computadora del programa. No lleva datos."""
+    return render(request, 'prospectos/sin_conexion.html', {'publico': bool(settings.URL_PUBLICA)})
 
 
 def certificado(request):

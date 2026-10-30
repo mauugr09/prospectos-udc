@@ -8,6 +8,12 @@ ANTES DE INSTALAR: ¿esta PC va a CORRER el programa o solo a USARLO?
   En las demás computadoras Windows puedes copiar este programa y elegir «C» al abrirlo (paso 3):
   queda como acceso directo a la principal, sin datos propios.
 
+  ¿YA TIENEN UN SERVIDOR CENTRAL (por ejemplo https://prospectos.udcm.mx)?
+    Abre el programa, elige «C» (conectarme) y escribe esa dirección completa (https://...).
+    Esta PC solo abrirá el servidor: no guarda datos aquí y todos ven la misma información,
+    desde cualquier lugar. Celulares y tabletas: abren la dirección en el navegador y la agregan
+    a la pantalla de inicio. Detalle: docs/servidor.md.
+
 1. Copia esta carpeta "Prospectos" a C:\Prospectos
    (NO la dejes en Descargas, Escritorio sincronizado ni OneDrive).
 

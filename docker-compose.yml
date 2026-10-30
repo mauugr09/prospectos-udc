@@ -1,0 +1,87 @@
+# Prospectos UDC · servidor con una sola base de datos para todos (computadoras, celulares y tabletas).
+#
+#   1. cp .env.ejemplo .env      y llena DOMINIO, contraseñas y PERFIL (https o tunel)
+#   2. docker compose up -d --build
+#   3. Abre https://DOMINIO/admin/
+#
+# Paso a paso, respaldos y actualizaciones: docs/servidor.md.
+
+services:
+  mariadb:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: prospectos
+      MARIADB_USER: prospectos
+      MARIADB_PASSWORD: ${BD_CLAVE:?Falta BD_CLAVE en .env}
+      MARIADB_ROOT_PASSWORD: ${BD_CLAVE_ROOT:?Falta BD_CLAVE_ROOT en .env}
+      TZ: America/Mexico_City
+    volumes:
+      - bd:/var/lib/mysql
+      - ./docker/mariadb-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    # Sin «ports»: la base NO se publica a internet; solo el programa llega a ella por la red interna.
+
+  app:
+    build: .
+    image: prospectos-udc:local
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      PROSPECTOS_URL_PUBLICA: https://${DOMINIO:?Falta DOMINIO en .env}
+      # Solo el proxy (Caddy o cloudflared) llega a este contenedor: el puerto 8000 no se publica.
+      PROSPECTOS_PROXY_CONFIABLE: "*"
+      PROSPECTOS_BD_MOTOR: mariadb
+      PROSPECTOS_BD_HOST: mariadb
+      PROSPECTOS_BD_PUERTO: "3306"
+      PROSPECTOS_BD_NOMBRE: prospectos
+      PROSPECTOS_BD_USUARIO: prospectos
+      PROSPECTOS_BD_CLAVE: ${BD_CLAVE}
+      PROSPECTOS_ADMIN_CORREO: ${ADMIN_CORREO:-}
+      PROSPECTOS_ADMIN_CLAVE: ${ADMIN_CLAVE:-}
+      TZ: America/Mexico_City
+    volumes:
+      # config.json con las LLAVES de cifrado, respaldos, logo, cuenta de Google… Respáldalo aparte.
+      - datos:/datos
+    expose:
+      - "8000"
+
+  # Opción A: el servidor tiene IP pública y los puertos 80/443 abiertos. Caddy saca y renueva el certificado solo.
+  caddy:
+    image: caddy:2.10
+    profiles: ["https"]
+    restart: unless-stopped
+    depends_on: [app]
+    environment:
+      DOMINIO: ${DOMINIO}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_datos:/data
+      - caddy_config:/config
+
+  # Opción B: el servidor NO tiene IP pública (red de la universidad o de la oficina). Cloudflare Tunnel sale
+  # hacia Cloudflare y por ahí entra todo el mundo; no se abre ningún puerto.
+  cloudflared:
+    image: cloudflare/cloudflared:latest   # fija una versión (p. ej. 2025.x.y) cuando lo pongas en producción
+    profiles: ["tunel"]
+    restart: unless-stopped
+    depends_on: [app]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNEL_TOKEN:-}
+
+volumes:
+  bd:
+  datos:
+  caddy_datos:
+  caddy_config:

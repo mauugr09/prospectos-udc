@@ -6,8 +6,9 @@ prioriza el seguimiento de los asesores y genera reportes. **No se instala nada*
 con `Prospectos.exe`.
 
 > **Empieza aquí: [Puesta en marcha con tus datos reales](docs/puesta-en-marcha.md)** ·
+> [Un solo Prospectos para todos, desde cualquier lugar (servidor)](docs/servidor.md) ·
 > [Configurar los Google Forms](docs/formularios.md) · [MariaDB y acceso a la base](docs/mariadb.md) ·
-> [Guía para Admisiones](docs/operacion.md) · [Seguridad y LFPDPPP](docs/seguridad.md) · [Decisiones de diseño](docs/decisiones.md)
+> [Guía para Admisiones](docs/operacion.md) · [Teléfonos y tabletas](docs/moviles.md) · [Seguridad y LFPDPPP](docs/seguridad.md) · [Decisiones de diseño](docs/decisiones.md)
 
 ## Documentación
 
@@ -16,6 +17,8 @@ con `Prospectos.exe`.
 | Admisiones, promotores, directivos | [Manual de usuario](docs/manual-usuario.md) · [PDF](docs/Manual-de-usuario.pdf) |
 | Quien instala, respalda y actualiza | [Manual de instalación y operación](docs/manual-instalacion-operacion.md) · [PDF](docs/Manual-de-instalacion-y-operacion.pdf) |
 | Quien da mantenimiento | [Documentación técnica](docs/tecnica.md) · [PDF](docs/Documentacion-tecnica.pdf) · [Decisiones](docs/decisiones.md) |
+| Quien instala el servidor central (una sola base para todos) | [Servidor: nube, universidad o PC de la oficina](docs/servidor.md) |
+| Admisiones y promotores con teléfono o tableta | [Teléfonos y tabletas (Android, iPhone, iPad)](docs/moviles.md) |
 | Autores | [Autoría, registro y licencia](docs/autoria.md) |
 
 Los PDF se regeneran con `python empaquetado/manuales/generar.py`.
@@ -47,6 +50,24 @@ Si abres `Prospectos.exe` otra vez con el programa ya abierto, solo abre el nave
 
 El programa ya está hecho para el **Cuestionario Vocacional** y la **Encuesta para padres de familia**
 de la universidad (Cuautitlán y Tultepec). Lo que conviene agregarle al Form está en [docs/formularios.md](docs/formularios.md), sección 3.
+
+### Una sola base de datos para todos, desde cualquier lugar
+
+Para que todas las computadoras, celulares y tabletas vean la misma información desde la oficina, desde casa o
+desde una prepa, el programa corre en **un servidor** (nube, servidor de la universidad o una PC de la oficina
+con Cloudflare Tunnel) y todos entran por la misma dirección con HTTPS. Viene listo con Docker
+(`docker-compose.yml`: programa + MariaDB + Caddy). En las demás computadoras, `Prospectos.exe` pregunta la
+primera vez por el **servidor central** y solo lo abre. Paso a paso: [docs/servidor.md](docs/servidor.md).
+
+**Para presentar el proyecto** sin servidor ni dominio: Configuración → Otras computadoras → **Compartir por internet**
+(túnel rápido de Cloudflare, gratis). Da un enlace `https://…trycloudflare.com` temporal; ver docs/servidor.md, 3 bis.
+
+### Desde teléfonos y tabletas (Android, iPhone, iPad)
+
+Con el acceso por red activo (Configuración → **Otras computadoras**) aparece un **QR**: el teléfono, en el
+Wi‑Fi de la oficina, lo escanea, instala el certificado una vez y agrega Prospectos a su pantalla de inicio.
+Todas las pantallas se acomodan al teléfono y la ficha trae botones para **Llamar**, **WhatsApp** y **Correo**.
+El teléfono no guarda datos de aspirantes. Detalle: [docs/moviles.md](docs/moviles.md).
 
 ### Pasar de la demo a datos reales
 

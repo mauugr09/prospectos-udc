@@ -222,8 +222,8 @@
       {% if perms.prospectos.reporte_ejecutivo %}<a class="gu-ir" href="{% url 'prospectos:reporte' %}">Ir al Reporte ejecutivo<span class="material-symbols-outlined">arrow_forward</span></a>{% endif %}
     </section>
 
-    <section class="gu-guia" id="configuracion" data-palabras="usuarios roles contraseña otras computadoras red respaldo copia config llave firma membrete">
-      <header><span class="gu-icono"><span class="material-symbols-outlined">settings</span></span><div><h2>Configuración y cuidado del programa</h2><p>Usuarios, otras computadoras y respaldos.</p></div></header>
+    <section class="gu-guia" id="configuracion" data-palabras="usuarios roles contraseña otras computadoras red respaldo copia config llave firma membrete telefono teléfono celular tableta android iphone ipad app movil móvil">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">settings</span></span><div><h2>Configuración y cuidado del programa</h2><p>Usuarios, otras computadoras, teléfonos y respaldos.</p></div></header>
       <h3>Usuarios y roles</h3>
       <ul class="gu-saber"><li>Una cuenta por persona, con su rol; no compartan contraseñas.</li><li>Solo un administrador cambia roles o crea administradores.</li></ul>
       <h3>Otras computadoras</h3>
@@ -274,7 +274,7 @@
       </ul>
     </section>
 
-    <section class="gu-guia" id="red" data-palabras="red otras computadoras planteles tultepec cuautitlan vpn casa conectar certificado principal misma informacion usuarios compartir">
+    <section class="gu-guia" id="red" data-palabras="red otras computadoras planteles tultepec cuautitlan vpn casa conectar certificado principal misma informacion usuarios compartir internet telefono teléfono celular tableta android iphone ipad app movil móvil enlace">
       <header><span class="gu-icono"><span class="material-symbols-outlined">devices</span></span><div><h2>Varias computadoras y planteles</h2><p>Todos ven la misma información, los mismos usuarios y sus perfiles.</p></div></header>
       <ul class="gu-saber">
         <li>Una sola computadora es la <b>principal</b>: guarda los datos. Las demás <b>se conectan</b> a ella. No hay nada que sincronizar.</li>
@@ -295,8 +295,25 @@
       <ul class="gu-saber">
         <li>Si la principal está apagada, nadie puede trabajar (los datos no se pierden). Actívale <b>Abrir al iniciar sesión</b> y, si se puede, que sea una computadora que no se apague.</li>
         <li>Con acceso desde otro plantel, conviene <b>pedir la verificación en 2 pasos a todos</b> (mismo lugar).</li>
-        <li>Nunca se abre el puerto a internet: solo por la red de la UDC o la VPN.</li>
+        <li>Nunca se abre el puerto a internet: solo por la red de la UDC o la VPN. Para entrar por internet sin abrir puertos está <b>Compartir por internet</b> (abajo).</li>
       </ul>
+      <h3>Teléfonos y tabletas (Android, iPhone, iPad)</h3>
+      <ol class="gu-pasos">
+        <li>Con el acceso por red activo, en <b>Otras computadoras</b> aparece un <b>código QR</b>: escanéalo con la cámara del teléfono conectado a la misma red.</li>
+        <li>Sigue los pasos de Android o iPhone/iPad para instalar el certificado (una sola vez) y compara el código.</li>
+        <li>Dentro del programa: en iPhone, <b>Compartir → Agregar a inicio</b>; en Android, <b>⋮ → Instalar app</b>. Queda un icono de Prospectos que se abre como app.</li>
+      </ol>
+      <ul class="gu-saber"><li>Las pantallas se acomodan solas al tamaño del teléfono; las tablas anchas se deslizan de lado.</li>
+        <li>En la ficha, con los datos de contacto visibles, hay botones para <b>Llamar</b>, <b>WhatsApp</b> y <b>Correo</b>.</li>
+        <li>El teléfono no guarda datos de aspirantes: sin conexión solo muestra «Sin conexión».</li></ul>
+      <h3>Compartir por internet (para presentar o entrar desde cualquier lugar)</h3>
+      <ol class="gu-pasos">
+        <li>Instala <b>cloudflared</b> una vez (la pantalla dice cómo) y pulsa <b>Otras computadoras → Compartir por internet</b>.</li>
+        <li>Cierra y vuelve a abrir el programa: aparece un enlace <b>https://…trycloudflare.com</b> y su QR. Con él se entra desde cualquier lugar, sin certificados.</li>
+      </ol>
+      <ul class="gu-saber"><li>El enlace cambia cada vez que se abre el programa y solo funciona con esta computadora encendida.</li>
+        <li>Mientras se comparte, la verificación en 2 pasos es obligatoria para todos. La base de datos nunca se publica.</li>
+        <li>Para el uso diario desde cualquier lugar: un servidor central (ver docs/servidor.md).</li></ul>
     </section>
 
     <section class="gu-guia" id="perfil" data-palabras="perfil foto apodo firma telefono contraseña cambiar dos pasos verificacion codigo authenticator telefono perdi tema oscuro">

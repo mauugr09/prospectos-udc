@@ -72,6 +72,10 @@ El camino de una respuesta:
   **cambió tu contraseña** o pasaron los 30 días. No lo marques en una computadora pública o compartida con gente de fuera.
   En **Mi perfil → Seguridad** ves esas computadoras y puedes **Olvidarlas**.
 
+**Desde el teléfono o la tableta:** si tu equipo ya está conectado (ver [Teléfonos y tabletas](moviles.md)),
+abre el icono **Prospectos** de tu pantalla de inicio. Todo funciona igual que en la computadora; las pantallas
+se acomodan al tamaño. Necesitas estar en el Wi‑Fi de la oficina; si no, verás «Sin conexión con Prospectos».
+
 **Qué ve cada rol**
 
 | Rol | Ve y hace |
@@ -239,7 +243,8 @@ des de baja**: abre su ficha y marca «No quiere información».
   de acuerdo. Por ejemplo, si el alumno quiere Derecho y la familia Ingeniería, la llamada es distinta.
 - **Respuestas por tema**, con el alumno y la familia lado a lado. Las que no coinciden se marcan en ámbar.
 - **Contacto:** el correo y el teléfono aparecen ocultos. **Mostrar** los revela y deja registro de quién
-  los vio.
+  los vio. Ya visibles, cada dato trae botones **Llamar**, **WhatsApp** y **Correo** (en el teléfono abren el
+  marcador, WhatsApp o el correo directamente).
 - **Registrar contacto o nota:** el tipo (llamada, WhatsApp, correo, visita o nota interna), la fecha y lo que
   se habló. El primer contacto real pasa al aspirante a *Contactado* y cierra sus llamadas pendientes. Una
   nota interna no cuenta como contacto.

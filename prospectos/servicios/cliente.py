@@ -6,6 +6,9 @@ directo: la primera vez pregunta la dirección de la principal, descarga su cert
 compararlo con el de la principal (Configuración → Otras computadoras), lo instala y guarda «conexion.json».
 Desde entonces, abrirlo comprueba que la principal responde y abre el navegador ahí.
 
+También sirve para un SERVIDOR CENTRAL en internet (https://prospectos.udcm.mx, ver docs/servidor.md): con una
+dirección https:// con dominio y sin puerto, se usa su certificado HTTPS real (sin código ni certificado propio).
+
 No usa Django: corre antes de preparar cualquier base de datos (una computadora conectada no tiene base propia).
 """
 
@@ -62,6 +65,18 @@ def leer(carpeta: Path | None = None) -> dict | None:
         return None
 
 
+def servidor_publico(texto: str) -> str | None:
+    """«https://prospectos.udcm.mx/admin/» → «https://prospectos.udcm.mx/» si es un servidor central en internet:
+    escrito con https://, con dominio (no una IP) y sin puerto. Si no, None (es la principal de la red local)."""
+    t = (texto or '').strip()
+    if not t.lower().startswith('https://'):
+        return None
+    m = re.fullmatch(r'([a-z0-9-]+(?:\.[a-z0-9-]+)+)', t[8:].split('/')[0].lower())
+    if not m or re.fullmatch(r'[0-9.]+', m.group(1)) or '.' not in m.group(1):
+        return None
+    return f'https://{m.group(1)}/'
+
+
 def normalizar_servidor(texto: str) -> str | None:
     """«10.20.1.15», «pc-admisiones:8443», «https://10.20.1.15:8443/admin/» → «https://10.20.1.15:8443/»."""
     t = (texto or '').strip()
@@ -94,10 +109,11 @@ def descargar_certificado(servidor: str, tiempo: float = 8) -> bytes:
     return pem
 
 
-def responde(servidor: str, certificado: Path, tiempo: float = 5) -> tuple[bool, str]:
-    """¿La principal contesta, con un certificado firmado por la autoridad que se aceptó? (True, '') o (False, motivo)."""
+def responde(servidor: str, certificado: Path | None, tiempo: float = 5) -> tuple[bool, str]:
+    """¿La principal contesta, con un certificado firmado por la autoridad que se aceptó? (True, '') o (False, motivo).
+    Sin `certificado` (servidor central en internet) se exige un certificado HTTPS público válido."""
     try:
-        ctx = ssl.create_default_context(cafile=str(certificado))
+        ctx = ssl.create_default_context(cafile=str(certificado)) if certificado else ssl.create_default_context()
         try:
             with _abrir_url(servidor + 'salud/', ctx, tiempo) as r:
                 texto = r.read(200).decode(errors='replace')
@@ -194,6 +210,21 @@ def _elegir(candidatas: list[dict], preguntar, decir) -> str | None:
     return candidatas[int(r) - 1]['servidor'] if r.isdigit() and 1 <= int(r) <= len(candidatas) else r
 
 
+def _conectar_publico(carpeta: Path, servidor: str, decir) -> str | None:
+    """Servidor central en internet: certificado HTTPS real, nada que comparar ni instalar."""
+    decir(f'Comprobando el servidor central {servidor} …')
+    ok, motivo = responde(servidor, None, tiempo=10)
+    if not ok:
+        decir(f'No se pudo: {motivo}. Revisa la dirección y que tengas internet.')
+        return None
+    carpeta.mkdir(parents=True, exist_ok=True)
+    (carpeta / ARCHIVO).write_text(json.dumps({'servidor': servidor, 'publico': True,
+                                               'conectada_en': time.strftime('%Y-%m-%d %H:%M')}, indent=2), encoding='utf-8')
+    decir('')
+    decir('Listo: esta computadora abre el servidor central. No guarda datos propios.')
+    return servidor
+
+
 def _configurar(carpeta: Path, preguntar, decir, buscar_fn) -> str | None:
     decir('')
     decir('Buscando la computadora principal en esta red…')
@@ -203,7 +234,8 @@ def _configurar(carpeta: Path, preguntar, decir, buscar_fn) -> str | None:
         decir('No la encontré en esta red (si estás en otro plantel o en la VPN es normal).')
     if propuesta is None or not candidatas:
         decir('Escribe su dirección: está en la principal, en Configuración → Otras computadoras')
-        decir('(por ejemplo 192.168.1.20 o 10.20.1.15).')
+        decir('(por ejemplo 192.168.1.20 o 10.20.1.15). Si tienen un servidor central en internet,')
+        decir('escribe su dirección completa (por ejemplo https://prospectos.udcm.mx).')
     for _ in range(5):
         if propuesta:
             texto, propuesta = propuesta, None
@@ -211,6 +243,9 @@ def _configurar(carpeta: Path, preguntar, decir, buscar_fn) -> str | None:
             texto = preguntar('Dirección (o Enter para cancelar): ').strip()
         if not texto:
             return None
+        publico = servidor_publico(texto)
+        if publico:
+            return _conectar_publico(carpeta, publico, decir)
         servidor = normalizar_servidor(texto)
         if not servidor:
             decir('Esa dirección no es válida. Escribe solo la IP o el nombre, por ejemplo 192.168.1.20')
@@ -251,9 +286,10 @@ def abrir(conexion: dict, carpeta: Path | None = None, decir=print, abrir_navega
     import webbrowser
     carpeta = carpeta or carpeta_datos()
     servidor = conexion['servidor']
-    decir(f'Esta computadora se conecta a la principal: {servidor}')
+    publico = bool(conexion.get('publico'))
+    decir(f"Esta computadora se conecta {'al servidor central' if publico else 'a la principal'}: {servidor}")
     for i in range(intentos):
-        ok, motivo = responde(servidor, carpeta / CERTIFICADO)
+        ok, motivo = responde(servidor, None if publico else carpeta / CERTIFICADO)
         if ok:
             (abrir_navegador or webbrowser.open)(servidor + 'admin/')
             decir('Abriendo el navegador… (puedes cerrar esta ventana)')

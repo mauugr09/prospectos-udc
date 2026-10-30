@@ -129,6 +129,10 @@ cambiarla al entrar.
 
 ## 6. Varias computadoras y planteles
 
+> **¿Varias computadoras, celulares y tabletas, desde cualquier lugar y con la misma información?** Lo
+> recomendado es un **servidor central**: [Un solo Prospectos para todos](servidor.md). Lo de esta sección es
+> para cuando el programa corre en una PC y solo se usa dentro de la red de la oficina.
+
 ![Otras computadoras](img/otras.jpg)
 
 Una sola computadora es la **principal**: guarda la base de datos. Las demás **se conectan** a ella con el
@@ -179,7 +183,26 @@ lo dice y reintenta durante 2 minutos. Para cambiar de principal: `Prospectos.ex
 **Mac, o sin copiar el programa:** en el navegador abre `https://<dirección>:8443/conectar/`, compara el
 código, descarga e instala el certificado siguiendo los pasos de esa página.
 
+### 6.4 Celulares y tabletas (Android, iPhone, iPad)
+
+Con el acceso por red activo, **Otras computadoras** muestra un **código QR**. El teléfono, en la misma red,
+lo escanea y la página *Conectar* da los pasos para Android o iPhone/iPad (instalar el certificado y comparar
+el código). Después se agrega a la pantalla de inicio y se abre como app. Detalle: [Teléfonos y tabletas](moviles.md).
+
+### 6.5 Desde cualquier lugar por internet (sin VPN)
+
+- **Para presentar o probar:** **Otras computadoras → Compartir por internet** (túnel rápido de Cloudflare,
+  gratis, sin abrir puertos). Da un enlace `https://…trycloudflare.com` que cambia en cada arranque; mientras
+  se comparte, la verificación en 2 pasos es obligatoria para todos.
+- **Para el uso diario:** un **servidor central** (nube, servidor de la universidad o esta PC con Cloudflare
+  Tunnel y dominio propio). Ver [Un solo Prospectos para todos](servidor.md).
+
 > Si Firefox sigue mostrando el aviso de seguridad (usa sus propios certificados), usa Edge o Chrome.
+
+**Teléfonos y tabletas (Android, iPhone, iPad):** en la misma pantalla aparece un **código QR**. El teléfono,
+conectado al Wi‑Fi de la oficina, lo escanea y la página *Conectar* muestra los pasos para su sistema
+(instalar el certificado y, en iPhone, activarlo en *Ajustes de confianza de certificados*). Después se
+agrega a la pantalla de inicio y se abre como app. Paso a paso: [Teléfonos y tabletas](moviles.md).
 
 ## 7. Protección de datos (obligatorio antes de usar datos reales)
 

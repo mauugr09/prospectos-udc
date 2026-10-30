@@ -7,6 +7,12 @@ ANTES DE INSTALAR: ¿esta Mac va a CORRER el programa o solo a USARLO?
     muestra esa computadora (Configuración > Otras computadoras). Así todos ven los mismos datos.
   Si instalas el programa en varias computadoras, cada una tendrá datos distintos y separados.
 
+  ¿YA TIENEN UN SERVIDOR CENTRAL (por ejemplo https://prospectos.udcm.mx)?
+    Abre el programa, elige «C» (conectarme) y escribe esa dirección completa (https://...).
+    Esta Mac solo abrirá el servidor: no guarda datos aquí y todos ven la misma información,
+    desde cualquier lugar. Celulares y tabletas: abren la dirección en el navegador y la agregan
+    a la pantalla de inicio. Detalle: docs/servidor.md.
+
 INSTALAR (solo en la computadora que corre el programa)
 1. Arrastra Prospectos a la carpeta Aplicaciones (en esta misma ventana).
 2. Abre Prospectos desde Aplicaciones. macOS dirá que no puede verificarlo, porque no está
