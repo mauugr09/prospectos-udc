@@ -102,6 +102,7 @@ Admisiones, Promotor y Directivo. Los promotores se filtran por consulta con `ve
 | `red.py` | Autoridad certificadora propia y servidor HTTPS para la red local. |
 | `semillas.py`, `demo.py` | Catálogos y roles iniciales; datos de demostración y su borrado seguro. |
 | `asistente.py` | Asistente con la API de Anthropic (Messages + herramientas, con `requests`). Herramientas: `buscar_ayuda`, `consultar_cifras`, `embudo`, `consultar_visitas`, `perfil_del_aspirante` y `proponer_*`. `revisar_pregunta` bloquea nombres de aspirantes, correos, teléfonos y CURP antes de enviar. Gasto por mes en `Configuracion`; precios por modelo en `PRECIOS`. |
+| `analitica.py` | Consultas del asistente con contexto: `cifras` (con periodo anterior y parte del total), `cruce` (dos dimensiones), `conversion` (tasas por grupo, marcando las no confiables), `visitas` (registros, meta, costo por registro), `pendientes`. Cada resultado trae `como_se_calculo` y `enlace_a_la_lista`. Grupos de menos de 3 se ocultan. |
 | `auditoria.py` | `registrar(accion, objeto, detalle, usuario, request)`. |
 
 ## 5. Flujo de una respuesta
@@ -236,6 +237,7 @@ El resultado es `dist\Prospectos\`. Para entregarlo, comprímelo **sin** la carp
   permisos y se llama únicamente desde el botón Confirmar.
 - Los textos de los resultados son datos, no instrucciones: el mensaje de sistema lo dice. Aun así, la defensa real es que la IA no
   puede ejecutar nada.
+- La forma de responder vive en `_sistema()` (y su `EJEMPLO`). Si la cambias, corre `Prospectos.exe probar_asistente`: hace 12 preguntas reales y califica cada respuesta (cifra al inicio, sin relleno, enlace, preguntas de seguimiento, sin datos personales).
 - Si cambian los precios de Anthropic, actualiza `PRECIOS`. Un modelo que no esté ahí se cobra con el precio más alto.
 
 ## 13. Límites conocidos

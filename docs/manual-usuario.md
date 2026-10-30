@@ -112,6 +112,25 @@ Confirmar**. No puede borrar, unir, exportar ni cambiar estatus.
 - En la ficha recibe solo categorías (carrera, modalidad, grupos y lo que marcó en preguntas de opción). El nombre lo pone el
   programa en el borrador después de que la IA responde.
 
+**Cómo responde.** Primero la cifra, luego con qué se compara (el periodo anterior, el otro plantel, la meta), qué llama la atención
+y qué haría, con el enlace a la lista exacta. Debajo trae:
+- una **gráfica** con los números del programa (la rayita marca el periodo anterior);
+- **Cómo lo calculé**: qué contó, de qué fechas, con qué filtros y un enlace a esos aspirantes, para que lo compruebes;
+- **preguntas para seguir**: tócalas para profundizar sin escribir.
+
+**Preguntas que dan mejores respuestas:**
+
+| En vez de… | Pregunta… |
+|---|---|
+| «¿Cuántos aspirantes hay?» | «¿Cómo vamos este mes contra el anterior, por plantel?» |
+| «¿Qué carreras piden?» | «¿Qué carreras piden en cada plantel?» |
+| «¿Cómo va WhatsApp?» | «¿Qué canal convierte mejor: WhatsApp o correo?» |
+| «¿Qué hago?» | «¿Qué es lo más urgente hoy?» |
+| «¿Sirvieron las visitas?» | «¿Qué visitas rindieron más registros por costo?» |
+| «¿Dónde fallamos?» | «¿En qué etapa del embudo se nos quedan más aspirantes?» |
+
+Si no dices el periodo, toma los últimos 30 días y lo aclara. Con pocos casos (menos de 8) te avisa que el porcentaje no es confiable.
+
 Si el asistente no está activado, solo busca en este manual. Puede equivocarse al entender la pregunta: revisa el periodo y los
 filtros que menciona.
 

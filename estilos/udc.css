@@ -1499,3 +1499,29 @@ button.as-abrir:hover { background: var(--c-material-fuerte); box-shadow: none; 
 .km .kuali { width: 48px; height: 48px; }
 .km { padding: 2px 12px 8px; }
 button.as-abrir .k-alerta, .as-logo-kuali .k-alerta { display: none; }
+/* respuestas del asistente: gráfica, cálculo, seguimiento */
+.as-ideas-titulo { display: block; margin: 10px 2px 2px; font-size: 11.5px; font-weight: 650; letter-spacing: .02em; text-transform: uppercase; color: var(--c-texto-3); }
+.as-ideas-titulo:first-child { margin-top: 0; }
+a.as-enlace { color: var(--c-acento); font-weight: 550; text-decoration: underline; text-underline-offset: 2px; }
+.as-grafica { margin-top: 10px; padding: 10px 10px 8px; border-radius: 10px; background: var(--c-relleno-2); border: .5px solid var(--c-separador); display: grid; gap: 5px; }
+.as-grafica-cabeza { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--c-texto-2); margin-bottom: 2px; }
+.as-grafica-cabeza b { color: var(--c-texto); font-weight: 650; }
+.as-barra { display: grid; grid-template-columns: minmax(0, 42%) 1fr auto; align-items: center; gap: 8px; font-size: 12.5px; color: var(--c-texto); text-decoration: none; }
+a.as-barra:hover .as-barra-etiqueta { color: var(--c-acento); text-decoration: underline; }
+.as-barra-etiqueta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.as-barra-pista { position: relative; height: 8px; border-radius: 4px; background: var(--c-relleno); overflow: visible; }
+.as-barra-pista i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: linear-gradient(90deg, #2447b8, #7a4cd8); }
+.as-barra-pista i.poco { background: var(--c-texto-3); }
+.as-barra-pista em { position: absolute; top: -3px; width: 2px; height: 14px; border-radius: 1px; background: var(--c-texto); opacity: .55; }
+.as-barra-valor { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; min-width: 34px; }
+.as-grafica-nota { font-size: 11px; color: var(--c-texto-3); }
+.as-grafica-ver { font-size: 12.5px; justify-self: start; margin-top: 2px; }
+details.as-calculo { margin-top: 8px; font-size: 12px; color: var(--c-texto-2); }
+details.as-calculo summary { cursor: pointer; color: var(--c-texto-3); font-weight: 550; list-style: none; }
+details.as-calculo summary::before { content: '▸ '; } details.as-calculo[open] summary::before { content: '▾ '; }
+details.as-calculo p { margin-top: 5px; line-height: 1.45; }
+.as-siguientes { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+button.as-siguiente { font-size: 13px; text-align: left; padding: 6px 11px; border-radius: 14px; color: var(--c-acento); background: var(--c-acento-suave);
+  border: .5px solid color-mix(in srgb, var(--c-acento) 25%, transparent); }
+button.as-siguiente:hover { background: color-mix(in srgb, var(--c-acento) 18%, transparent); }
+button.as-siguiente::before { content: '↳ '; opacity: .6; }

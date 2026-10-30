@@ -223,8 +223,60 @@ def test_kuali_en_el_menu_con_su_nombre_y_en_las_instrucciones(client, jefa):
     html = client.get('/admin/').content.decode()
     assert 'data-nombre="Cuauhtiscript"' in html
     sistema = asistente._sistema(jefa, {})
-    assert 'Eres Cuauhtiscript, un aguilucho' in sistema and 'nunca hagas bromas' in sistema
+    assert 'Eres Cuauhtiscript, un aguilucho' in sistema and 'Nunca bromees' in sistema and 'SIGUIENTES' in sistema
 
 
 def test_sin_sesion_no_hay_mascota(client):
     assert 'id="km"' not in client.get('/admin/login/').content.decode()
+
+
+
+# --------------------------------------------------------------------------- respuestas con contexto
+
+def test_respuesta_trae_grafica_calculo_y_preguntas_de_seguimiento(client, jefa, activo, datos, monkeypatch):
+    api = FalsaAPI(usa('consultar_cifras', {'metrica': 'aspirantes', 'agrupar_por': 'plantel', 'desde': '2026-01-01', 'hasta': '2026-12-31'}),
+                   responde('Llegaron **3 aspirantes** en 2026.\n- Todos en Cuautitlán.\n**Qué haría:** [ver la lista](/admin/prospectos/prospecto/) '
+                            'y [esto no](https://malo.example.com)\nSIGUIENTES: ¿Y por carrera? | ¿Cuántos ya contactamos? | ¿Qué prepas?'))
+    monkeypatch.setattr(asistente.requests, 'post', api)
+    r = _preguntar(client, '¿Cuántos llegaron este año por plantel?').json()
+    assert 'SIGUIENTES' not in r['texto'] and r['siguientes'] == ['¿Y por carrera?', '¿Cuántos ya contactamos?', '¿Qué prepas?']
+    assert r['visual']['tipo'] == 'barras' and r['visual']['total'] == 3 and r['visual']['filas']
+    assert r['calculos'] and 'Se contaron' in r['calculos'][0]['que'] and r['calculos'][0]['enlace'].startswith('/admin/prospectos/prospecto/?')
+    resultado = json.loads(api.enviado[1]['messages'][-1]['content'][0]['content'])
+    assert 'periodo_anterior' in resultado and 'como_se_calculo' in resultado  # la IA recibe con qué comparar
+
+
+def test_herramientas_de_analisis_no_filtran_datos_personales(jefa, datos, f_alumno):
+    from prospectos.servicios import analitica
+    todo = json.dumps([analitica.cifras(jefa, {'agrupar_por': 'preparatoria', 'desde': '2000-01-01'}),
+                       analitica.cruce(jefa, {'filas': 'carrera', 'columnas': 'plantel', 'desde': '2000-01-01'}),
+                       analitica.conversion(jefa, {'agrupar_por': 'preparatoria', 'desde': '2000-01-01'}),
+                       analitica.pendientes(jefa, {}), analitica.visitas(jefa, {})], ensure_ascii=False, default=str)
+    for p in datos:
+        for parte in p.nombre_aspirante.split():
+            assert parte not in todo
+    assert 'menos de 3' in todo  # grupos chicos ocultos
+
+
+def test_conversion_marca_tasas_con_pocos_casos(jefa, datos):
+    from prospectos.servicios import analitica
+    r = analitica.conversion(jefa, {'agrupar_por': 'plantel', 'desde': '2000-01-01'})
+    assert r['grupos'] and all(g['confiable'] is False for g in r['grupos'])  # 3 aspirantes: no alcanza para una tasa
+
+
+def test_enlaces_de_las_herramientas_abren_la_lista_filtrada(client, jefa, datos):
+    from prospectos.servicios import analitica
+    r = analitica.cifras(jefa, {'plantel': 'cuautitlan', 'carrera': 'Derecho', 'desde': '2000-01-01'})
+    html = client.get(r['enlace_a_la_lista']).content.decode()
+    assert r['total'] == 3 and all(n in html for n in ('Valeria Quintero', 'Mateo Quintero', 'Ana Paz'))
+    otra = analitica.cifras(jefa, {'plantel': 'tultepec', 'desde': '2000-01-01'})
+    assert otra['total'] == 0 and 'Valeria Quintero' not in client.get(otra['enlace_a_la_lista']).content.decode()
+
+
+def test_calificador_de_probar_asistente():
+    from prospectos.management.commands.probar_asistente import calificar
+    bien = calificar('Llegaron **12 aspirantes** este mes, 3 más que antes. [lista](/admin/prospectos/prospecto/)',
+                     {'herramientas': ['consultar_cifras'], 'siguientes': ['a', 'b']})
+    assert bien == []
+    mal = calificar('¡Claro! Con gusto te ayudo. Hay varios aspirantes.', {'herramientas': ['consultar_cifras'], 'siguientes': []})
+    assert len(mal) >= 3

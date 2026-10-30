@@ -57,10 +57,15 @@
   new MutationObserver(acomodar).observe(document.body, { attributes: true, attributeFilter: ['class'] });
   setTimeout(acomodar, 50); setTimeout(acomodar, 600);
 
-  const SUGERENCIAS = ficha
-    ? ['Prepara la llamada con este aspirante', 'Escribe un WhatsApp para invitarlo al open house', '¿En qué no coincide con su familia?']
-    : ['¿Cuántos aspirantes llegaron este mes por plantel?', '¿Qué carreras piden más en Tultepec?', '¿Qué visitas hay las próximas 2 semanas?',
-       '¿Cómo uno a una familia con su alumno?'];
+  const IDEAS = ficha
+    ? [['Preparar el contacto', ['Prepara la llamada con este aspirante', 'Escribe un WhatsApp para invitarlo al open house',
+        '¿En qué no coincide con su familia y cómo lo abordo?']]]
+    : [['Qué hago hoy', ['¿Qué es lo más urgente hoy?', '¿Cuántos listos para inscribirse nadie ha llamado?']],
+       ['Entender cómo vamos', ['¿Cómo vamos este mes contra el anterior, por plantel?', '¿En qué etapa del embudo se nos quedan más?',
+         '¿Qué carreras piden en cada plantel?']],
+       ['Mejorar resultados', ['¿Qué canal convierte mejor: WhatsApp o correo?', '¿Qué visitas rindieron más registros por costo?',
+         '¿Qué prepas mandan aspirantes que sí avanzan?']],
+       ['Cómo se hace', ['¿Cómo uno a una familia con su alumno?', '¿Qué significa Esperando permiso?']]];
 
   const panel = document.createElement('aside');
   panel.id = 'as-panel';
@@ -112,7 +117,10 @@
       b.appendChild(av);
     }
     const lista = el('div', 'as-sugerencias');
-    SUGERENCIAS.forEach((s) => { const c = el('button', 'as-sugerencia', s); c.type = 'button'; c.onclick = () => enviar(s); lista.appendChild(c); });
+    IDEAS.forEach(([titulo, preguntas]) => {
+      lista.appendChild(el('small', 'as-ideas-titulo', titulo));
+      preguntas.forEach((s) => { const c = el('button', 'as-sugerencia', s); c.type = 'button'; c.onclick = () => enviar(s); lista.appendChild(c); });
+    });
     b.appendChild(lista);
     hilo.appendChild(b);
   }
@@ -134,11 +142,46 @@
     return cont;
   }
   function enLinea(nodo, txt) {
-    txt.split(/(\*\*[^*]+\*\*)/).forEach((parte) => {
+    txt.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)\s]+\))/).forEach((parte) => {
+      const enlace = parte.match(/^\[([^\]]+)\]\(([^)\s]+)\)$/);
       if (/^\*\*[^*]+\*\*$/.test(parte)) nodo.appendChild(el('b', '', parte.slice(2, -2)));
-      else if (parte) nodo.appendChild(document.createTextNode(parte));
+      else if (enlace) {
+        if (esInterno(enlace[2])) { const a = el('a', 'as-enlace', enlace[1]); a.href = enlace[2]; nodo.appendChild(a); }
+        else nodo.appendChild(document.createTextNode(enlace[1]));  // la IA no puede mandar a sitios de fuera
+      } else if (parte) nodo.appendChild(document.createTextNode(parte));
     });
     return nodo;
+  }
+  const esInterno = (u) => typeof u === 'string' && u.startsWith('/admin/') && !u.includes('//');
+
+  // Gráfica con los números del sistema (no del texto de la IA).
+  function grafica(v) {
+    const caja = el('div', 'as-grafica');
+    const cab = el('div', 'as-grafica-cabeza');
+    cab.appendChild(el('b', '', v.titulo || ''));
+    if (v.total != null) cab.appendChild(el('span', '', `Total ${v.total}` + (v.anterior != null ? ` · antes ${v.anterior}` : '')));
+    caja.appendChild(cab);
+    const max = Math.max(1, ...v.filas.map((f) => Math.max(f.valor || 0, f.antes || 0)));
+    v.filas.forEach((f) => {
+      const fila = el(f.enlace && esInterno(f.enlace) ? 'a' : 'div', 'as-barra');
+      if (fila.tagName === 'A') fila.href = f.enlace;
+      fila.appendChild(el('span', 'as-barra-etiqueta', f.etiqueta));
+      const pista = el('span', 'as-barra-pista');
+      if (v.tipo !== 'pendientes') {
+        const ancho = v.tipo === 'porcentajes' ? (f.valor || 0) : ((f.valor || 0) / max * 100);
+        const relleno = el('i', f.confiable === false ? 'poco' : ''); relleno.style.width = Math.max(ancho, f.valor ? 2 : 0) + '%';
+        pista.appendChild(relleno);
+        if (f.antes != null) { const fantasma = el('em'); fantasma.style.left = (f.antes / max * 100) + '%'; fantasma.title = `Antes: ${f.antes}`; pista.appendChild(fantasma); }
+      }
+      fila.appendChild(pista);
+      const valor = f.valor == null ? 'menos de 3' : (v.tipo === 'porcentajes' ? `${f.valor} %` : String(f.valor));
+      fila.appendChild(el('span', 'as-barra-valor', valor + (v.tipo === 'porcentajes' && f.n ? ` de ${f.n}` : '')));
+      caja.appendChild(fila);
+    });
+    if (v.tipo === 'barras' && v.filas.some((f) => f.antes != null)) caja.appendChild(el('small', 'as-grafica-nota', 'La rayita marca el periodo anterior.'));
+    if (v.tipo === 'porcentajes' && v.filas.some((f) => f.confiable === false)) caja.appendChild(el('small', 'as-grafica-nota', 'En gris: muy pocos casos para confiar en el porcentaje.'));
+    if (v.enlace && esInterno(v.enlace)) { const a = el('a', 'as-enlace as-grafica-ver', 'Ver la lista'); a.href = v.enlace; caja.appendChild(a); }
+    return caja;
   }
 
   function burbuja(quien, contenido) {
@@ -195,7 +238,8 @@
     hilo.querySelector('.as-bienvenida')?.remove();
     burbuja('yo', texto);
     campo.value = ''; ajustar();
-    const pensando = burbuja('ia', el('div', 'as-pensando', 'Consultando…'));
+    hilo.querySelectorAll('.as-siguientes').forEach((x) => x.remove());
+    const pensando = burbuja('ia', el('div', 'as-pensando', 'Revisando los datos…'));
     estado('pensando');
     try {
       const r = await fetch(boton.dataset.url, { method: 'POST', credentials: 'same-origin',
@@ -207,9 +251,24 @@
       estado(null);
       if (!j.ok) { estado('preocupado', 3500); burbuja('aviso ' + (j.tipo || ''), j.mensaje); return; }
       const b = burbuja('ia', j.texto || '(sin respuesta)');
-      if (j.consulto && j.consulto.length) b.appendChild(el('small', 'as-fuente', 'Consultó: ' + j.consulto.map(nombreHerramienta).join(', ')));
+      if (j.visual && j.visual.filas && j.visual.filas.length) b.appendChild(grafica(j.visual));
+      if (j.calculos && j.calculos.length) {
+        const det = el('details', 'as-calculo');
+        det.appendChild(el('summary', '', 'Cómo lo calculé'));
+        j.calculos.forEach((c) => {
+          const p = el('p', '', c.que);
+          if (c.enlace && esInterno(c.enlace)) { p.appendChild(document.createTextNode(' ')); const a = el('a', 'as-enlace', 'Ver esos aspirantes'); a.href = c.enlace; p.appendChild(a); }
+          det.appendChild(p);
+        });
+        b.appendChild(det);
+      } else if (j.consulto && j.consulto.length) b.appendChild(el('small', 'as-fuente', 'Consultó: ' + j.consulto.map(nombreHerramienta).join(', ')));
       if (ficha && /whatsapp|mensaje|correo/i.test(texto)) botonCopiar(b, j.texto);
       (j.propuestas || []).forEach((p) => hilo.appendChild(tarjeta(p)));
+      if (j.siguientes && j.siguientes.length) {
+        const sig = el('div', 'as-siguientes');
+        j.siguientes.forEach((q) => { const c = el('button', 'as-siguiente', q); c.type = 'button'; c.onclick = () => { sig.remove(); enviar(q); }; sig.appendChild(c); });
+        hilo.appendChild(sig);
+      }
       hilo.scrollTop = hilo.scrollHeight;
     } catch (e) {
       pensando.remove();
@@ -217,7 +276,7 @@
       burbuja('aviso', 'Sin conexión con la PC del sistema.');
     } finally { ocupado = false; campo.focus(); }
   }
-  const NOMBRES_H = { consultar_cifras: 'cifras', embudo: 'embudo', consultar_visitas: 'visitas', buscar_ayuda: 'manual', manual: 'manual',
+  const NOMBRES_H = { consultar_cifras: 'cifras', cruzar: 'cruce', conversion: 'conversión', pendientes: 'pendientes', embudo: 'embudo', consultar_visitas: 'visitas', buscar_ayuda: 'manual', manual: 'manual',
     perfil_del_aspirante: 'perfil sin nombre', proponer_crear_visita: 'propuesta', proponer_crear_actividad: 'propuesta', proponer_asignar_asesor: 'propuesta' };
   const nombreHerramienta = (n) => NOMBRES_H[n] || n;
 

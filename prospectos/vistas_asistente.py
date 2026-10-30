@@ -45,7 +45,14 @@ def conversar(request):
         tarjetas.append({'id': p['id'], **asistente.detalle_propuesta(p)})
     request.session[SESION_PROPUESTAS] = pendientes
     return JsonResponse({'ok': True, 'texto': asistente.personalizar(r['texto'], request.user, contexto),
-                         'propuestas': tarjetas, 'sin_ia': r.get('sin_ia', False), 'consulto': sorted(set(r['herramientas']))})
+                         'propuestas': tarjetas, 'sin_ia': r.get('sin_ia', False), 'consulto': sorted(set(r['herramientas'])),
+                         'siguientes': r.get('siguientes', []), 'calculos': [c for c in r.get('calculos', []) if _interno(c.get('enlace'))
+                                                                             or not c.get('enlace')],
+                         'visual': r.get('visual')})
+
+
+def _interno(url) -> bool:
+    return isinstance(url, str) and url.startswith('/admin/') and '//' not in url
 
 
 @staff_member_required
