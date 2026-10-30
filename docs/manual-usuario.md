@@ -76,7 +76,35 @@ Arriba a la derecha. El número rojo indica cuántos avisos no has leído.
 
 ![Bandeja de avisos](img/avisos.jpg)
 
-## 5. A quién llamar hoy
+## 5. El asistente
+
+![Asistente](img/asistente.jpg)
+
+El botón **Asistente** (arriba a la derecha) abre una conversación. Sirve para tres cosas:
+
+- **Cifras:** «¿cuántos aspirantes llegaron este mes por plantel?», «¿qué carreras piden más en Tultepec?», «¿cómo va el
+  embudo desde agosto?». Las cifras salen del programa. Debajo de la respuesta dice qué consultó. Los grupos de menos de 3
+  aspirantes aparecen como «menos de 3».
+- **Ayuda:** «¿cómo uno a una familia?», «¿qué significa Esperando permiso?». Responde con este manual.
+- **Preparar llamadas y mensajes:** en la ficha de un aspirante, los botones **Preparar llamada**, **Borrador de WhatsApp** y
+  **Diferencias con su familia**. El borrador trae un botón **Copiar**.
+
+**Propuestas:** si le pides «agenda una visita a tal prepa el día tal», «agrega el open house al calendario» o «asigna los 10 de
+mayor prioridad sin asesor a Fulana», te muestra una tarjeta con lo que hará, con los nombres, y **no cambia nada hasta que pulses
+Confirmar**. No puede borrar, unir, exportar ni cambiar estatus.
+
+![Propuesta del asistente](img/asistente-propuesta.jpg)
+
+**Privacidad.** El asistente usa una inteligencia artificial externa (Claude, de Anthropic). Por eso:
+- Nunca recibe nombres, teléfonos, correos, CURP, edad, la prepa del aspirante ni lo que escribió con sus palabras.
+- Si escribes un nombre o un teléfono en la pregunta, el programa no la envía y te pide reformularla.
+- En la ficha recibe solo categorías (carrera, modalidad, grupos y lo que marcó en preguntas de opción). El nombre lo pone el
+  programa en el borrador después de que la IA responde.
+
+Si el asistente no está activado, solo busca en este manual. Puede equivocarse al entender la pregunta: revisa el periodo y los
+filtros que menciona.
+
+## 6. A quién llamar hoy
 
 ![A quién llamar hoy](img/cola.jpg)
 
@@ -88,7 +116,7 @@ Arriba a la derecha. El número rojo indica cuántos avisos no has leído.
 
 Quien contestó **«No, gracias»** a recibir información no aparece aquí y **no se le llama**.
 
-## 6. La ficha del aspirante
+## 7. La ficha del aspirante
 
 ![Ficha](img/ficha.jpg)
 
@@ -110,7 +138,7 @@ Quien contestó **«No, gracias»** a recibir información no aparece aquí y **
 **No es la misma persona: separar**. Las dos vuelven a ser fichas independientes y el programa ya no las
 une solo. Un correo de bienvenida que ya se haya enviado no se puede deshacer.
 
-## 7. Respuestas de los Forms: «contestaron y no aparece»
+## 8. Respuestas de los Forms: «contestaron y no aparece»
 
 ![Respuestas de los Forms](img/respuestas.jpg)
 
@@ -130,7 +158,7 @@ y el medio (llamada, WhatsApp, en persona, por escrito). Queda tu nombre, la fec
 Si una respuesta **ni siquiera aparece aquí**: el programa estaba cerrado (se pone al día al abrirlo) o
 el Form tiene un problema de conexión (aviso rojo en el Inicio).
 
-## 8. Familias por unir
+## 9. Familias por unir
 
 ![Familias por unir](img/familias.jpg)
 
@@ -150,7 +178,7 @@ probable primero, con sus puntos y por qué se parecen.
 > **Importante:** mientras un menor no se une con su familia, el permiso que dio la familia no le llega y
 > sigue «Esperando permiso». Revisa esta pantalla al menos dos veces por semana.
 
-## 9. Posibles duplicados
+## 10. Posibles duplicados
 
 ![Posibles duplicados](img/duplicados.jpg)
 
@@ -161,9 +189,9 @@ El programa **nunca** las une solo. Revisa cada una:
 - **Son personas distintas: rechazar.**
 
 Pistas: misma prepa, mismo apellido materno, el mismo teléfono. Si te equivocas al fusionar, se separa
-desde la ficha (sección 6).
+desde la ficha (sección 7).
 
-## 10. Visitas a preparatorias
+## 11. Visitas a preparatorias
 
 ### Calendario
 
@@ -207,7 +235,7 @@ nombres. Esta pantalla no cierra la sesión por inactividad.
 El **Reporte** del evento resume cuántos se registraron, de qué carreras y cuánto costó cada registro.
 Cambia el estado del evento a *Realizado*.
 
-## 11. Preparatorias y mapa de cobertura
+## 12. Preparatorias y mapa de cobertura
 
 ![Mapa de cobertura](img/mapa.jpg)
 
@@ -222,7 +250,7 @@ Cambia el estado del evento a *Realizado*.
   la misma escuela, en **Preparatorias** selecciónalas y usa **Unir**. Para ponerlas en el mapa, usa
   **Ubicar**: búscala o haz clic donde está.
 
-## 12. Reporte ejecutivo
+## 13. Reporte ejecutivo
 
 ![Reporte ejecutivo](img/reporte.jpg)
 
@@ -230,7 +258,7 @@ Para dirección: aspirantes del periodo, de dónde vienen, qué carreras piden, 
 universidad y en qué no coinciden con su familia. Solo cifras, sin nombres. **Imprimir / PDF** lo
 deja listo para una junta.
 
-## 13. Cambiar las encuestas
+## 14. Cambiar las encuestas
 
 ![Encuestas](img/encuestas.jpg)
 
@@ -238,7 +266,7 @@ En **Configuración → Encuestas** (Coordinación y Administrador) se agregan, 
 Forms sin entrar a Google. Las preguntas que usa el programa para la prioridad y el permiso **no se pueden
 borrar**, solo cambiar su texto. Al publicar, el Form de Google se actualiza.
 
-## 14. Exportar y derechos de las personas (ARCO)
+## 15. Exportar y derechos de las personas (ARCO)
 
 - **Exportar a Excel** (sin contacto) o **con datos de contacto**: este segundo queda en la bitácora. Borra
   el archivo cuando termines y no lo reenvíes por correo personal ni WhatsApp.
@@ -246,13 +274,14 @@ borrar**, solo cambiar su texto. Al publicar, el Form de Google se actualiza.
   **Anonimizar**, y escribe ANONIMIZAR para confirmar. Es irreversible: solo quedan cifras.
 - **Si pide ver sus datos** (acceso): exporta su ficha con contacto y entrégasela por un medio seguro.
 
-## 15. Preguntas frecuentes
+## 16. Preguntas frecuentes
 
 | Pregunta | Respuesta |
 |---|---|
 | Un alumno dice que contestó y no aparece. | Busca en **Respuestas de los Forms**. Si está «Esperando permiso», falta su familia. Si no está, el programa estaba cerrado: se pone al día al abrirlo. |
 | ¿Por qué un aspirante tiene prioridad 100? | En su ficha, pestaña **Prioridad y grupos**, dice de dónde salen los puntos. |
 | Me salió «Se cerró tu sesión». | Pasaron 30 minutos sin uso. Vuelve a entrar; no se perdió nada. |
+| ¿El asistente puede ver los datos de un aspirante? | No. Recibe cifras y categorías, nunca nombres ni teléfonos. Ver sección 5. |
 | Me salió «Demasiados intentos». | Espera 15 minutos o pide a un administrador que te restablezca la contraseña. |
 | Uní a una familia con el alumno equivocado. | En la ficha, **No es la misma persona: separar**. |
 | La campanita no avisa. | Revisa en **Avisos → Qué avisos recibir** que no los tengas apagados. Los avisos se generan solo mientras el programa está abierto en la PC del sistema. |

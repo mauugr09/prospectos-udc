@@ -14,6 +14,7 @@ datas += collect_data_files('unfold')              # tema del panel
 datas += collect_data_files('tzdata')              # zonas horarias (Windows no trae base IANA)
 datas += collect_data_files('certifi')
 datas += [('staticfiles', 'staticfiles')]
+datas += [('docs/manual-usuario.md', 'docs'), ('docs/manual-instalacion-operacion.md', 'docs')]  # el asistente los consulta sin IA
 
 _fuera = ('django.contrib.gis', 'django.contrib.postgres', 'django.db.backends.oracle',
           'django.db.backends.postgresql', 'django.test')

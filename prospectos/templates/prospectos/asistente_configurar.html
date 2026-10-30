@@ -1,0 +1,58 @@
+{% extends "prospectos/base.html" %}
+{% block ayuda %}asistente{% endblock %}
+{% block pagina %}
+<div class="pd">
+  <section class="grupo pd-estado">
+    <div class="pd-tile {% if activo and tiene_llave %}bien{% else %}regular{% endif %}">
+      <span class="material-symbols-outlined">auto_awesome</span>
+      <div><small>Asistente</small><b>{% if activo and tiene_llave %}Activado{% elif not tiene_llave %}Sin llave{% else %}Apagado{% endif %}</b>
+        <span>{% if activo and tiene_llave %}Modelo {{ modelo }}{% else %}Sin IA solo busca en el manual{% endif %}</span></div>
+    </div>
+    <div class="pd-tile {% if uso >= 100 %}mal{% elif uso >= 80 %}regular{% else %}bien{% endif %}">
+      <span class="material-symbols-outlined">payments</span>
+      <div><small>Gasto de este mes</small><b>{{ gasto.usd|floatformat:2 }} de {{ tope|floatformat:2 }} USD</b>
+        <span>{{ gasto.consultas }} preguntas · {{ uso }} % del tope</span></div>
+    </div>
+    <div class="pd-tile bien">
+      <span class="material-symbols-outlined">shield_person</span>
+      <div><small>Datos personales</small><b>No se envían</b><span>Solo cifras y categorías, nunca nombres</span></div>
+    </div>
+  </section>
+
+  <section class="grupo">
+    <header class="grupo-cabecera"><h2>Configuración</h2></header>
+    <form method="post" class="grupo-cuerpo as-config">{% csrf_token %}
+      <label class="av-pref"><span class="av-texto"><b>Activar el asistente con IA</b><small>Usa Claude, de Anthropic. Necesita internet y una llave de pago.</small></span>
+        <input type="checkbox" class="av-switch" name="activo" value="1"{% if activo %} checked{% endif %}></label>
+      <label class="pd-campo"><span>Llave de la API de Anthropic {% if tiene_llave %}(ya hay una guardada; escribe otra solo para cambiarla){% endif %}</span>
+        <input class="udc-campo" type="password" name="llave" autocomplete="off" placeholder="sk-ant-…" spellcheck="false"></label>
+      <div class="pd-fila">
+        <label class="pd-campo"><span>Tope de gasto al mes (USD)</span><input class="udc-campo" type="number" name="tope_usd" min="0" max="500" step="1" value="{{ tope|floatformat:0 }}"></label>
+        <label class="pd-campo"><span>Modelo</span>
+          <select class="udc-campo" name="modelo">{% for m, p in modelos %}<option value="{{ m }}"{% if m == modelo %} selected{% endif %}>{{ m }} · {{ p.0 }} / {{ p.1 }} USD por millón</option>{% endfor %}</select></label>
+      </div>
+      <div class="pd-acciones">
+        <button class="udc-btn"><span class="material-symbols-outlined">save</span>Guardar</button>
+        {% if tiene_llave %}<button class="udc-btn secundario" name="quitar_llave" value="1" onclick="return confirm('¿Quitar la llave? El asistente deja de usar la IA.')">Quitar la llave</button>{% endif %}
+      </div>
+      <ul class="pd-notas">
+        <li>La llave se crea en <b>console.anthropic.com</b> con la cuenta de la universidad. Allí mismo pongan también un límite de gasto: es una segunda protección.</li>
+        <li>Con Claude Haiku 5.5, una pregunta cuesta normalmente menos de un centavo de dólar. Al llegar al tope el asistente se detiene hasta el mes siguiente.</li>
+        <li>La llave se guarda cifrada. Activar, cambiar la llave o el tope queda en la bitácora.</li>
+      </ul>
+    </form>
+  </section>
+
+  <section class="grupo">
+    <header class="grupo-cabecera"><h2>Qué recibe la IA y qué no</h2></header>
+    <div class="grupo-cuerpo">
+      <ul class="pd-notas" style="margin-top:0">
+        <li><b>Recibe:</b> la pregunta, cifras agregadas (los grupos de menos de 3 se ocultan), textos del manual y, al preparar una llamada, las categorías del aspirante (carrera, modalidad, grupos, lo que marcó en las preguntas de opción).</li>
+        <li><b>Nunca recibe:</b> nombres, teléfonos, correos, CURP, edad, la preparatoria del aspirante ni lo que escribió con sus palabras. Si alguien escribe un nombre, un correo o un teléfono en la pregunta, no se envía.</li>
+        <li><b>No cambia nada solo:</b> puede proponer crear una visita, agregar algo al calendario o asignar asesor, y la persona confirma viendo el detalle. Nada de borrar, unir, exportar ni cambiar estatus.</li>
+        <li>Anthropic procesa la información en Estados Unidos. Que jurídico confirme si el aviso de privacidad debe mencionarlo (aunque no se envíen datos personales).</li>
+      </ul>
+    </div>
+  </section>
+</div>
+{% endblock %}

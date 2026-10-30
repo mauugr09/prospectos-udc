@@ -352,7 +352,7 @@ def ayuda(request):
 
 TEMAS_AYUDA = [  # (ancla, icono, título) del índice de «¿Cómo funciona?»
     ('empezar', 'route', 'Cómo viaja una respuesta'), ('respuestas', 'inbox', 'Contestaron y no aparece'),
-    ('dia', 'support_agent', 'Día a día del asesor'), ('avisos', 'notifications', 'Avisos'),
+    ('dia', 'support_agent', 'Día a día del asesor'), ('avisos', 'notifications', 'Avisos'), ('asistente', 'auto_awesome', 'Asistente'),
     ('familias', 'family_restroom', 'Alumno y familia'),
     ('visitas', 'qr_code_2', 'Visitas a prepas'), ('calendario', 'calendar_month', 'Calendario'),
     ('mapa', 'map', 'Preparatorias y mapa'), ('encuestas', 'edit_note', 'Cambiar las encuestas'),

@@ -13,6 +13,11 @@
         {% endif %}
 
         {% if avisos_sin_leer is not None %}
+        <button type="button" class="as-abrir" id="as-abrir" aria-haspopup="dialog" aria-controls="as-panel"
+                data-url="{% url 'prospectos:asistente' %}" data-nueva="{% url 'prospectos:asistente_nueva' %}"
+                data-confirmar="{% url 'prospectos:asistente_confirmar' 'PID' %}" data-csrf="{{ csrf_token }}">
+          <span class="material-symbols-outlined">auto_awesome</span><span class="as-abrir-texto">Asistente</span></button>
+        <script src="{% static 'prospectos/js/asistente.js' %}" defer></script>
         <div class="av-campana" id="av-campana" data-panel="{% url 'prospectos:avisos_panel' %}" data-contador="{% url 'prospectos:avisos_contador' %}"
              data-leer="{% url 'prospectos:avisos_leer_todo' %}" data-csrf="{{ csrf_token }}">
             <button type="button" class="av-boton" aria-haspopup="true" aria-expanded="false" aria-controls="av-panel"

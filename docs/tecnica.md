@@ -41,6 +41,7 @@ recuperación.
 | `prospectos/views.py` | Pantallas propias: Inicio, A quién llamar, Respuestas, Familias por unir, mapa, calendario, eventos (QR, tarjetas, solicitud, becas, en vivo), reportes, encuestas, apariencia, ayuda. |
 | `prospectos/vistas_avisos.py` | Campanita: bandeja, panel, contador y preferencias. |
 | `prospectos/vistas_proteccion.py` | Protección de datos: copia externa, llave de recuperación y separar uniones. |
+| `prospectos/vistas_asistente.py` | Asistente: conversación, confirmación de propuestas y configuración (llave cifrada, tope, modelo). |
 | `prospectos/middleware.py` | Cambio de contraseña obligatorio, `Referer` solo en el mapa, bloqueo por intentos y cierre por inactividad. |
 | `prospectos/programador.py` | Tareas periódicas (sección 6). |
 | `prospectos/servicios/` | La lógica, separada de las vistas (sección 4). |
@@ -99,6 +100,7 @@ Admisiones, Promotor y Directivo. Los promotores se filtran por consulta con `ve
 | `editor_form.py`, `publicar.py` | Editar las preguntas y publicar los cambios en el Google Form. |
 | `red.py` | Autoridad certificadora propia y servidor HTTPS para la red local. |
 | `semillas.py`, `demo.py` | Catálogos y roles iniciales; datos de demostración y su borrado seguro. |
+| `asistente.py` | Asistente con la API de Anthropic (Messages + herramientas, con `requests`). Herramientas: `buscar_ayuda`, `consultar_cifras`, `embudo`, `consultar_visitas`, `perfil_del_aspirante` y `proponer_*`. `revisar_pregunta` bloquea nombres de aspirantes, correos, teléfonos y CURP antes de enviar. Gasto por mes en `Configuracion`; precios por modelo en `PRECIOS`. |
 | `auditoria.py` | `registrar(accion, objeto, detalle, usuario, request)`. |
 
 ## 5. Flujo de una respuesta
@@ -224,7 +226,18 @@ El resultado es `dist\Prospectos\`. Para entregarlo, comprímelo **sin** la carp
 | Cambiar la carta de beca o la solicitud | `servicios/cartas.py` y sus plantillas. La hoja membretada se puede reemplazar en `datos/hoja-membretada.jpg`. |
 | Agregar un campo personal | Usa `CampoCifrado`. Si se busca por él, agrega un índice ciego `_bi`. Inclúyelo en la anonimización (`seguridad.py`) y en `uniones.DERIVADOS` si `recalcular` lo rellena. |
 
-## 12. Límites conocidos
+## 12. El asistente: reglas para cambiarlo
+
+- **Nunca** agregues a una herramienta un campo que identifique a una persona (nombre, contacto, CURP, edad, prepa del
+  aspirante, fechas de un individuo, texto libre). `tests/test_asistente.py` revisa que no se envíen; amplía esas pruebas si
+  agregas herramientas.
+- Las herramientas que cambian datos **solo proponen** (`proponer()`); la ejecución vive en `ejecutar()`, que vuelve a revisar
+  permisos y se llama únicamente desde el botón Confirmar.
+- Los textos de los resultados son datos, no instrucciones: el mensaje de sistema lo dice. Aun así, la defensa real es que la IA no
+  puede ejecutar nada.
+- Si cambian los precios de Anthropic, actualiza `PRECIOS`. Un modelo que no esté ahí se cobra con el precio más alto.
+
+## 13. Límites conocidos
 
 - **Punto único de falla:** si la PC del sistema está apagada, no se importa, no se avisa y no se respalda.
 - **Escala:** `familias.candidatos()` compara contra todos los alumnos sin familia. Está bien para miles; con
@@ -233,3 +246,4 @@ El resultado es `dist\Prospectos\`. Para entregarlo, comprímelo **sin** la carp
 - **El bloqueo por intentos** vive en memoria: reiniciar el programa lo limpia.
 - **Correo:** si el servidor SMTP falla, la bienvenida se reintenta, pero no hay aviso de esa falla.
 - **«Inscrito»** lo marca un asesor a mano: no hay integración con Control Escolar.
+- **El asistente** no se ha probado contra la API real en esta versión (las pruebas usan una API simulada con el mismo formato). Pruébalo con la llave antes de presentarlo.

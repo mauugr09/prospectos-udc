@@ -35,6 +35,14 @@
   <a class="font-semibold underline" href="{% url 'admin:prospectos_posiblecoincidencia_changelist' %}">Resolver en Coincidencias</a></div>
 </div>
 {% endif %}
+{% if original.consentimiento and not original.no_contactar %}
+<div class="as-ficha mb-6">
+  <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span><span>Asistente:</span>
+  <button type="button" class="as-chip" data-asistente="Prepara la llamada con este aspirante: de qué hablar primero y qué preguntarle.">Preparar llamada</button>
+  <button type="button" class="as-chip" data-asistente="Escribe un mensaje corto de WhatsApp para este aspirante, según lo que le interesa.">Borrador de WhatsApp</button>
+  <button type="button" class="as-chip" data-asistente="¿En qué no coincide con su familia y cómo lo abordo en la llamada?">Diferencias con su familia</button>
+</div>
+{% endif %}
 {% if absorbidos and perms.prospectos.resolver_coincidencias %}
 <div class="udc-nota mb-6"><span class="material-symbols-outlined">call_merge</span>
   <div><b>Esta ficha junta {{ absorbidos|length|add:1 }} respuestas que se unieron</b>

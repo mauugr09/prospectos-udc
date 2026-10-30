@@ -361,6 +361,8 @@ UNFOLD = {
                  'permission': _permiso('auth.view_user')},
                 {'title': 'Roles', 'icon': 'admin_panel_settings', 'link': reverse_lazy('admin:auth_group_changelist'),
                  'permission': lambda r: r.user.is_superuser},
+                {'title': 'Asistente', 'icon': 'auto_awesome', 'link': reverse_lazy('prospectos:asistente_configurar'),
+                 'permission': lambda r: r.user.is_superuser},
                 {'title': 'Protección de datos', 'icon': 'shield_lock', 'link': reverse_lazy('prospectos:proteccion'),
                  'permission': lambda r: r.user.is_superuser},
                 {'title': 'Respaldos', 'icon': 'backup', 'link': reverse_lazy('admin:prospectos_respaldo_changelist'),
