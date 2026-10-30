@@ -185,13 +185,26 @@ prefijos por pantalla (`.tb-` Inicio, `.fm-` Familias, `.av-` Avisos, `.pd-` Pro
 **Textos:** en español de México, sin tecnicismos en pantalla. Las explicaciones largas van en
 `ayuda.html` (guías con ancla) y cada pantalla enlaza la suya con `{% block ayuda %}ancla{% endblock %}`.
 
-## 9. Pruebas
+## 9. Pruebas y la «ITV»
 
 ```bash
-.venv/bin/pytest                                         # SQLite
+bash empaquetado/itv.sh                                  # todo lo que revisa GitHub
+.venv/bin/pytest                                         # solo pruebas, SQLite
 .venv/bin/pytest --ds=config.settings_pruebas_mariadb    # mismas pruebas contra MariaDB 10.11+
 ```
 
+`empaquetado/itv.sh` es la revisión que debe pasar cualquier cambio, aquí y en GitHub:
+
+| Revisión | Herramienta | Qué detiene |
+|---|---|---|
+| Estilo y errores comunes | `ruff` (`ruff.toml`: E, F, W, B) | Importaciones o variables sin usar, claves repetidas, errores de lógica comunes |
+| Seguridad del código | `bandit -ll -ii` | HTML sin escapar, SQL armado con texto, `urlopen` con cualquier esquema… Los casos revisados llevan `# nosec Bxxx` en esa línea |
+| Dependencias | `pip-audit` | Versiones de `requirements.txt` con vulnerabilidades publicadas |
+| Migraciones | `makemigrations --check` | Un modelo cambiado sin su migración |
+| Pruebas | `pytest --cov --cov-fail-under=80` | Cualquier prueba que falle o que la cobertura baje de 80 % |
+
+- `git config core.hooksPath .githooks` activa `.githooks/pre-push`: la ITV corre antes de cada `git push` y,
+  si falla, no se sube nada (`git push --no-verify` solo en una emergencia).
 - `tests/conftest.py`: fixtures (`prepa`, `promotor`, `evento`, `f_alumno`, `f_tutor`) y fábricas
   `alumno()` y `tutor()` que simulan respuestas de la API de Google (`FuenteMemoria`).
 - Las pruebas que respaldan la base SQLite necesitan `@pytest.mark.django_db(transaction=True)`: la API de
@@ -199,11 +212,24 @@ prefijos por pantalla (`.tb-` Inicio, `.fm-` Familias, `.av-` Avisos, `.pd-` Pro
 - Al corregir un error, primero escribe la prueba que lo reproduce. Así se hizo, por ejemplo, con «Fernanda se
   unía sola con Fernando» (`test_fernanda_no_se_une_sola_con_fernando`).
 
-## 10. Construir y publicar
+## 10. Construir y publicar (CI/CD)
 
-**GitHub Actions** (`.github/workflows/compilar.yml`): pruebas con SQLite y MariaDB en Ubuntu, `.exe` en
-Windows con prueba de humo (comandos, servidor local y HTTPS) y la app de Mac. Los artefactos se descargan
-de la ejecución.
+**GitHub Actions** (`.github/workflows/compilar.yml`):
+1. **ITV** en cada pull request y en cada push a `main`.
+2. **Pruebas con MariaDB**, solo si pasó la ITV.
+3. En `main` (o con etiqueta): `.exe` en Windows y app de Mac, cada uno con prueba de humo (comandos, servidor
+   local y HTTPS en red). Los artefactos se descargan de la ejecución.
+4. Con una etiqueta `v1.2.3`: publica un *Release* con el zip de Windows y el `.dmg`.
+
+**Flujo de trabajo:** los cambios van en una rama → pull request → la ITV y MariaDB deben pasar → se une a
+`main`. La rama `main` está protegida: no acepta cambios que no hayan pasado esas dos revisiones.
+
+**Publicar una versión:**
+1. Sube `VERSION` en `config/version.py` y en `version.txt`.
+2. Si hay migraciones, prueba la actualización con una copia de datos reales: `preparar` debe crear
+   `prospectos-antes-de-actualizar-…` y migrar sin errores.
+3. Agrega una fila a `docs/decisiones.md` si cambió algún comportamiento.
+4. `git tag v1.0.1 && git push --tags`: GitHub compila, prueba y publica el Release.
 
 **A mano en Windows:**
 ```
@@ -212,16 +238,9 @@ python manage.py collectstatic --noinput
 python -m PyInstaller --noconfirm prospectos.spec
 ```
 El resultado es `dist\Prospectos\`. Para entregarlo, comprímelo **sin** la carpeta `datos` y con `LEEME.txt`
-(`empaquetado/LEEME-windows.txt`), `LICENSE`, `AVISOS-TERCEROS.md` y `docs/` (manuales en PDF).
+(`empaquetado/LEEME-windows.txt`), `LICENSE`, `AVISOS-TERCEROS.md` y `docs/` sin `autoria.md` ni `decisiones.md`.
 
 **Mac:** `empaquetado/mac/construir.sh` (requiere una Mac con chip Apple).
-
-**Antes de publicar una versión:**
-1. Sube `VERSION` en `config/version.py` y en `version.txt`.
-2. Si hay migraciones, prueba la actualización con una copia de datos reales: `preparar` debe crear
-   `prospectos-antes-de-actualizar-…` y migrar sin errores.
-3. Agrega una fila a `docs/decisiones.md` si cambió algún comportamiento.
-4. Corre todas las pruebas.
 
 ## 11. Cómo hacer cambios comunes
 

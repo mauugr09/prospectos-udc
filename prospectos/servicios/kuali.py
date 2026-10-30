@@ -23,7 +23,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
 
-from ..models import Carrera, Estatus, Preparatoria, Prospecto, Segmento, TipoSeguimiento, etiqueta_segmento
+from ..models import Carrera, Estatus, Preparatoria, Prospecto, etiqueta_segmento
 from . import analitica as A
 from . import texto
 
@@ -468,13 +468,13 @@ def r_cifras(user, ent) -> dict:
     # siguientes
     lugar = f" en {dict(A.Plantel.choices)[a['plantel']]}" if a.get('plantel') else ''
     if not por:
-        siguientes += [f'¿Y por plantel?' if not a.get('plantel') else '¿Y por carrera?', f'¿Cómo vamos mes a mes{lugar}?']
+        siguientes += ['¿Y por plantel?' if not a.get('plantel') else '¿Y por carrera?', f'¿Cómo vamos mes a mes{lugar}?']
     elif por == 'plantel':
         siguientes += ['¿Qué carreras piden en cada plantel?']
     elif por == 'carrera':
         siguientes += [f'¿De qué prepas vienen{lugar}?']
     elif por == 'mes':
-        siguientes += [f'¿Y por plantel?' if not a.get('plantel') else '¿Y por carrera?']
+        siguientes += ['¿Y por plantel?' if not a.get('plantel') else '¿Y por carrera?']
     siguientes += [f'¿Qué canal convierte mejor{lugar}?', '¿Qué es lo más urgente hoy?']
     return _salida(lineas, siguientes, r, 'consultar_cifras')
 
@@ -785,7 +785,7 @@ def r_ficha_diferencias(user, ent, contexto) -> dict:
         return _salida([perfil['error']], [], None, None)
     if perfil['quien_contesto'] != 'alumno y familia':
         return _salida([f"Solo contestó {perfil['quien_contesto'].replace('solo ', '')}: no hay con qué comparar.",
-                        f"Para tener las dos versiones, comparte con la familia el QR del cuestionario de padres."],
+                        "Para tener las dos versiones, comparte con la familia el QR del cuestionario de padres."],
                        ['Prepara la llamada con este aspirante'], None, None)
     filas = [f for f in perfil['respuestas_por_tema'] if f['alumno'] and f['familia']]
     distintas = [f for f in filas if not f['coinciden']]
@@ -996,7 +996,7 @@ def responder(user, mensaje: str, memoria: dict, contexto: dict) -> dict:
 
 def _nombre_de_aspirante(q: str):
     palabras = [p for p in q.split() if len(p) >= 3]
-    for a, b in zip(palabras, palabras[1:]):
+    for a, b in zip(palabras, palabras[1:], strict=False):
         va, vb = texto._variantes(a), texto._variantes(b)
         if Prospecto.objects.filter(nombre_normalizado__contains=va).filter(nombre_normalizado__contains=vb).exists():
             return f'{a} {b}'

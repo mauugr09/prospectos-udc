@@ -125,7 +125,7 @@ def plan(formulario: Formulario, form: dict) -> list[Cambio]:
     mapeo = formulario.mapeo_campos or {}
     preguntas = {p.codigo: p for p in Pregunta.objects.filter(cuestionario=formulario.tipo, retirada=False).prefetch_related('opciones_lista')}
     cambios, presentes = [], set()
-    for i, item, seccion in _items_con_seccion(form):
+    for _i, item, seccion in _items_con_seccion(form):
         q = _pregunta(item)
         codigo = mapeo.get(q.get('questionId'))
         p = preguntas.get(codigo)

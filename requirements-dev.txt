@@ -1,2 +1,6 @@
 pytest==9.2.0
 pytest-django==4.14.0
+pytest-cov==7.0.0
+ruff==0.14.3
+bandit==1.8.6
+pip-audit==2.9.0

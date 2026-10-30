@@ -105,7 +105,7 @@ def ips_locales() -> list[str]:
             ips.add(info[4][0])
     except OSError:
         pass
-    return sorted(ip for ip in ips if not ip.startswith('127.') and ip != '0.0.0.0')
+    return sorted(ip for ip in ips if not ip.startswith('127.') and ip != '0.0.0.0')  # nosec B104
 
 
 def nombres_servidor(fijos: list[str] | tuple = ()) -> list[str]:
@@ -257,6 +257,36 @@ def codigo_de_huella(huella: str) -> str:
     return f'{h[0:4]}-{h[4:8]}-{h[8:12]}'
 
 
+# --------------------------------------------------------------------------- descubrimiento en la red local
+def responder_descubrimiento(config: dict, data_dir: Path, puerto_udp: int = 8444):
+    """Contesta «¿hay una principal?» (cliente.buscar) con el nombre del equipo, el puerto y el código.
+    Es información pública (está en el certificado); nada de datos. Devuelve el socket (para cerrarlo) o None."""
+    import threading
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(('0.0.0.0', puerto_udp))  # nosec B104
+    except OSError:
+        return None
+    respuesta = json.dumps({'programa': 'prospectos-udc', 'equipo': nombre_equipo(), 'puerto': puerto(config),
+                            'codigo': codigo_ca(data_dir)}).encode()
+
+    def atender():
+        while True:
+            try:
+                datos, origen = s.recvfrom(64)
+            except OSError:
+                return
+            if datos == b'PROSPECTOS-UDC?':
+                try:
+                    s.sendto(respuesta, origen)
+                except OSError:
+                    pass
+
+    threading.Thread(target=atender, name='descubrir', daemon=True).start()
+    return s
+
+
 # --------------------------------------------------------------------------- servidor HTTPS
 def servidor_https(aplicacion, data_dir: Path, config: dict, hilos: int = 8):
     """Servidor HTTPS (cheroot) para la red. Se arranca con .start() en un hilo aparte."""
@@ -264,7 +294,7 @@ def servidor_https(aplicacion, data_dir: Path, config: dict, hilos: int = 8):
     from cheroot.ssl.builtin import BuiltinSSLAdapter
 
     _, crt, key = asegurar_certificados(data_dir, nombres_fijos(config))
-    srv = wsgi.Server(('0.0.0.0', puerto(config)), aplicacion, numthreads=hilos, server_name='Prospectos')
+    srv = wsgi.Server(('0.0.0.0', puerto(config)), aplicacion, numthreads=hilos, server_name='Prospectos')  # nosec B104
     adaptador = BuiltinSSLAdapter(str(crt), str(key))
     try:  # solo TLS 1.2 o mayor
         import ssl

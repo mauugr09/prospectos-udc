@@ -210,7 +210,7 @@ def test_datos_apodo_y_firma(client, jefa, f_alumno, f_tutor, evento):
                                                 'apodo': 'Lau<script>', 'telefono': '55 1234 5678', 'firma': 'Laura · Admisiones UDC'})
     p = Perfil.de(jefa)
     assert p.apodo == 'Lauscript' and p.telefono == '55 1234 5678'
-    assert 'Buenos' in client.get('/admin/').content.decode() and 'Lauscript' in client.get('/admin/').content.decode()
+    assert ', Lauscript<' in client.get('/admin/').content.decode()  # «Buenos días, Lauscript» (o tardes, o noches)
     client.post('/admin/herramientas/perfil/', {'accion': 'datos', 'telefono': '<b>'})
     assert Perfil.de(jefa).telefono == '55 1234 5678'  # no aceptó basura
     importar(f_alumno, alumno('a1', 'Valeria Quintero Salas', edad='17', tutor_correo=None, tutor_telefono=None))

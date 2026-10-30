@@ -1,7 +1,11 @@
 """Manuales en PDF: markdown → HTML con portada e índice → PDF (Chromium vía Playwright).
 Uso: pip install markdown pypdf playwright && playwright install chromium; python empaquetado/manuales/generar.py
 """
-import html, pathlib, re, sys, tempfile
+import html
+import pathlib
+import re
+import sys
+import tempfile
 
 import markdown
 from playwright.sync_api import sync_playwright

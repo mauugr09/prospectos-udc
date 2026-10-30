@@ -20,7 +20,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
 def _escuchando(puerto: int) -> str | None:
     try:
-        with urllib.request.urlopen(f'http://127.0.0.1:{puerto}/salud/', timeout=1.5) as r:
+        with urllib.request.urlopen(f'http://127.0.0.1:{puerto}/salud/', timeout=1.5) as r:  # nosec B310
             return r.read().decode()
     except Exception:  # noqa: BLE001
         return None
@@ -204,6 +204,7 @@ def _iniciar_red(application, settings):
               f'({type(e).__name__}: {e}). Las demás computadoras no podrán entrar; en esta sí funciona.')
         return
     threading.Thread(target=srv.serve, name='https-red', daemon=True).start()
+    red.responder_descubrimiento(settings.CONFIG, settings.DATA_DIR)  # «C · Conectarme» la encuentra sola
     dirs = red.direcciones(settings.CONFIG)
     if not dirs:
         print('AVISO: esta computadora no tiene red local en este momento; el acceso por red queda listo para cuando la tenga.')

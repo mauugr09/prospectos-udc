@@ -24,6 +24,8 @@ import urllib.request
 from pathlib import Path
 
 ARCHIVO = 'conexion.json'
+PUERTO_DESCUBRIR = 8444
+PREGUNTA = b'PROSPECTOS-UDC?'
 CERTIFICADO = 'principal.crt'
 PUERTO_OMISION = 8443
 
@@ -136,21 +138,77 @@ def guardar(carpeta: Path, servidor: str, pem: bytes) -> None:
                                                'conectada_en': time.strftime('%Y-%m-%d %H:%M')}, indent=2), encoding='utf-8')
 
 
-def configurar(carpeta: Path | None = None, preguntar=input, decir=print) -> str | None:
-    """Pregunta la dirección de la principal y la deja lista. Devuelve la dirección o None si se canceló."""
-    carpeta = carpeta or carpeta_datos()
-    decir('')
-    decir('Escribe la dirección de la computadora principal. Está en esa computadora, en')
-    decir('Configuración → Otras computadoras (por ejemplo 192.168.1.20 o 10.20.1.15).')
+def buscar(tiempo: float = 2.5, destinos: tuple = ('255.255.255.255',), puerto: int = PUERTO_DESCUBRIR) -> list[dict]:
+    """Pregunta en la red local «¿hay una principal?». Solo encuentra las de la misma red (no a través de una VPN).
+    Lo que contesta NO se cree: el código se vuelve a calcular del certificado descargado y la persona lo compara."""
+    import socket
+    encontradas: dict[str, dict] = {}
     try:
-        return _configurar(carpeta, preguntar, decir)
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            s.settimeout(0.3)
+            for d in destinos:
+                try:
+                    s.sendto(PREGUNTA, (d, puerto))
+                except OSError:
+                    pass
+            fin = time.time() + tiempo
+            while time.time() < fin:
+                try:
+                    datos, (ip, _) = s.recvfrom(4096)
+                except socket.timeout:
+                    continue
+                try:
+                    r = json.loads(datos.decode('utf-8'))
+                    servidor = normalizar_servidor(f"{ip}:{int(r.get('puerto', PUERTO_OMISION))}")
+                except (ValueError, TypeError):
+                    continue
+                if servidor and r.get('programa') == 'prospectos-udc':
+                    encontradas.setdefault(servidor, {'servidor': servidor, 'equipo': str(r.get('equipo', ''))[:40],
+                                                      'codigo': str(r.get('codigo', ''))[:20]})
+    except OSError:
+        return []
+    return list(encontradas.values())
+
+
+def configurar(carpeta: Path | None = None, preguntar=input, decir=print, buscar_fn=None) -> str | None:
+    """Busca la principal en la red (o pide su dirección) y la deja lista. Devuelve la dirección o None si se canceló."""
+    carpeta = carpeta or carpeta_datos()
+    try:
+        return _configurar(carpeta, preguntar, decir, buscar_fn or buscar)
     except EOFError:
         return None
 
 
-def _configurar(carpeta: Path, preguntar, decir) -> str | None:
+def _elegir(candidatas: list[dict], preguntar, decir) -> str | None:
+    decir('')
+    if len(candidatas) == 1:
+        c = candidatas[0]
+        decir(f"Encontré la principal: {c['equipo'] or 'sin nombre'} ({c['servidor']})")
+        r = preguntar('¿Conectarme a ella? Enter = sí, o escribe otra dirección: ').strip()
+        return c['servidor'] if not r or r.lower() in ('s', 'si', 'sí') else r
+    decir('Encontré varias principales en esta red (¿una de pruebas?):')
+    for i, c in enumerate(candidatas, 1):
+        decir(f"  [{i}] {c['equipo'] or 'sin nombre'}  {c['servidor']}")
+    r = preguntar('Escribe el número, o una dirección: ').strip()
+    return candidatas[int(r) - 1]['servidor'] if r.isdigit() and 1 <= int(r) <= len(candidatas) else r
+
+
+def _configurar(carpeta: Path, preguntar, decir, buscar_fn) -> str | None:
+    decir('')
+    decir('Buscando la computadora principal en esta red…')
+    candidatas = buscar_fn()
+    propuesta = _elegir(candidatas, preguntar, decir) if candidatas else None
+    if not candidatas:
+        decir('No la encontré en esta red (si estás en otro plantel o en la VPN es normal).')
+    if propuesta is None or not candidatas:
+        decir('Escribe su dirección: está en la principal, en Configuración → Otras computadoras')
+        decir('(por ejemplo 192.168.1.20 o 10.20.1.15).')
     for _ in range(5):
-        texto = preguntar('Dirección (o Enter para cancelar): ').strip()
+        if propuesta:
+            texto, propuesta = propuesta, None
+        else:
+            texto = preguntar('Dirección (o Enter para cancelar): ').strip()
         if not texto:
             return None
         servidor = normalizar_servidor(texto)

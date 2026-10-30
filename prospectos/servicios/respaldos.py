@@ -107,7 +107,7 @@ def _verificar_mariadb(ruta: Path) -> dict[str, int]:
         with connection.cursor() as c:
             conteos = {}
             for t in TABLAS:
-                c.execute(f'SELECT COUNT(*) FROM `{base}`.`{t}`')
+                c.execute(f'SELECT COUNT(*) FROM `{base}`.`{t}`')  # nosec B608
                 conteos[t] = c.fetchone()[0]
     finally:
         args, entorno = _conexion_args()
@@ -192,7 +192,7 @@ def verificar(archivo: str | None = None) -> dict[str, int]:
         try:
             if con.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
                 raise ErrorRespaldo('El respaldo está dañado (integrity_check).')
-            conteos = {t: con.execute(f'SELECT COUNT(*) FROM "{t}"').fetchone()[0] for t in TABLAS}
+            conteos = {t: con.execute(f'SELECT COUNT(*) FROM "{t}"').fetchone()[0] for t in TABLAS}  # nosec B608
         except sqlite3.DatabaseError as e:
             raise ErrorRespaldo(f'El respaldo no es una base válida: {e}') from e
         finally:

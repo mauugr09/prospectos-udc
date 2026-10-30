@@ -74,7 +74,7 @@ def test_ics_valido(client, prepa, promotor):
     assert r['Content-Type'].startswith('text/calendar') and 'attachment' in r['Content-Disposition']
     t = r.content.decode()
     assert t.count('BEGIN:VEVENT') == 2 and 'UID:evento-' in t and '\\,' in t and '\\;' in t
-    assert all(len(l.encode()) <= 75 for l in t.split('\r\n'))
+    assert all(len(renglon.encode()) <= 75 for renglon in t.split('\r\n'))
     assert f'DTEND;VALUE=DATE:{hoy + dt.timedelta(days=2):%Y%m%d}' in t  # fin exclusivo
 
 

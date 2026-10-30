@@ -140,10 +140,10 @@ def test_mapa_de_cobertura_con_visitas_y_planteles(client, prepa, prepa2, promot
     assert dos['ultima_visita'] is None and dos['proxima_visita'] is None
 
     client.force_login(User.objects.create_superuser('m@x.mx', 'm@x.mx', 'Clave-de-prueba-123'))
-    r = client.post('/admin/herramientas/mapa/configurar/', {'accion': 'sedes', 'sede_cuautitlan': '19.6693, -99.1795', 'sede_tultepec': 'no sé'})
+    client.post('/admin/herramientas/mapa/configurar/', {'accion': 'sedes', 'sede_cuautitlan': '19.6693, -99.1795', 'sede_tultepec': 'no sé'})
     assert Configuracion.obtener('mapa.sedes') in (None, {})  # nada se guarda si una no se entiende
     client.post('/admin/herramientas/mapa/configurar/', {'accion': 'sedes', 'sede_cuautitlan': '19.6693, -99.1795', 'sede_tultepec': ''})
     assert Configuracion.obtener('mapa.sedes') == {'cuautitlan': {'lat': 19.6693, 'lng': -99.1795}}
     html = client.get('/admin/herramientas/mapa/').content.decode()
     assert 'cobertura.js' in html and '"clave": "cuautitlan"' in html and 'sin visita en 6 meses' in html
-    assert f'/admin/prospectos/prospecto/' in html  # acciones de la ficha
+    assert '/admin/prospectos/prospecto/' in html  # acciones de la ficha

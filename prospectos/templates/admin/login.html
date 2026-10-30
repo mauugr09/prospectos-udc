@@ -1,0 +1,18 @@
+{% extends 'prospectos/acceso_base.html' %}
+{% block panel %}
+  <h2 class="ac-titulo">Iniciar sesión</h2>
+  {% if form.errors or form.non_field_errors %}
+    <p class="ac-error" role="alert">{% for e in form.non_field_errors %}{{ e }}{% empty %}Revisa tu correo y tu contraseña.{% endfor %}</p>
+  {% endif %}
+  {% for m in messages %}<p class="ac-aviso {{ m.tags }}" role="status">{{ m }}</p>{% endfor %}
+  {% if user.is_authenticated %}<p class="ac-aviso">Entraste como {{ user.get_username }}, pero esta página necesita otra cuenta.</p>{% endif %}
+  <form action="{{ app_path }}" method="post" id="login-form" class="ac-form">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <label class="ac-campo"><span>Correo</span>
+      <input type="text" name="username" value="{{ form.username.value|default:'' }}" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus placeholder="tu@correo.mx"></label>
+    <label class="ac-campo"><span>Contraseña</span>
+      <input type="password" name="password" autocomplete="current-password" required placeholder="••••••••••••"></label>
+    <button type="submit" class="ac-boton">Entrar</button>
+  </form>
+  <p class="ac-pie">¿Olvidaste tu contraseña? Un administrador te la restablece.</p>
+{% endblock %}
