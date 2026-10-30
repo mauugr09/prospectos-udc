@@ -230,9 +230,15 @@
       </ol>
       <h3>Respaldos</h3>
       <ul class="gu-saber">
-        <li>Cada día se guarda una copia en <code>datos\respaldos</code>. Cópiala a otro equipo: si el disco falla, se pierde junto con todo.</li>
-        <li>Guarda también <code>config.json</code> fuera de la computadora: sin sus llaves, los datos cifrados no se pueden leer.</li>
+        <li>Cada día se guarda una copia en <code>datos\respaldos</code> y, si la configuras, otra cifrada fuera de la PC (ver <a href="#proteccion">Protección de datos</a>).</li>
+        <li>Antes de instalar una versión nueva que cambie la base, el programa guarda solo una copia «antes-de-actualizar».</li>
       </ul>
+      <h3>Actualizar a una versión nueva</h3>
+      <ol class="gu-pasos">
+        <li>Cierra la ventana negra del programa.</li>
+        <li>Descomprime la versión nueva <b>encima</b> de la carpeta actual (que Windows reemplace los archivos). <b>No borres la carpeta</b>: dentro está <code>datos</code>, con toda la información.</li>
+        <li>Abre <b>Prospectos.exe</b>. Si la versión trae cambios a la base, verás «Copia previa: …» en la ventana negra.</li>
+      </ol>
       <h3>Apariencia</h3>
       <ul class="gu-saber"><li>En <b>Configuración → Apariencia</b> se sube la foto de un plantel que se ve detrás del Inicio (horizontal, ~2000 px, sin texto).</li></ul>
       <h3>Cartas</h3>
@@ -249,6 +255,38 @@
       </ol>
       <h3 id="sedes">Ubicar los planteles</h3>
       <p class="gu-texto">En <b>Configuración → Mapa</b>, pega las coordenadas de cada plantel (clic derecho en Google Maps → clic en los números). Así el mapa muestra las sedes y las distancias.</p>
+    </section>
+
+    <section class="gu-guia" id="proteccion" data-palabras="proteccion respaldo copia usb memoria llave recuperacion separar union error bloqueo sesion inactividad contraseña">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">shield_lock</span></span><div><h2>Protección de datos</h2><p>Que nada se pierda y que nadie entre sin permiso. Solo administradores.</p></div></header>
+      <h3>Copia fuera de esta computadora</h3>
+      <ol class="gu-pasos">
+        <li>Conecta una memoria USB o disco externo (o usa una carpeta de red) y crea una carpeta, por ejemplo <code>E:\Respaldos Prospectos</code>.</li>
+        <li>En <b>Configuración → Protección de datos</b> escribe esa ruta y pulsa <b>Probar y guardar</b>.</li>
+        <li>Desde ese momento cada respaldo se copia ahí, <b>cifrado</b>. Si la memoria no está conectada, se reintenta y la campanita avisa si pasan 2 días.</li>
+      </ol>
+      <h3>Llave de recuperación</h3>
+      <ol class="gu-pasos">
+        <li>En la misma pantalla, escribe tu contraseña y pulsa <b>Descargar llave</b> (es el archivo <code>config.json</code>).</li>
+        <li>Guárdala en un lugar <b>distinto</b> a las copias: otra memoria en la caja fuerte, o con la dirección. Llave y copia juntas permiten leer todo.</li>
+      </ol>
+      <h3>Si la computadora se pierde o se daña</h3>
+      <ol class="gu-pasos">
+        <li>En la computadora nueva descomprime el programa y ábrelo una vez; ciérralo cuando pregunte D o A.</li>
+        <li>Copia la llave guardada (<code>config.json</code>) dentro de la carpeta <code>datos</code>, reemplazando la que se creó.</li>
+        <li>En esa carpeta, abre una ventana de comandos y ejecuta <code>{{ comando }} respaldo restaurar "E:\Respaldos Prospectos\prospectos-AAAAMMDD-HHMMSS.sqlite3.gz.cifrado"</code> con la copia más reciente.</li>
+      </ol>
+      <h3>Separar una unión equivocada</h3>
+      <ul class="gu-saber">
+        <li>En la ficha, el aviso «Esta ficha junta … respuestas» tiene <b>No es la misma persona: separar</b>. También en <b>Protección de datos → Uniones</b>, donde las sospechosas (nombres de otro sexo) se marcan en rojo.</li>
+        <li>Las dos fichas vuelven a ser independientes y el programa ya no las une solo. Lo que no se deshace: un correo de bienvenida ya enviado.</li>
+      </ul>
+      <h3>Acceso</h3>
+      <ul class="gu-saber">
+        <li>Tras <b>5 contraseñas equivocadas</b>, ese usuario queda bloqueado 15 minutos (queda en la bitácora). Un administrador puede restablecerle la contraseña.</li>
+        <li>Tras <b>30 minutos sin usar</b> el programa, o al cerrar el navegador, la sesión se cierra. La pantalla «En vivo» de un evento no se cierra mientras esté abierta.</li>
+      </ul>
+      <a class="gu-ir" href="{% url 'prospectos:proteccion' %}">Ir a Protección de datos<span class="material-symbols-outlined">arrow_forward</span></a>
     </section>
 
     <section class="gu-guia" id="privacidad" data-palabras="privacidad datos personales cifrado menores permiso arco borrar retencion bitacora">
@@ -272,6 +310,16 @@
         <dt>Llamadas pendientes</dt><dd>Tareas de los asesores; se crean solas tras {{ sin_contacto }} días sin contacto.</dd>
         <dt>Folio</dt><dd>Número de cada carta de beca, para saber de qué visita viene.</dd>
       </dl>
+    </section>
+
+    <section class="gu-guia" id="acerca" data-palabras="acerca version autor nullspace licencia derechos">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">info</span></span><div><h2>Acerca de Prospectos</h2><p>Versión {{ version }}, {{ version_fecha }}.</p></div></header>
+      <ul class="gu-saber">
+        <li>Hecho por <b>{{ estudio }}</b>. {{ derechos }}</li>
+        <li>Programa propietario: su uso está sujeto al contrato de licencia con la institución. No se permite copiarlo, modificarlo ni distribuirlo sin autorización.</li>
+        <li>El nombre, logotipo, hoja membretada y fotografías de la Universidad de Cuautitlán son propiedad de la universidad.</li>
+        <li>Usa componentes de código abierto (Django, Leaflet, Chart.js y otros) bajo sus propias licencias. La lista completa está en <code>AVISOS-TERCEROS.md</code>, junto al programa.</li>
+      </ul>
     </section>
   </div>
 </div>

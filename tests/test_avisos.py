@@ -119,13 +119,15 @@ def test_visita_de_manana_y_permiso_sin_pedir(prepa, promotor):
 def test_problemas_del_sistema_solo_a_administradores(promotor):
     jefa = _admin()
     Respaldo.objects.create(archivo='r.gz', estado='error', mensaje='disco lleno')
-    assert avisos.problemas_del_sistema() == 2  # falló el último y no hay uno bueno en 48 h
+    # falló el último, no hay uno bueno en 48 h y los respaldos no se copian fuera de la PC
+    assert avisos.problemas_del_sistema() == 3
+    assert Notificacion.objects.filter(usuario=jefa, titulo='Los respaldos solo están en esta computadora').exists()
     assert not Notificacion.objects.filter(usuario=promotor).exists()
     assert set(Notificacion.objects.filter(usuario=jefa).values_list('tipo', flat=True)) == {'sistema'}
     assert avisos.problemas_del_sistema() == 0
     Respaldo.objects.create(archivo='r2.gz', estado='ok')  # se arregló solo
     avisos.problemas_del_sistema()
-    assert avisos.no_leidas(jefa) == 0 and Notificacion.objects.filter(usuario=jefa).count() == 2
+    assert avisos.no_leidas(jefa) == 1 and Notificacion.objects.filter(usuario=jefa).count() == 3  # sigue sin copia externa
 
 
 def test_limpiar_borra_los_viejos(promotor):

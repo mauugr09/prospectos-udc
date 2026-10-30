@@ -480,11 +480,18 @@ def fusionar(queda: Prospecto, sale: Prospecto, usuario=None) -> Prospecto:
     if queda.token_familia and sale.token_familia and queda.token_familia != sale.token_familia:
         raise NoFusionable('Tienen códigos de familia distintos: son familias diferentes.')
     with transaction.atomic():
+        # Lo que se mueve queda en la bitácora (solo IDs y nombres de campo) para poder separarlos después.
+        movido = {'absorbido_id': sale.pk,
+                  'respuestas': list(sale.respuestas.values_list('pk', flat=True)),
+                  'seguimientos': list(Seguimiento.objects.filter(prospecto=sale).values_list('pk', flat=True)),
+                  'etiquetas_nuevas': list(sale.etiquetas.exclude(pk__in=queda.etiquetas.all()).values_list('pk', flat=True)),
+                  'campos': [], 'estatus_previo': queda.estatus}
         sale.respuestas.update(prospecto=queda)
         Seguimiento.objects.filter(prospecto=sale).update(prospecto=queda)
         queda.etiquetas.add(*sale.etiquetas.all())
         for campo in ('token_familia', 'preparatoria_id', 'evento_id', 'promotor_id', 'asesor_id'):
             if not getattr(queda, campo) and getattr(sale, campo):
+                movido['campos'].append(campo)
                 valor = getattr(sale, campo)
                 if campo == 'token_familia':
                     Prospecto.objects.filter(pk=sale.pk).update(token_familia=None)
@@ -499,7 +506,7 @@ def fusionar(queda: Prospecto, sale: Prospecto, usuario=None) -> Prospecto:
         PosibleCoincidencia.objects.filter(prospecto=sale, estado='pendiente').update(estado='rechazada', revisado_en=timezone.now())
         Seguimiento.objects.create(prospecto=queda, usuario=usuario, tipo=TipoSeguimiento.SISTEMA,
                                    notas=f'Fusionado con el prospecto #{sale.pk}.')
-        auditoria.registrar('fusionar', queda, {'absorbido_id': sale.pk}, usuario)
+        auditoria.registrar('fusionar', queda, movido, usuario)
         return recalcular(Prospecto.objects.get(pk=queda.pk))
 
 

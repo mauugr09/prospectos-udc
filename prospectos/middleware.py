@@ -39,3 +39,97 @@ class CambioDeClaveObligatorio:
                 messages.info(request, 'Antes de empezar, cambia tu contraseña temporal por una tuya (12 caracteres o más).')
                 return redirect(cambio)
         return self.get_response(request)
+
+
+# --------------------------------------------------------------------------- acceso: intentos fallidos e inactividad
+import time
+
+from django.conf import settings
+from django.contrib.auth import logout
+from django.contrib.auth.signals import user_logged_in, user_login_failed
+from django.core.cache import cache
+from django.dispatch import receiver
+from django.http import JsonResponse
+
+INTENTOS_MAXIMOS = 5          # por usuario
+INTENTOS_MAXIMOS_IP = 20      # por computadora (alguien probando muchos usuarios)
+BLOQUEO_SEGUNDOS = 15 * 60
+
+
+def _ip(request) -> str:
+    return (request.META.get('REMOTE_ADDR') or '?') if request is not None else '?'
+
+
+def _llaves(usuario: str, ip: str) -> tuple[str, str]:
+    return f'acceso:u:{(usuario or "").strip().lower()[:150]}', f'acceso:ip:{ip}'
+
+
+def bloqueado(usuario: str, ip: str) -> bool:
+    ku, kip = _llaves(usuario, ip)
+    return (cache.get(ku, 0) >= INTENTOS_MAXIMOS) or (cache.get(kip, 0) >= INTENTOS_MAXIMOS_IP)
+
+
+@receiver(user_login_failed)
+def _fallo(sender, credentials, request=None, **kw):
+    usuario = credentials.get('username', '')
+    ku, kip = _llaves(usuario, _ip(request))
+    for k in (ku, kip):
+        cache.add(k, 0, BLOQUEO_SEGUNDOS)
+        try:
+            n = cache.incr(k)
+        except ValueError:
+            cache.set(k, 1, BLOQUEO_SEGUNDOS)
+            n = 1
+        if k == ku and n == INTENTOS_MAXIMOS:
+            from django.contrib.auth import get_user_model
+            from .servicios import auditoria
+            u = get_user_model().objects.filter(username__iexact=usuario).first()
+            auditoria.registrar('acceso_bloqueado', u, {'intentos': n, 'minutos': BLOQUEO_SEGUNDOS // 60}, request=request)
+
+
+@receiver(user_logged_in)
+def _entro(sender, request, user, **kw):
+    cache.delete(_llaves(user.get_username(), _ip(request))[0])
+    if request is not None and hasattr(request, 'session'):
+        request.session['ultima_actividad'] = time.time()
+
+
+class ProteccionDeAcceso:
+    """
+    - Tras 5 contraseñas equivocadas para un usuario (o 20 desde una misma computadora), el acceso se
+      bloquea 15 minutos. Contra adivinar contraseñas; el costo es que alguien podría bloquear a otro a
+      propósito durante 15 minutos.
+    - Tras INACTIVIDAD_MINUTOS sin usar el programa (30 por omisión) la sesión se cierra: una PC de oficina
+      abierta no deja los datos de los aspirantes a la vista. La campanita revisando avisos NO cuenta como uso;
+      la pantalla «En vivo» de un evento sí (se proyecta durante horas).
+    """
+    SIN_CONTAR = ('/static/', '/salud/', '/marca/', '/admin/herramientas/avisos/contador/', '/favicon')
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.login = '/admin/login/'
+
+    def __call__(self, request):
+        if request.method == 'POST' and request.path == self.login:
+            if bloqueado(request.POST.get('username', ''), _ip(request)):
+                messages.error(request, f'Demasiados intentos con contraseña equivocada. Espera {BLOQUEO_SEGUNDOS // 60} minutos '
+                                        'o pide a un administrador que te restablezca la contraseña.')
+                return redirect(request.get_full_path())
+        u = getattr(request, 'user', None)
+        minutos = int(settings.CONFIG.get('INACTIVIDAD_MINUTOS', 30) or 0)
+        if minutos and u is not None and u.is_authenticated and not request.path.startswith(self.SIN_CONTAR):
+            ahora = time.time()
+            ultima = request.session.get('ultima_actividad', ahora)
+            if ahora - ultima > minutos * 60:
+                logout(request)
+                if request.headers.get('x-requested-with') == 'fetch':
+                    return JsonResponse({'ok': False, 'mensaje': 'La sesión se cerró por inactividad. Recarga la página.'}, status=401)
+                messages.info(request, f'Se cerró tu sesión después de {minutos} minutos sin usar el programa.')
+                return redirect(f'{self.login}?next={request.path}')
+            request.session['ultima_actividad'] = ahora
+        elif minutos and u is not None and u.is_authenticated and request.path == '/admin/herramientas/avisos/contador/':
+            ultima = request.session.get('ultima_actividad', time.time())
+            if time.time() - ultima > minutos * 60:
+                logout(request)
+                return JsonResponse({'sin_leer': 0, 'sesion': False}, status=401)
+        return self.get_response(request)

@@ -340,8 +340,9 @@ def ayuda(request):
     total = sum(float(v) for v in pesos.values()) or 1
     reglas = [(NOMBRES_PESOS.get(k, k), round(float(v) / total * 100)) for k, v in pesos.items() if float(v) > 0]
     puede_config = request.user.is_superuser or request.user.has_perm('prospectos.change_formulario')
+    from config import version as _v
     return render(request, 'prospectos/ayuda.html', _ctx(
-        request, '¿Cómo funciona?', reglas=reglas,
+        request, '¿Cómo funciona?', reglas=reglas, version=_v.VERSION, version_fecha=_v.FECHA, estudio=_v.ESTUDIO, derechos=_v.DERECHOS,
         listo=inteligencia.umbral('listo_para_convertir_score'), indeciso=inteligencia.umbral('indeciso_desde_carreras'),
         cuarentena=p.get('CUARENTENA_DIAS', 30), sin_contacto=p.get('DIAS_SIN_CONTACTO', 5), retencion=p.get('RETENCION_MESES', 18),
         pasos=primeros_pasos() if puede_config else None, pasos_ocultos=Configuracion.obtener('pasos.ocultos', False),
@@ -357,7 +358,8 @@ TEMAS_AYUDA = [  # (ancla, icono, título) del índice de «¿Cómo funciona?»
     ('mapa', 'map', 'Preparatorias y mapa'), ('encuestas', 'edit_note', 'Cambiar las encuestas'),
     ('google', 'dynamic_form', 'Conectar Google'), ('prioridad', 'tune', 'Prioridad y grupos'),
     ('reportes', 'insights', 'Reportes'), ('configuracion', 'settings', 'Configuración'),
-    ('privacidad', 'verified_user', 'Datos personales'), ('glosario', 'menu_book', 'Palabras'),
+    ('proteccion', 'shield_lock', 'Protección de datos'), ('privacidad', 'verified_user', 'Datos personales'),
+    ('glosario', 'menu_book', 'Palabras'), ('acerca', 'info', 'Acerca de'),
 ]
 
 

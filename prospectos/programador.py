@@ -67,7 +67,21 @@ class Programador(threading.Thread):
             if not respaldo_pendiente():
                 return None
             r = respaldos.crear()
-            return f'{r.archivo} {r.estado} · rotados {respaldos.rotar()}'
+            texto = f'{r.archivo} {r.estado} · rotados {respaldos.rotar()}'
+            if r.estado == 'ok' and respaldos.carpeta_copia():
+                try:
+                    texto += f' · copia externa {respaldos.copiar_externo(r.archivo)}'
+                except respaldos.ErrorRespaldo as e:
+                    texto += f' · copia externa FALLÓ: {e}'
+            return texto
+
+        def copiar():  # la memoria USB no estaba conectada: se reintenta sola
+            if respaldos.copia_pendiente():
+                try:
+                    return f'copia externa {respaldos.copiar_externo()}'
+                except respaldos.ErrorRespaldo:
+                    return None
+            return None
 
         def verificar():
             ultimo = Respaldo.objects.filter(estado='ok').order_by('-creado_en').first()
@@ -101,6 +115,8 @@ class Programador(threading.Thread):
                 self._correr('tareas', seguimiento.generar_tareas_sin_contacto)
             if self._toca('respaldo', 300):
                 self._correr('respaldo', respaldar)
+            if self._toca('copia', 1800):
+                self._correr('copia', copiar)
             if self._toca('verificar', 3600):
                 self._correr('verificar', verificar)
             if self._toca('retencion', 3600):

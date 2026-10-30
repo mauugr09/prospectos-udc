@@ -35,6 +35,19 @@
   <a class="font-semibold underline" href="{% url 'admin:prospectos_posiblecoincidencia_changelist' %}">Resolver en Coincidencias</a></div>
 </div>
 {% endif %}
+{% if absorbidos and perms.prospectos.resolver_coincidencias %}
+<div class="udc-nota mb-6"><span class="material-symbols-outlined">call_merge</span>
+  <div><b>Esta ficha junta {{ absorbidos|length|add:1 }} respuestas que se unieron</b>
+  {% for a in absorbidos %}
+    <form method="post" action="{% url 'prospectos:separar' a.pk %}" class="text-sm flex flex-wrap items-center gap-2 mt-1"
+          onsubmit="return confirm('¿Separar «{{ a.nombre_aspirante|escapejs }}» de esta ficha? Vuelven a ser dos y no se unirán solas otra vez.')">{% csrf_token %}
+      <input type="hidden" name="volver" value="{{ request.path }}">
+      <span>«{{ a.nombre_aspirante }}»{% if a.tutor_nombre %} ({{ a.tutor_nombre }}){% endif %}</span>
+      <button class="underline font-semibold" type="submit">No es la misma persona: separar</button>
+    </form>
+  {% endfor %}</div>
+</div>
+{% endif %}
 {% with c=comparativo %}
 <div class="grid gap-4 xl:grid-cols-4 mb-4">
   <section class="rs-quien {% if c.alumno %}si{% endif %}">

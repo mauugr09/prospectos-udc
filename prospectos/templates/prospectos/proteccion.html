@@ -1,0 +1,79 @@
+{% extends "prospectos/base.html" %}
+{% block ayuda %}proteccion{% endblock %}
+{% block pagina %}
+<div class="pd">
+  <section class="grupo pd-estado">
+    <div class="pd-tile {% if ultimo %}bien{% else %}mal{% endif %}">
+      <span class="material-symbols-outlined">backup</span>
+      <div><small>Último respaldo</small><b>{% if ultimo %}{{ ultimo.creado_en|date:"j M, H:i" }}{% else %}Ninguno{% endif %}</b>
+        <span>{% if verificado %}Restauración probada el {{ verificado.verificado_en|date:"j M" }}{% else %}Sin prueba de restauración{% endif %}</span></div>
+    </div>
+    <div class="pd-tile {% if not carpeta %}mal{% elif copia.ok and not pendiente %}bien{% else %}regular{% endif %}">
+      <span class="material-symbols-outlined">{% if carpeta %}usb{% else %}usb_off{% endif %}</span>
+      <div><small>Copia fuera de esta PC</small>
+        <b>{% if not carpeta %}No configurada{% elif copia.ok and not pendiente %}Al día{% elif copia.ok is False %}Falló{% else %}Pendiente{% endif %}</b>
+        <span>{% if copia_fecha %}Última: {{ copia_fecha|date:"j M, H:i" }}{% elif carpeta %}Aún no se copia nada{% else %}Si se pierde la PC, se pierde todo{% endif %}</span></div>
+    </div>
+    <div class="pd-tile {% if llave_descargada %}bien{% else %}regular{% endif %}">
+      <span class="material-symbols-outlined">key</span>
+      <div><small>Llave de recuperación</small><b>{% if llave_descargada %}Guardada{% else %}No descargada{% endif %}</b>
+        <span>{% if llave_descargada %}{{ llave_descargada.creado_en|date:"j M Y" }}{% else %}Sin ella, una copia no sirve{% endif %}</span></div>
+    </div>
+  </section>
+
+  <section class="grupo">
+    <header class="grupo-cabecera"><h2>Copia fuera de esta computadora</h2></header>
+    <div class="grupo-cuerpo">
+      <form method="post" class="pd-fila">{% csrf_token %}<input type="hidden" name="accion" value="carpeta">
+        <label class="pd-campo"><span>Carpeta (memoria USB, disco externo o carpeta de red)</span>
+          <input class="udc-campo" name="carpeta" value="{{ carpeta }}" placeholder="E:\Respaldos Prospectos   o   \\servidor\Admisiones\Respaldos" spellcheck="false"></label>
+        <button class="udc-btn"><span class="material-symbols-outlined">check</span>Probar y guardar</button>
+      </form>
+      {% if copia.ok is False and copia.mensaje %}<p class="pd-error"><span class="material-symbols-outlined">error</span>{{ copia.mensaje }}</p>{% endif %}
+      <div class="pd-acciones">
+        <form method="post">{% csrf_token %}<button class="udc-btn secundario chico" name="accion" value="respaldar"><span class="material-symbols-outlined">backup</span>Respaldar ahora</button></form>
+        {% if carpeta %}<form method="post">{% csrf_token %}<button class="udc-btn secundario chico" name="accion" value="copiar"><span class="material-symbols-outlined">content_copy</span>Copiar el último ahora</button></form>{% endif %}
+      </div>
+      <ul class="pd-notas">
+        <li>Cada respaldo se copia ahí, <b>cifrado</b>: quien encuentre la memoria no puede leerlo. Se guardan los últimos 30.</li>
+        <li>Si la memoria no está conectada, se reintenta sola cada media hora y te avisa si pasan 2 días sin copia.</li>
+        <li>No uses una carpeta de OneDrive, Drive o Dropbox para la base, pero sí puedes usarla para estas copias cifradas.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="grupo" id="llave">
+    <header class="grupo-cabecera"><h2>Llave de recuperación</h2></header>
+    <div class="grupo-cuerpo">
+      <p class="pd-texto">Es el archivo <code>config.json</code>: tiene las llaves que cifran correos, teléfonos y las copias externas.
+        Si esta PC se pierde, necesitas <b>la llave y una copia</b> para recuperar todo. Guárdala en un lugar distinto a las copias
+        (otra memoria en la caja fuerte, o con la dirección). Quien tenga la llave y una copia puede leer los datos.</p>
+      <form method="post" class="pd-fila">{% csrf_token %}<input type="hidden" name="accion" value="llave">
+        <label class="pd-campo"><span>Tu contraseña, para confirmar</span><input class="udc-campo" type="password" name="clave" autocomplete="current-password" required></label>
+        <button class="udc-btn secundario"><span class="material-symbols-outlined">download</span>Descargar llave</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="grupo" id="uniones">
+    <header class="grupo-cabecera"><h2>Uniones de los últimos 90 días</h2><span class="text-subtle text-sm">{{ uniones_lista|length }}</span></header>
+    {% if uniones_lista %}
+    <ul class="lista">
+      {% for u in uniones_lista %}
+      <li class="pd-union{% if u.alertas %} alerta{% endif %}">
+        <div class="pd-union-texto">
+          <b><a href="{% url 'admin:prospectos_prospecto_change' u.queda.pk %}">{{ u.queda.nombre_aspirante }}</a></b>
+          <span>se unió con «{{ u.sale.nombre_aspirante }}»{% if u.sale.tutor_nombre %} ({{ u.sale.tutor_nombre }}){% endif %}</span>
+          <small>{{ u.registro.creado_en|date:"j M, H:i" }} · {% if u.automatica %}automática{% else %}{{ u.registro.usuario }}{% endif %}
+            {% for a in u.alertas %}<em>{{ a }}</em>{% endfor %}</small>
+        </div>
+        <form method="post" action="{% url 'prospectos:separar' u.sale.pk %}" onsubmit="return confirm('¿Separar estas dos fichas? Vuelven a ser dos y no se unirán solas otra vez.')">{% csrf_token %}
+          <input type="hidden" name="volver" value="{{ request.path }}#uniones">
+          <button class="udc-btn secundario chico"><span class="material-symbols-outlined">call_split</span>Separar</button></form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="lista-vacia">No hay uniones recientes.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

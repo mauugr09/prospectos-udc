@@ -720,6 +720,7 @@ class ProspectoAdmin(AccionesFila, ModelAdmin):
                     ('Teléfono del tutor', obj.tutor_telefono if revelar else enmascarar_telefono(obj.tutor_telefono)),
                 ] + ([('CURP', obj.curp if revelar else obj.curp[:4] + '••••••••••••••')] if obj.curp else []),
                 'familia_posible': familias.candidatos(obj, maximo=2) if obj.tiene_alumno != obj.tiene_tutor else [],
+                'absorbidos': list(obj.absorbidos.filter(anonimizado_en__isnull=True).only('pk', 'nombre_aspirante', 'tutor_nombre')),
                 'coincidencias': PosibleCoincidencia.objects.filter(Q(prospecto=obj) | Q(candidato=obj), estado='pendiente')
                 .exclude(motivo__startswith=familias.MOTIVO)
                 .select_related('prospecto', 'candidato'),

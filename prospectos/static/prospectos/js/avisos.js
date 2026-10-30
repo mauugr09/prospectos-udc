@@ -56,6 +56,7 @@
     if (document.hidden) return;
     try {
       const r = await fetch(raiz.dataset.contador, { credentials: 'same-origin' });
+      if (r.status === 401) { location.reload(); return; }  // la sesión se cerró por inactividad: mostrar el acceso
       if (r.ok) pintar((await r.json()).sin_leer);
     } catch (e) { /* sin conexión: se intenta en el siguiente minuto */ }
   }

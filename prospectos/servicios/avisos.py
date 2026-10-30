@@ -10,7 +10,7 @@ Para que no se vuelvan ruido:
 """
 
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
 from django.db.models import Count
@@ -197,6 +197,19 @@ def problemas_del_sistema() -> int:
     if ok is None or ok.creado_en < timezone.now() - timedelta(hours=48):
         problemas.append((f'sin-respaldo:{hoy}', 'No hay un respaldo de los últimos 2 días',
                           'Si la computadora falla, se pierde lo de esos días.', respaldos))
+    from . import respaldos as _resp
+    proteccion = reverse('prospectos:proteccion')
+    if not _resp.carpeta_copia():
+        semana = timezone.localdate().isocalendar()
+        problemas.append((f'sin-copia:{semana[0]}-{semana[1]}', 'Los respaldos solo están en esta computadora',
+                          'Si el disco falla o se pierde la PC, se pierde todo. Configura una copia en una memoria o carpeta de red.',
+                          proteccion))
+    elif _resp.copia_pendiente():
+        est = _resp.estado_copia()
+        fecha = est.get('fecha')
+        if not fecha or datetime.fromisoformat(fecha) < timezone.now() - timedelta(hours=48):
+            problemas.append((f'copia:{hoy}', 'La copia fuera de esta PC no se ha hecho',
+                              (est.get('mensaje') or 'Conecta la memoria o revisa la carpeta de red.')[:200], proteccion))
     for f in Formulario.objects.filter(activo=True):
         ultima = f.importaciones.order_by('-iniciada_en').first()
         if ultima and ultima.estado == 'error':

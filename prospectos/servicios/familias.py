@@ -157,13 +157,20 @@ def _vivos():
     return Prospecto.objects.filter(fusionado_en__isnull=True, anonimizado_en__isnull=True)
 
 
+def descartados(p: Prospecto) -> set[int]:
+    """Con quién ya se dijo «No son» (o se separó): no se vuelve a proponer ni a unir solo."""
+    filas = PosibleCoincidencia.objects.filter(Q(prospecto=p) | Q(candidato=p), estado='rechazada').values_list('prospecto_id', 'candidato_id')
+    return {x for par in filas for x in par} - {p.pk}
+
+
 def candidatos(p: Prospecto, minimo: int = REVISION, maximo: int = 5) -> list[dict]:
     """Posibles parejas de un prospecto al que le falta una mitad (solo familia o solo alumno)."""
     if p.tiene_alumno == p.tiene_tutor:
         return []
     yo = _lado(p)
     soy_familia = p.tiene_tutor
-    otros = _vivos().exclude(pk=p.pk).filter(tiene_alumno=soy_familia, tiene_tutor=not soy_familia)
+    otros = (_vivos().exclude(pk=p.pk).filter(tiene_alumno=soy_familia, tiene_tutor=not soy_familia)
+             .exclude(pk__in=descartados(p)))
     if p.token_familia:
         otros = otros.filter(Q(token_familia__isnull=True) | Q(token_familia=p.token_familia))
     res = []

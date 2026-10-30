@@ -24,10 +24,19 @@ ANTES DE INSTALAR: ¿esta PC va a CORRER el programa o solo a USARLO?
    ahí se importan las respuestas, se crean tareas y se hacen los respaldos.
    Para apagarlo, cierra la ventana negra.
 
-LO ÚNICO QUE HAY QUE RESPALDAR: la carpeta "datos" que se crea junto a Prospectos.exe.
-  - datos\config.json  -> LLAVES DE CIFRADO. Si se pierde, los correos y teléfonos no se
-                          pueden recuperar. Guarda una copia en un USB, aparte.
-  - datos\respaldos\   -> un respaldo por noche. Cópialos a otro equipo.
+LO ÚNICO QUE HAY QUE CUIDAR: la carpeta "datos" que se crea junto a Prospectos.exe.
+  En el programa: Configuración > Protección de datos
+  - Copia fuera de esta PC: elige una memoria USB o carpeta de red y cada respaldo se copia
+    ahí, cifrado.
+  - Llave de recuperación (config.json): descárgala y guárdala APARTE de las copias.
+    Sin la llave, ni las copias ni los correos y teléfonos se pueden leer.
+
+ACTUALIZAR A UNA VERSIÓN NUEVA:
+  1. Cierra la ventana negra.
+  2. Descomprime la versión nueva ENCIMA de C:\Prospectos (reemplazar archivos).
+     NO BORRES LA CARPETA: dentro está "datos" con toda la información.
+  3. Abre Prospectos.exe. Si la versión cambia la base, primero guarda sola una copia
+     "antes-de-actualizar" en datos\respaldos.
 
 PARA USARLO CON TUS DATOS REALES: sigue docs\puesta-en-marcha.md (primero en una carpeta de
 pruebas, C:\ProspectosPrueba, y cuando cuadre en la definitiva).
@@ -38,4 +47,10 @@ abrir. Para MariaDB (10.11 o mayor; 10.3 NO funciona) lee docs\mariadb.md.
 LOGO: guarda el logotipo oficial (versión blanca, PNG con fondo transparente) como
   datos\logo.png y aparece en el menú lateral.
 
-Manual completo: README.md y la carpeta docs.
+MANUALES (carpeta docs):
+  - Manual-de-usuario.pdf ................ para Admisiones y promotores
+  - Manual-de-instalacion-y-operacion.pdf  para quien instala, respalda y actualiza
+  - Documentacion-tecnica.pdf ............ para quien dé mantenimiento al programa
+
+© 2026 NullSpace Studio. Todos los derechos reservados. Programa propietario: ver LICENSE.
+Componentes de terceros: AVISOS-TERCEROS.md.

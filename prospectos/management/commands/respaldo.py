@@ -4,10 +4,10 @@ from ...servicios import auditoria, respaldos
 
 
 class Command(BaseCommand):
-    help = 'Respaldos: crear | verificar [archivo] | restaurar <archivo> | listar'
+    help = 'Respaldos: crear | verificar [archivo] | restaurar <archivo o copia .cifrado> | listar | copiar'
 
     def add_arguments(self, parser):
-        parser.add_argument('accion', choices=['crear', 'verificar', 'restaurar', 'listar'])
+        parser.add_argument('accion', choices=['crear', 'verificar', 'restaurar', 'listar', 'copiar'])
         parser.add_argument('archivo', nargs='?')
         parser.add_argument('--si', action='store_true', help='No pedir confirmación al restaurar')
 
@@ -17,6 +17,9 @@ class Command(BaseCommand):
                 r = respaldos.crear()
                 self.stdout.write(f'{r.archivo}: {r.estado} {r.mensaje}')
                 self.stdout.write(f'Rotados: {respaldos.rotar()}')
+            elif accion == 'copiar':
+                nombre = respaldos.copiar_externo(archivo)
+                self.stdout.write(f'Copiado: {nombre}' if nombre else 'No hay carpeta de copia configurada.')
             elif accion == 'listar':
                 for f in respaldos.archivos():
                     self.stdout.write(f'{f.name}  {f.stat().st_size / 1_048_576:.1f} MB')
@@ -26,6 +29,10 @@ class Command(BaseCommand):
             else:
                 if not archivo:
                     raise CommandError('Indica el archivo a restaurar (usa «respaldo listar»).')
+                if archivo.endswith(respaldos.SUFIJO_CIFRADO):  # copia de la memoria USB o carpeta de red
+                    from pathlib import Path
+                    archivo = str(respaldos.descifrar_copia(Path(archivo), respaldos.directorio()))
+                    self.stdout.write(f'Copia descifrada: {Path(archivo).name}')
                 ruta = respaldos.resolver(archivo)
                 from django.conf import settings
                 from urllib.request import urlopen

@@ -1,0 +1,17 @@
+# Propiedades del archivo Prospectos.exe en Windows (clic derecho → Propiedades → Detalles).
+VSVersionInfo(
+  ffi=FixedFileInfo(filevers=(1, 0, 0, 0), prodvers=(1, 0, 0, 0), mask=0x3f, flags=0x0, OS=0x40004,
+                    fileType=0x1, subtype=0x0, date=(0, 0)),
+  kids=[
+    StringFileInfo([StringTable('080a04b0', [
+      StringStruct('CompanyName', 'NullSpace Studio'),
+      StringStruct('FileDescription', 'Prospectos: sistema de admisiones'),
+      StringStruct('FileVersion', '1.0.0'),
+      StringStruct('InternalName', 'Prospectos'),
+      StringStruct('LegalCopyright', '© 2026 NullSpace Studio. Todos los derechos reservados.'),
+      StringStruct('OriginalFilename', 'Prospectos.exe'),
+      StringStruct('ProductName', 'Prospectos'),
+      StringStruct('ProductVersion', '1.0.0')])]),
+    VarFileInfo([VarStruct('Translation', [0x080a, 1200])])
+  ]
+)

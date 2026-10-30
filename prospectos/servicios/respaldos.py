@@ -222,3 +222,102 @@ def restaurar(archivo: str) -> None:
             origen.backup(connection.connection)
         finally:
             origen.close()
+
+
+# --------------------------------------------------------------------------- copia fuera de esta computadora
+# Si el disco falla o se roban la PC, los respaldos de datos/respaldos se pierden con ella. Cada respaldo
+# se copia además a otra carpeta (memoria USB, disco externo o carpeta de red), CIFRADO con la llave de
+# config.json: quien encuentre la memoria no puede leer nombres ni respuestas. Para restaurar hace falta
+# esa misma llave (guárdala aparte: Configuración → Protección de datos → Llave de recuperación).
+
+SUFIJO_CIFRADO = '.cifrado'
+COPIAS_A_CONSERVAR = 30
+
+
+def carpeta_copia() -> Path | None:
+    from ..models import Configuracion
+    valor = (Configuracion.obtener('respaldo.copia_carpeta') or '').strip()
+    return Path(valor) if valor else None
+
+
+def estado_copia() -> dict:
+    from ..models import Configuracion
+    return Configuracion.obtener('respaldo.copia_estado') or {}
+
+
+def _guardar_estado(**datos) -> None:
+    from ..models import Configuracion
+    Configuracion.guardar('respaldo.copia_estado', estado_copia() | datos | {'intento': timezone.now().isoformat()})
+
+
+def _fernet():
+    from cryptography.fernet import Fernet
+    return Fernet(settings.CONFIG['CLAVE_CIFRADO'].encode())
+
+
+def probar_carpeta(ruta: Path) -> None:
+    """Lanza ErrorRespaldo con un mensaje claro si no se puede escribir ahí."""
+    if not ruta.is_absolute():
+        raise ErrorRespaldo('Escribe la ruta completa, por ejemplo E:\\Respaldos o \\\\servidor\\Admisiones\\Respaldos.')
+    try:
+        if ruta.resolve() == directorio().resolve() or directorio().resolve() in ruta.resolve().parents \
+                or Path(settings.DATA_DIR).resolve() in ruta.resolve().parents:
+            raise ErrorRespaldo('Esa carpeta está dentro de los datos del programa: no protege de nada. Usa otra unidad.')
+    except OSError:
+        pass
+    if not ruta.exists():
+        raise ErrorRespaldo('No encuentro esa carpeta. ¿Está conectada la memoria o el disco?')
+    prueba = ruta / '.prueba-prospectos'
+    try:
+        prueba.write_bytes(b'ok')
+        prueba.unlink()
+    except OSError as e:
+        raise ErrorRespaldo(f'No se puede escribir en esa carpeta ({e.strerror or e}).') from e
+
+
+def copiar_externo(archivo: str | None = None) -> str | None:
+    """Copia cifrada del respaldo indicado (o del último bueno). Devuelve el nombre copiado, o None si no hay carpeta."""
+    destino_dir = carpeta_copia()
+    if not destino_dir:
+        return None
+    ultimo = Respaldo.objects.filter(estado='ok', **({'archivo': archivo} if archivo else {})).order_by('-creado_en').first()
+    if not ultimo:
+        return None
+    origen = directorio() / ultimo.archivo
+    try:
+        probar_carpeta(destino_dir)
+        if not origen.is_file():
+            raise ErrorRespaldo(f'No encuentro {ultimo.archivo} en esta computadora.')
+        nombre = ultimo.archivo + SUFIJO_CIFRADO
+        tmp = destino_dir / (nombre + '.parcial')
+        tmp.write_bytes(_fernet().encrypt(origen.read_bytes()))
+        os.replace(tmp, destino_dir / nombre)
+        copias = sorted(destino_dir.glob('prospectos-*.gz' + SUFIJO_CIFRADO))
+        for viejo in copias[:-COPIAS_A_CONSERVAR]:
+            viejo.unlink(missing_ok=True)
+    except (ErrorRespaldo, OSError) as e:
+        _guardar_estado(ok=False, mensaje=str(e)[:300])
+        raise ErrorRespaldo(str(e)) from e
+    _guardar_estado(ok=True, mensaje='', archivo=nombre, fecha=timezone.now().isoformat())
+    return nombre
+
+
+def copia_pendiente() -> bool:
+    """Hay carpeta configurada y el último respaldo bueno todavía no está copiado."""
+    if not carpeta_copia():
+        return False
+    ultimo = Respaldo.objects.filter(estado='ok').order_by('-creado_en').first()
+    return bool(ultimo) and estado_copia().get('archivo') != ultimo.archivo + SUFIJO_CIFRADO
+
+
+def descifrar_copia(ruta: Path, destino_dir: Path) -> Path:
+    """Convierte una copia .cifrado en un respaldo .gz normal (necesita la misma llave de config.json)."""
+    from cryptography.fernet import InvalidToken
+    try:
+        datos = _fernet().decrypt(ruta.read_bytes())
+    except InvalidToken as e:
+        raise ErrorRespaldo('Esta copia se cifró con otra llave. Pon en datos/config.json la llave de recuperación '
+                            'de la computadora donde se hizo.') from e
+    salida = destino_dir / ruta.name.removesuffix(SUFIJO_CIFRADO)
+    salida.write_bytes(datos)
+    return salida

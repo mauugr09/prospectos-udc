@@ -102,6 +102,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'prospectos.middleware.ProteccionDeAcceso',
     'prospectos.middleware.CambioDeClaveObligatorio',
     'prospectos.middleware.ReferrerEnMapas',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -197,6 +198,7 @@ LOGIN_REDIRECT_URL = '/admin/'
 # Sesiones y cookies.
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_AGE = 8 * 3600
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # cerrar el navegador cierra la sesión
 CSRF_COOKIE_HTTPONLY = True
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -358,6 +360,8 @@ UNFOLD = {
                 {'title': 'Usuarios', 'icon': 'person', 'link': reverse_lazy('admin:auth_user_changelist'),
                  'permission': _permiso('auth.view_user')},
                 {'title': 'Roles', 'icon': 'admin_panel_settings', 'link': reverse_lazy('admin:auth_group_changelist'),
+                 'permission': lambda r: r.user.is_superuser},
+                {'title': 'Protección de datos', 'icon': 'shield_lock', 'link': reverse_lazy('prospectos:proteccion'),
                  'permission': lambda r: r.user.is_superuser},
                 {'title': 'Respaldos', 'icon': 'backup', 'link': reverse_lazy('admin:prospectos_respaldo_changelist'),
                  'permission': _permiso('prospectos.view_respaldo')},
