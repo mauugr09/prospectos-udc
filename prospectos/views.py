@@ -713,6 +713,12 @@ def encuestas(request):
             form = FuenteGoogle().info(f)
             ctx['secciones'] = editor_form.leer(f, form)
             ctx['pendientes'] = [c for c in publicar.plan(f, form) if c.tipo != 'crear']
+            todas = [p for s in ctx['secciones'] for p in s.preguntas]
+            ctx['cuenta'] = {'preguntas': len(todas), 'secciones': len(ctx['secciones']),
+                             'sistema': sum(1 for p in todas if p.del_sistema), 'sin_leer': sum(1 for p in todas if not p.pregunta)}
+            ctx['titulo_form'] = (form.get('info') or {}).get('title') or f.nombre
+            corto = {'texto': 'Respuesta corta', 'abierta': 'Párrafo', 'opcion': 'Una opción', 'multiple': 'Varias opciones', 'lista': 'Lista'}
+            ctx['iconos'] = [(t, editor_form.ICONOS[t], corto[t]) for t, _, n in editor_form.TIPOS]
             ctx['url'] = form.get('responderUri') or f.url_publica
         except ErrorFuente as e:
             ctx['error'] = str(e)

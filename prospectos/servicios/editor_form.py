@@ -34,6 +34,13 @@ TIPOS = [  # (tipo del programa, tipo de Google, cómo se llama)
 NOMBRE_TIPO = {t: n for t, _, n in TIPOS} | {'numero': 'Número', 'consentimiento': 'Aviso de privacidad', 'oculto': 'Uso interno (QR)',
                                               'si_no': 'Sí / No', 'catalogo': 'Respuesta corta', 'correo': 'Correo', 'telefono': 'Teléfono'}
 
+ICONOS = {'texto': 'short_text', 'abierta': 'notes', 'opcion': 'radio_button_checked', 'multiple': 'check_box',
+          'lista': 'arrow_drop_down_circle', 'numero': 'pin', 'consentimiento': 'verified_user', 'oculto': 'qr_code_2',
+          'si_no': 'toggle_on', 'catalogo': 'short_text', 'correo': 'alternate_email', 'telefono': 'call'}
+# Cómo se ve la respuesta en la vista previa: línea corta, párrafo, círculos, casillas o lista.
+FORMA = {'texto': 'linea', 'numero': 'linea', 'catalogo': 'linea', 'correo': 'linea', 'telefono': 'linea', 'abierta': 'parrafo',
+         'opcion': 'circulos', 'consentimiento': 'circulos', 'si_no': 'circulos', 'multiple': 'casillas', 'lista': 'lista', 'oculto': 'oculto'}
+
 
 @dataclass
 class PreguntaForm:
@@ -49,6 +56,16 @@ class PreguntaForm:
     @property
     def nombre_tipo(self):
         return NOMBRE_TIPO.get(self.tipo, self.tipo)
+
+    @property
+    def icono(self):
+        return ICONOS.get(self.tipo, 'help')
+
+    @property
+    def forma(self):
+        if self.opciones and self.tipo not in FORMA:
+            return 'circulos'
+        return FORMA.get(self.tipo, 'linea')
 
     @property
     def del_sistema(self) -> bool:

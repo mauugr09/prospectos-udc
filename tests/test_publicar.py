@@ -178,4 +178,4 @@ def test_pantalla_y_aviso_de_pendiente(client, google, monkeypatch):
     assert Configuracion.obtener('publicar.pendiente.ALUMNO') is True
     Carrera.objects.create(nombre='Enfermería', planteles=['tultepec'])
     html = client.get('/admin/herramientas/encuestas/').content.decode()
-    assert 'Cambios del programa que el Form aún no tiene' in html and 'Agregar «Enfermería»' in html
+    assert 'aún no está' in html and 'del programa' in html and 'Agregar «Enfermería»' in html

@@ -178,8 +178,9 @@ Es dato de contacto del menor: se guarda cifrado y solo se usa para unir.
 
 ## 6. Cambiar el Form desde el programa («Encuestas»)
 
-En **Configuración → Encuestas** se ve el Form tal como está en Google, por secciones (Alumno o Familia).
-Cada cambio se aplica en Google **en ese momento**:
+En **Configuración → Encuestas** se ve el Form como lo verá el alumno: cada pregunta en su tarjeta, con sus opciones,
+su tipo y si es obligatoria; a la izquierda, el índice de secciones. El lápiz edita la tarjeta ahí mismo y, para agregar,
+se elige el tipo al final de la sección y aparece una vista previa mientras escribes. Cada cambio se aplica en Google **en ese momento**:
 
 | Acción | Qué pasa |
 |---|---|

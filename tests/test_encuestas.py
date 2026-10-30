@@ -116,3 +116,13 @@ def test_pantalla(client, google, monkeypatch):
     assert 'Pregunta agregada' in r.content.decode() and '¿Trabajas?' in _titulos(g)
     assert client.get('/admin/herramientas/publicar/').status_code == 302
     assert OpcionPregunta.objects.exists()
+
+
+def test_pantalla_del_editor_parece_el_form(client, google, monkeypatch):
+    f, g = google
+    from prospectos.servicios import fuentes
+    client.force_login(User.objects.create_superuser('enc@x.mx', 'enc@x.mx', 'Clave-de-prueba-123'))
+    monkeypatch.setattr(fuentes.FuenteGoogle, 'info', lambda self, fo: g.info(fo))
+    html = client.get(f'/admin/herramientas/encuestas/?tipo={f.tipo}').content.decode()
+    assert 'Sección 1 de 3' in html and 'enc-opciones-vista' in html and 'data-tipo="multiple"' in html
+    assert 'La usa el programa' in html and 'href="#sec-2"' in html
