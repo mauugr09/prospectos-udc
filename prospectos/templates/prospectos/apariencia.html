@@ -3,6 +3,7 @@
 <section class="grupo" style="max-width:720px">
   <header class="grupo-cabecera"><h2>Foto de fondo</h2></header>
   <div class="grupo-cuerpo flex flex-col gap-4">
+    <input type="text" hidden aria-hidden="true" tabindex="-1">{# unfold escribe aquí el nombre del archivo elegido #}
     <div class="ap-muestra"><span>{% if tiene_foto %}Foto actual{% else %}Degradado de la marca (sin foto){% endif %}</span></div>
     <form method="post" enctype="multipart/form-data" class="flex flex-wrap gap-3 items-end">{% csrf_token %}
       <label class="text-sm">Foto de un plantel (JPG, PNG o WebP, hasta 8 MB)<br><input type="file" name="foto" accept="image/jpeg,image/png,image/webp" class="udc-campo" required></label>
