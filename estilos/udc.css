@@ -1374,6 +1374,9 @@ button.udc-btn.fm-confirmando { background-color: var(--c-rojo); color: #fff; }
 .pd-union-texto em { font-style: normal; font-weight: 600; color: var(--c-rojo); background: rgba(215,0,21,.10); padding: 0 7px; border-radius: 8px; }
 @media (max-width: 720px) { .pd-estado { grid-template-columns: 1fr; } }
 
+/* ---------------------------------------------------------------- Otras computadoras */
+.red-codigo { font: 700 28px/1.2 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .06em; color: var(--c-texto); margin: 2px 0 10px; }
+
 /* ---------------------------------------------------------------- Mi perfil y verificación en 2 pasos */
 .pf-cabeza { display: flex; gap: 20px; align-items: flex-start; padding: 20px; }
 .pf-foto { flex: none; width: 96px; height: 96px; border-radius: 50%; overflow: hidden; display: grid; place-items: center;

@@ -5,7 +5,8 @@ ANTES DE INSTALAR: ¿esta PC va a CORRER el programa o solo a USARLO?
   - Solo una computadora de la oficina corre el programa (la que tiene los datos).
   - Las demás, Windows o Mac, NO instalan nada: entran con el navegador a la dirección que
     muestra esa computadora (Configuración > Otras computadoras). Así todos ven los mismos datos.
-  Si instalas el programa en varias computadoras, cada una tendrá datos distintos y separados.
+  En las demás computadoras Windows puedes copiar este programa y elegir «C» al abrirlo (paso 3):
+  queda como acceso directo a la principal, sin datos propios.
 
 1. Copia esta carpeta "Prospectos" a C:\Prospectos
    (NO la dejes en Descargas, Escritorio sincronizado ni OneDrive).
@@ -14,7 +15,12 @@ ANTES DE INSTALAR: ¿esta PC va a CORRER el programa o solo a USARLO?
    - Si aparece "Windows protegió su PC": Más información -> Ejecutar de todas formas.
      (El programa no está firmado digitalmente; por eso Windows avisa.)
 
-3. La primera vez pide crear el ADMINISTRADOR (tu correo y una contraseña de 12 caracteres o más).
+3. La primera vez pregunta el papel de esta computadora:
+   P = PRINCIPAL: aquí se guardan los datos (solo UNA computadora de la oficina).
+   C = CONECTARME a la principal: escribe su dirección y compara el código que aparece con el de
+       la principal (Configuración > Otras computadoras). Si coincide, escribe S y acepta el
+       certificado. Desde entonces, doble clic en Prospectos.exe abre la principal.
+   En la PRINCIPAL, después pide crear el ADMINISTRADOR (tu correo y una contraseña de 12 caracteres o más).
    Al entrar te pedirá activar la verificación en 2 pasos: ten a la mano tu teléfono con
    Google Authenticator o Microsoft Authenticator.
    ¿Quieres practicar sin datos reales? Copia esta carpeta a otro lado (por ejemplo C:\Capacitacion),

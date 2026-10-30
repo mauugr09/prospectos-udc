@@ -318,6 +318,10 @@ def primeros_pasos() -> list[dict]:
          'url': reverse('prospectos:ubicar'), 'como': 'Las que escriben los alumnos se dan de alta solas; ubícalas con un clic.'},
         {'titulo': 'Crear usuarios del equipo', 'hecho': get_user_model().objects.filter(is_active=True).count() > 1,
          'url': reverse('admin:auth_user_changelist'), 'como': 'Una cuenta por persona, con su rol. No compartan contraseñas.'},
+        {'titulo': 'Usar desde otras computadoras', 'hecho': settings.EN_RED or bool(Configuracion.obtener('pasos.solo_esta_pc', False)),
+         'url': reverse('prospectos:otras_computadoras'), 'marcable': 'solo_esta_pc', 'boton': 'Solo usaremos esta computadora',
+         'como': 'Si más de una persona va a trabajar (u otro plantel), activa el acceso por red: todos ven los mismos datos, '
+                 'usuarios y perfiles. No instales el programa con datos en cada computadora.'},
         {'titulo': 'Guardar copia de config.json fuera de esta computadora', 'hecho': bool(Configuracion.obtener('pasos.config_copiado', False)),
          'url': None, 'marcable': 'config_copiado',
          'como': 'Tiene las llaves de cifrado. Si se pierde, los teléfonos y correos guardados no se recuperan nunca.'},
@@ -329,8 +333,8 @@ def pasos(request):
     """Marca a mano los pasos que el programa no puede comprobar solo, u oculta la lista."""
     if request.method == 'POST' and (request.user.is_superuser or request.user.has_perm('prospectos.change_formulario')):
         accion = request.POST.get('accion')
-        if accion == 'config_copiado':
-            Configuracion.guardar('pasos.config_copiado', True, request.user)
+        if accion in ('config_copiado', 'solo_esta_pc'):
+            Configuracion.guardar(f'pasos.{accion}', True, request.user)
         elif accion == 'ocultar':
             Configuracion.guardar('pasos.ocultos', True, request.user)
         elif accion == 'mostrar':
@@ -358,7 +362,7 @@ def ayuda(request):
 
 TEMAS_AYUDA = [  # (ancla, icono, título) del índice de «¿Cómo funciona?»
     ('empezar', 'route', 'Cómo viaja una respuesta'), ('respuestas', 'inbox', 'Contestaron y no aparece'),
-    ('perfil', 'account_circle', 'Mi perfil y 2 pasos'), ('dia', 'support_agent', 'Día a día del asesor'), ('avisos', 'notifications', 'Avisos'), ('asistente', 'auto_awesome', 'El asistente'),
+    ('perfil', 'account_circle', 'Mi perfil y 2 pasos'), ('red', 'devices', 'Varias computadoras'), ('dia', 'support_agent', 'Día a día del asesor'), ('avisos', 'notifications', 'Avisos'), ('asistente', 'auto_awesome', 'El asistente'),
     ('familias', 'family_restroom', 'Alumno y familia'),
     ('visitas', 'qr_code_2', 'Visitas a prepas'), ('calendario', 'calendar_month', 'Calendario'),
     ('mapa', 'map', 'Preparatorias y mapa'), ('encuestas', 'edit_note', 'Cambiar las encuestas'),
@@ -1045,24 +1049,52 @@ def borrar_demo(request):
 # --------------------------------------------------------------------------- uso desde otras computadoras
 @staff_member_required
 def otras_computadoras(request):
-    """Activar el acceso por red (HTTPS) para que Windows y Mac entren con el navegador."""
+    """Acceso por red (HTTPS): las demás computadoras ven los mismos datos, usuarios y perfiles que esta."""
     if not request.user.is_superuser:
         raise PermissionDenied
-    from .servicios import red
-    if request.method == 'POST':
-        activar = request.POST.get('accion') == 'activar'
-        red.guardar_activa(settings.CONFIG_FILE, activar)
-        if activar:
-            red.asegurar_certificados(settings.DATA_DIR)
-        auditoria.registrar('acceso_red', None, {'activa': activar}, request=request)
-        messages.success(request, 'Guardado. Cierra la ventana del programa y vuélvelo a abrir para que tome el cambio.')
-        return redirect(request.path)
     import json as _json
-    guardado = red.activa(_json.loads(settings.CONFIG_FILE.read_text(encoding='utf-8')))
+
+    from .servicios import arranque, red
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+        if accion in ('activar', 'apagar'):
+            red.guardar_activa(settings.CONFIG_FILE, accion == 'activar')
+            if accion == 'activar':
+                red.asegurar_certificados(settings.DATA_DIR, red.nombres_fijos(settings.CONFIG))
+            auditoria.registrar('acceso_red', None, {'activa': accion == 'activar'}, request=request)
+            messages.success(request, 'Guardado. Cierra la ventana del programa y vuélvelo a abrir para que tome el cambio.')
+        elif accion == 'direccion':
+            texto = (request.POST.get('direccion') or '').strip()
+            nombre = red.normalizar_nombre(texto) if texto else ''
+            if texto and not nombre:
+                messages.error(request, 'Escribe solo un nombre o una IP, por ejemplo «10.20.1.15» o «prospectos.udc.local».')
+                return redirect(request.path + '#direccion')
+            red.guardar_config(settings.CONFIG_FILE, NOMBRES_RED=[nombre] if nombre else [])
+            auditoria.registrar('acceso_red', None, {'direccion_fija': nombre or None}, request=request)
+            messages.success(request, 'Guardado. Cierra y vuelve a abrir el programa: el certificado se renueva solo con la nueva dirección '
+                                      '(las computadoras ya conectadas no tienen que hacer nada).')
+        elif accion == 'dos_pasos_todos':
+            valor = request.POST.get('valor') == '1'
+            red.guardar_config(settings.CONFIG_FILE, DOS_PASOS_TODOS=valor)
+            settings.CONFIG['DOS_PASOS_TODOS'] = valor  # sin reiniciar
+            auditoria.registrar('dos_pasos_todos', None, {'activa': valor}, request=request)
+            messages.success(request, 'Desde ahora todos deben activar la verificación en 2 pasos al entrar.' if valor
+                             else 'Ahora solo los administradores están obligados a usar la verificación en 2 pasos.')
+        elif accion == 'arranque' and arranque.disponible():
+            try:
+                arranque.activar() if request.POST.get('valor') == '1' else arranque.desactivar()
+                messages.success(request, 'Listo.')
+            except OSError as e:
+                messages.error(request, f'No se pudo: {e}')
+        return redirect(request.path)
+    guardado = _json.loads(settings.CONFIG_FILE.read_text(encoding='utf-8'))
     return render(request, 'prospectos/otras_computadoras.html', _ctx(
-        request, 'Usar desde otras computadoras', activa_ahora=settings.EN_RED, guardado=guardado,
-        direcciones=red.direcciones(settings.CONFIG), huella=red.huella_ca(settings.DATA_DIR),
-        puerto=red.puerto(settings.CONFIG), sistema=settings.SISTEMA))
+        request, 'Usar desde otras computadoras', activa_ahora=settings.EN_RED, guardado=red.activa(guardado),
+        direcciones=red.direcciones(settings.CONFIG), huella=red.huella_ca(settings.DATA_DIR), codigo=red.codigo_ca(settings.DATA_DIR),
+        puerto=red.puerto(settings.CONFIG), sistema=settings.SISTEMA, direccion_fija=(red.nombres_fijos(guardado) or [''])[0],
+        direccion_cambio=red.nombres_fijos(guardado) != red.nombres_fijos(settings.CONFIG),
+        dos_pasos_todos=bool(settings.CONFIG.get('DOS_PASOS_TODOS')), arranque_disponible=arranque.disponible(),
+        arranque_activo=arranque.activo(), comando=settings.COMANDO))
 
 
 def conectar(request):
@@ -1074,7 +1106,7 @@ def conectar(request):
     agente = request.META.get('HTTP_USER_AGENT', '')
     so = 'mac' if 'Macintosh' in agente else 'movil' if ('iPhone' in agente or 'iPad' in agente or 'Android' in agente) else 'windows'
     return render(request, 'prospectos/conectar.html', {
-        'so': so, 'huella': red.huella_ca(settings.DATA_DIR), 'equipo': red.nombre_equipo(),
+        'so': so, 'huella': red.huella_ca(settings.DATA_DIR), 'codigo': red.codigo_ca(settings.DATA_DIR), 'equipo': red.nombre_equipo(),
         'admin': request.build_absolute_uri('/admin/')})
 
 

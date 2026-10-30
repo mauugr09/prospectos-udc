@@ -28,6 +28,8 @@ El camino de una respuesta:
 
 ![Pantalla de acceso](img/login.jpg)
 
+- En la computadora principal o en una ya conectada, doble clic en **Prospectos.exe** abre el programa en el
+  navegador. Todas las computadoras ven la misma información, y tu usuario, perfil y foto son los mismos en cualquiera.
 - Entra con tu correo y contraseña. La primera vez el programa te pide cambiar la contraseña temporal
   por una tuya de **12 caracteres o más**.
 - **5 contraseñas equivocadas** bloquean tu usuario 15 minutos. Si se te olvidó, un administrador te

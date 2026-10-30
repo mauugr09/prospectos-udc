@@ -24,13 +24,9 @@ BASE_DIR = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent.parent)
 #  - Desarrollo: carpeta «datos» en la raíz del proyecto.
 SISTEMA = 'mac' if sys.platform == 'darwin' else 'windows' if os.name == 'nt' else 'linux'
 CONGELADO = bool(getattr(sys, 'frozen', False))
-if CONGELADO and SISTEMA == 'mac':
-    _DATOS_OMISION = Path.home() / 'Library' / 'Application Support' / 'Prospectos UDC'
-elif CONGELADO:
-    _DATOS_OMISION = Path(sys.executable).resolve().parent / 'datos'
-else:
-    _DATOS_OMISION = Path(__file__).resolve().parent.parent / 'datos'
-DATA_DIR = Path(os.environ.get('PROSPECTOS_DATOS', _DATOS_OMISION))
+from prospectos.servicios.cliente import carpeta_datos  # noqa: E402  (sin Django; el lanzador usa la misma regla)
+
+DATA_DIR = carpeta_datos()
 # Cómo se llama el programa al escribir comandos (para los mensajes de ayuda).
 COMANDO = ('Prospectos.exe' if SISTEMA == 'windows' else
            '/Applications/Prospectos.app/Contents/MacOS/Prospectos' if SISTEMA == 'mac' and CONGELADO else 'python lanzador.py')
@@ -78,7 +74,7 @@ from prospectos.servicios import red as _red  # noqa: E402  (no usa Django: solo
 EN_RED = _red.activa(CONFIG)
 ALLOWED_HOSTS = list(CONFIG.get('HOSTS_PERMITIDOS', ['127.0.0.1', 'localhost']))
 if EN_RED:
-    ALLOWED_HOSTS += [n for n in _red.nombres_servidor() if n not in ALLOWED_HOSTS]
+    ALLOWED_HOSTS += [n for n in _red.nombres_servidor(_red.nombres_fijos(CONFIG)) if n not in ALLOWED_HOSTS]
 
 INSTALLED_APPS = [
     'prospectos',  # primero: sus plantillas sustituyen a las del admin

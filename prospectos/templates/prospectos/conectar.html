@@ -44,8 +44,9 @@
     <header class="grupo-cabecera"><h2>1. Descarga el certificado</h2></header>
     <div class="grupo-cuerpo">
       <a class="udc-btn" href="{% url 'certificado' %}">Descargar certificado</a>
-      <p class="nota-pie">Antes de instalarlo, compara su huella con la que aparece en la computadora del programa (Configuración → Otras computadoras):</p>
-      <p class="huella">{{ huella }}</p>
+      <p class="nota-pie">Antes de instalarlo, compara este código con el que aparece en la computadora principal (Configuración → Otras computadoras). Deben ser idénticos:</p>
+      <p class="huella" style="font-size:22px;font-weight:700;letter-spacing:.06em">{{ codigo }}</p>
+      <p class="huella" style="font-size:11px">{{ huella }}</p>
     </div>
   </section>
 

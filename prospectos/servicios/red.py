@@ -45,6 +45,39 @@ def puerto(config: dict) -> int:
     return int(config.get('PUERTO_RED', PUERTO_RED_OMISION))
 
 
+def nombres_fijos(config: dict) -> list[str]:
+    """Dirección fija que dio sistemas (nombre o IP en la VPN o la red entre planteles). Va en el certificado."""
+    valor = config.get('NOMBRES_RED') or []
+    if isinstance(valor, str):
+        valor = [valor]
+    return [n for n in (normalizar_nombre(v) for v in valor) if n]
+
+
+def normalizar_nombre(texto: str) -> str | None:
+    """«https://10.20.1.15:8443/» → «10.20.1.15». None si no es un nombre o IP válidos."""
+    import re
+    t = (texto or '').strip().lower()
+    t = re.sub(r'^[a-z]+://', '', t).split('/')[0]
+    if t.startswith('['):
+        return None
+    t = t.split(':')[0]
+    try:
+        ipaddress.ip_address(t)
+        return t
+    except ValueError:
+        pass
+    if re.fullmatch(r'(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*', t):
+        return t
+    return None
+
+
+def guardar_config(config_file: Path, **valores) -> dict:
+    datos = json.loads(config_file.read_text(encoding='utf-8'))
+    datos.update(valores)
+    config_file.write_text(json.dumps(datos, indent=2, ensure_ascii=False), encoding='utf-8')
+    return datos
+
+
 def guardar_activa(config_file: Path, valor: bool) -> None:
     datos = json.loads(config_file.read_text(encoding='utf-8'))
     datos['EN_RED'] = bool(valor)
@@ -75,10 +108,11 @@ def ips_locales() -> list[str]:
     return sorted(ip for ip in ips if not ip.startswith('127.') and ip != '0.0.0.0')
 
 
-def nombres_servidor() -> list[str]:
-    """Nombres con los que las demás computadoras pueden llegar: IP, nombre del equipo y nombre.local (Bonjour)."""
+def nombres_servidor(fijos: list[str] | tuple = ()) -> list[str]:
+    """Nombres con los que las demás computadoras pueden llegar: la dirección fija (si hay), IP, nombre del equipo
+    y nombre.local (Bonjour)."""
     equipo = nombre_equipo()
-    nombres = [equipo, f'{equipo}.local', 'localhost', *ips_locales(), '127.0.0.1']
+    nombres = [*fijos, equipo, f'{equipo}.local', 'localhost', *ips_locales(), '127.0.0.1']
     vistos, salida = set(), []
     for n in nombres:
         if n and n.lower() not in vistos:
@@ -90,9 +124,14 @@ def nombres_servidor() -> list[str]:
 def direcciones(config: dict) -> list[str]:
     """Primero la IP (funciona en cualquier computadora); luego los nombres."""
     p = puerto(config)
-    ips = ips_locales()
+    fijos, ips = nombres_fijos(config), ips_locales()
     nombres = [n for n in nombres_servidor() if n not in ('localhost', '127.0.0.1') and n not in ips]
-    return [f'https://{n}:{p}/' for n in [*ips, *nombres]]
+    vistos, salida = set(), []
+    for n in [*fijos, *ips, *nombres]:
+        if n not in vistos:
+            vistos.add(n)
+            salida.append(f'https://{n}:{p}/')
+    return salida
 
 
 # --------------------------------------------------------------------------- certificados
@@ -169,11 +208,11 @@ def _vigente(ruta: Path, nombres: list[str]) -> bool:
         return False
 
 
-def asegurar_certificados(data_dir: Path) -> tuple[Path, Path, Path]:
+def asegurar_certificados(data_dir: Path, fijos: list[str] | tuple = ()) -> tuple[Path, Path, Path]:
     """Devuelve (ca.crt, servidor.crt, servidor.key); los crea o renueva si hace falta."""
     carpeta = _carpeta(data_dir)
     ca_cert, ca_llave = _cargar_ca(carpeta)
-    nombres = nombres_servidor()
+    nombres = nombres_servidor(fijos)
     crt, key = carpeta / 'servidor.crt', carpeta / 'servidor.key'
     if not (_vigente(crt, nombres) and key.exists()):
         llave = ec.generate_private_key(ec.SECP256R1())
@@ -207,13 +246,24 @@ def huella_ca(data_dir: Path) -> str | None:
     return ' '.join(h[i:i + 4] for i in range(0, len(h), 4))
 
 
+def codigo_ca(data_dir: Path) -> str | None:
+    """Los primeros 12 caracteres de la huella («3F2A-91C0-77AB»): lo que se compara al conectar otra PC."""
+    h = huella_ca(data_dir)
+    return codigo_de_huella(h) if h else None
+
+
+def codigo_de_huella(huella: str) -> str:
+    h = huella.replace(' ', '').replace(':', '').upper()
+    return f'{h[0:4]}-{h[4:8]}-{h[8:12]}'
+
+
 # --------------------------------------------------------------------------- servidor HTTPS
 def servidor_https(aplicacion, data_dir: Path, config: dict, hilos: int = 8):
     """Servidor HTTPS (cheroot) para la red. Se arranca con .start() en un hilo aparte."""
     from cheroot import wsgi
     from cheroot.ssl.builtin import BuiltinSSLAdapter
 
-    _, crt, key = asegurar_certificados(data_dir)
+    _, crt, key = asegurar_certificados(data_dir, nombres_fijos(config))
     srv = wsgi.Server(('0.0.0.0', puerto(config)), aplicacion, numthreads=hilos, server_name='Prospectos')
     adaptador = BuiltinSSLAdapter(str(crt), str(key))
     try:  # solo TLS 1.2 o mayor

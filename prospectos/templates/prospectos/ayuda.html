@@ -224,10 +224,7 @@
       <h3>Usuarios y roles</h3>
       <ul class="gu-saber"><li>Una cuenta por persona, con su rol; no compartan contraseñas.</li><li>Solo un administrador cambia roles o crea administradores.</li></ul>
       <h3>Otras computadoras</h3>
-      <ol class="gu-pasos">
-        <li>El programa corre en <b>una sola</b> computadora. Instalarlo en otra crea datos separados.</li>
-        <li>En las demás, abre en el navegador la dirección de <b>Otras computadoras</b> e instala el certificado una vez.</li>
-      </ol>
+      <ul class="gu-saber"><li>Ver <a href="#red">Varias computadoras y planteles</a>.</li></ul>
       <h3>Respaldos</h3>
       <ul class="gu-saber">
         <li>Cada día se guarda una copia en <code>datos\respaldos</code> y, si la configuras, otra cifrada fuera de la PC (ver <a href="#proteccion">Protección de datos</a>).</li>
@@ -271,6 +268,31 @@
         <li>Entiende con reglas: solo las formas de preguntar que se le enseñaron. Si no entiende, te ofrece preguntas parecidas.</li>
         <li>No puede borrar, unir, exportar ni cambiar estatus. Todo lo que confirmas queda en la bitácora.</li>
         <li>No interrumpe: solo cambia de cara (avisos sin leer, pensando, listo, algo falló, dormido). Se puede ocultar del menú desde su ventana.</li>
+      </ul>
+    </section>
+
+    <section class="gu-guia" id="red" data-palabras="red otras computadoras planteles tultepec cuautitlan vpn casa conectar certificado principal misma informacion usuarios compartir">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">devices</span></span><div><h2>Varias computadoras y planteles</h2><p>Todos ven la misma información, los mismos usuarios y sus perfiles.</p></div></header>
+      <ul class="gu-saber">
+        <li>Una sola computadora es la <b>principal</b>: guarda los datos. Las demás <b>se conectan</b> a ella. No hay nada que sincronizar.</li>
+        <li><b>No</b> instales el programa con datos propios en cada computadora: cada una tendría sus propios aspirantes y usuarios, y no se pueden juntar después.</li>
+      </ul>
+      <h3>En la principal (un administrador, una vez)</h3>
+      <ol class="gu-pasos">
+        <li><b>Configuración → Otras computadoras → Activar el acceso por red</b>, y cierra y vuelve a abrir el programa.</li>
+        <li>Si el Firewall de Windows pregunta, permite a Prospectos en <b>Redes privadas</b>.</li>
+        <li>Para el otro plantel o desde casa: sistemas conecta las redes o da una VPN, y la dirección fija que te den se escribe en <b>Otro plantel o VPN</b>.</li>
+      </ol>
+      <h3>En cada computadora que se conecta</h3>
+      <ol class="gu-pasos">
+        <li><b>Windows:</b> copia el programa (sin la carpeta <code>datos</code>), ábrelo y elige <b>C · Conectarme a la principal</b>. Escribe la dirección.</li>
+        <li>Compara el <b>código</b> que aparece con el de la principal. Si es igual, escribe S y acepta el certificado.</li>
+        <li>Desde entonces, doble clic en Prospectos.exe abre la principal. <b>Mac:</b> abre en el navegador la dirección seguida de <code>conectar/</code>.</li>
+      </ol>
+      <ul class="gu-saber">
+        <li>Si la principal está apagada, nadie puede trabajar (los datos no se pierden). Actívale <b>Abrir al iniciar sesión</b> y, si se puede, que sea una computadora que no se apague.</li>
+        <li>Con acceso desde otro plantel, conviene <b>pedir la verificación en 2 pasos a todos</b> (mismo lugar).</li>
+        <li>Nunca se abre el puerto a internet: solo por la red de la UDC o la VPN.</li>
       </ul>
     </section>
 

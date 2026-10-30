@@ -155,7 +155,7 @@
                 <p>{{ p.como }}</p>
                 {% if p.url %}<a class="udc-btn chico secundario" href="{{ p.url }}">Abrir</a>{% endif %}
                 {% if p.marcable %}<form method="post" action="{% url 'prospectos:pasos' %}">{% csrf_token %}
-                  <input type="hidden" name="accion" value="{{ p.marcable }}"><button class="udc-btn chico">Ya la guardé</button></form>{% endif %}
+                  <input type="hidden" name="accion" value="{{ p.marcable }}"><button class="udc-btn chico">{{ p.boton|default:"Ya la guardé" }}</button></form>{% endif %}
               </details></li>
             {% endif %}{% endfor %}
           </ul>

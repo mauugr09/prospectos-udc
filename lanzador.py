@@ -74,6 +74,56 @@ def _primera_vez():
     call_command('crear_admin')
 
 
+def _pausa():
+    if getattr(sys, 'frozen', False):
+        try:
+            input('\nPresiona Enter para cerrar…')
+        except EOFError:
+            pass
+
+
+def _modo_conectado() -> bool:
+    """Antes de Django: si esta computadora se conecta a la principal, solo abre el navegador allá. True si se encargó."""
+    from prospectos.servicios import cliente
+    pide_conectar = len(sys.argv) > 1 and sys.argv[1] == 'conectar'
+    if len(sys.argv) > 1 and not pide_conectar:
+        return False
+    if cliente.es_principal():
+        if pide_conectar:
+            print('Esta computadora es la PRINCIPAL (guarda los datos en la carpeta «datos»): no se puede conectar a otra.')
+            return True
+        return False
+    conexion = None if pide_conectar else cliente.leer()
+    if conexion is None:
+        if not pide_conectar:
+            if not getattr(sys, 'frozen', False) and not (sys.stdin and sys.stdin.isatty()):
+                return False  # desarrollo o pruebas automáticas: principal
+            print()
+            print('=' * 70)
+            print(' PRIMERA VEZ EN ESTA COMPUTADORA. ¿Cuál es su papel?')
+            print('  [P] PRINCIPAL: aquí se guardan los datos (solo UNA computadora de la oficina)')
+            print('  [C] CONECTARME a la principal: ver los mismos datos, usuarios y perfiles')
+            print('=' * 70)
+            opcion = ''
+            try:
+                while opcion not in ('p', 'c'):
+                    opcion = input('Elige P o C y presiona Enter: ').strip().lower()
+            except EOFError:  # sin teclado (p. ej. un servicio): principal
+                return False
+            if opcion == 'p':
+                return False
+        servidor = cliente.configurar()
+        if not servidor:
+            _pausa()
+            return True
+        conexion = cliente.leer()
+    if not cliente.abrir(conexion):
+        _pausa()
+    else:
+        time.sleep(3)
+    return True
+
+
 def main():
     import django
 
@@ -82,6 +132,8 @@ def main():
             flujo.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
         except (AttributeError, ValueError):
             pass
+    if _modo_conectado():
+        return
 
     django.setup()
     from django.conf import settings
@@ -160,7 +212,7 @@ def _iniciar_red(application, settings):
     for d in dirs:
         print(f'   {d}')
     print(f'   La primera vez, en cada computadora: {dirs[0]}conectar/  (instalar el certificado)')
-    print(f'   Huella del certificado, para comprobarlo: {red.huella_ca(settings.DATA_DIR)}')
+    print(f'   Código de esta computadora (para comparar al conectar otra): {red.codigo_ca(settings.DATA_DIR)}')
 
 
 def _config():

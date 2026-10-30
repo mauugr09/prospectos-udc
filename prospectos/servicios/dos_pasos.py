@@ -126,4 +126,9 @@ def es_demo(usuario) -> bool:
 
 
 def obligatoria(usuario) -> bool:
-    return bool(usuario.is_superuser and settings.CONFIG.get('DOS_PASOS_ADMINS', True) and not es_demo(usuario))
+    """Administradores siempre (salvo que se apague en config.json); todos, si se pidió en Otras computadoras."""
+    if es_demo(usuario):
+        return False
+    if settings.CONFIG.get('DOS_PASOS_TODOS'):
+        return True
+    return bool(usuario.is_superuser and settings.CONFIG.get('DOS_PASOS_ADMINS', True))

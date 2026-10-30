@@ -19,7 +19,7 @@ def test_activa_y_compatibilidad():
 
 
 def test_certificados_validos_para_navegadores(tmp_path, monkeypatch):
-    monkeypatch.setattr(red, 'nombres_servidor', lambda: ['admisiones', 'admisiones.local', 'localhost', '192.168.1.20', '127.0.0.1'])
+    monkeypatch.setattr(red, 'nombres_servidor', lambda *a: ['admisiones', 'admisiones.local', 'localhost', '192.168.1.20', '127.0.0.1'])
     ca, crt, key = red.asegurar_certificados(tmp_path)
     c = x509.load_pem_x509_certificate(crt.read_bytes())
     autoridad = x509.load_pem_x509_certificate(ca.read_bytes())
@@ -32,7 +32,7 @@ def test_certificados_validos_para_navegadores(tmp_path, monkeypatch):
     # Se reutiliza mientras no cambie la IP; con IP nueva se renueva con la MISMA autoridad (no hay que reinstalar).
     antes = crt.read_bytes()
     assert red.asegurar_certificados(tmp_path)[1].read_bytes() == antes
-    monkeypatch.setattr(red, 'nombres_servidor', lambda: ['admisiones', '192.168.1.99', '127.0.0.1'])
+    monkeypatch.setattr(red, 'nombres_servidor', lambda *a: ['admisiones', '192.168.1.99', '127.0.0.1'])
     red.asegurar_certificados(tmp_path)
     assert crt.read_bytes() != antes and ca.read_bytes() == autoridad.public_bytes(__import__('cryptography').hazmat.primitives.serialization.Encoding.PEM)
     assert len(red.huella_ca(tmp_path).replace(' ', '')) == 64
@@ -41,7 +41,7 @@ def test_certificados_validos_para_navegadores(tmp_path, monkeypatch):
 
 @pytest.mark.django_db(transaction=True)
 def test_servidor_https_atiende_y_el_certificado_se_valida(tmp_path, monkeypatch, settings):
-    monkeypatch.setattr(red, 'nombres_servidor', lambda: ['localhost', '127.0.0.1'])
+    monkeypatch.setattr(red, 'nombres_servidor', lambda *a: ['localhost', '127.0.0.1'])
     from config.wsgi import application
     cfg = {'PUERTO_RED': 18443}
     srv = red.servidor_https(application, tmp_path, cfg, hilos=2)
@@ -91,7 +91,7 @@ def test_solo_el_administrador_cambia_el_acceso_por_red(client):
 def test_nombre_de_mac_largo(tmp_path, monkeypatch):
     largo = 'MacBook-Pro-de-Maria-Guadalupe-Hernandez-Admisiones-Universidad-Cuautitlan'
     monkeypatch.setattr(red, 'nombre_equipo', lambda: largo)
-    monkeypatch.setattr(red, 'nombres_servidor', lambda: [largo, f'{largo}.local', '192.168.1.5', '127.0.0.1'])
+    monkeypatch.setattr(red, 'nombres_servidor', lambda *a: [largo, f'{largo}.local', '192.168.1.5', '127.0.0.1'])
     _, crt, _ = red.asegurar_certificados(tmp_path)
     san = x509.load_pem_x509_certificate(crt.read_bytes()).extensions.get_extension_for_class(x509.SubjectAlternativeName).value
     assert f'{largo}.local' in san.get_values_for_type(x509.DNSName)

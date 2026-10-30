@@ -33,7 +33,9 @@
    Escritorio sincronizado ni en OneDrive: la base se daña si se sincroniza mientras está abierta.
 2. Doble clic en `Prospectos.exe`. Si Windows dice «Windows protegió su PC», elige **Más información →
    Ejecutar de todas formas**. El programa no está firmado digitalmente, por eso avisa.
-3. La primera vez pide crear el **administrador**: tu correo y una contraseña de 12 caracteres o más.
+3. La primera vez pregunta el papel de la computadora: **P · Principal** (aquí se guardan los datos; solo
+   una) o **C · Conectarme a la principal** (sección 6.3). En la principal, después pide crear el
+   **administrador**: tu correo y una contraseña de 12 caracteres o más.
    Al entrar te pide activar la **verificación en 2 pasos** (sección 5): ten a la mano tu teléfono con
    Google Authenticator o Microsoft Authenticator.
 4. Se abre el navegador en `http://127.0.0.1:8000/admin/`. **Deja abierta la ventana negra.** Para
@@ -107,19 +109,52 @@ cambiarla al entrar.
 - **Cuentas de demostración** (`@demo.local`): dejan de poder entrar en cuanto existe un administrador
   real, aunque nadie haya borrado la demostración.
 
-## 6. Usarlo desde otras computadoras
+## 6. Varias computadoras y planteles
 
 ![Otras computadoras](img/otras.jpg)
 
-1. En la PC del sistema: **Configuración → Otras computadoras → Activar el acceso por red**. Reinicia
-   el programa.
-2. En cada computadora de la oficina, abre la dirección que se muestra (`https://<IP>:8443/conectar/`),
-   descarga el certificado, compara la **huella** con la de la pantalla e instálalo. Es solo la primera
-   vez.
-3. Si Windows pregunta por el firewall, permite a Prospectos en **Redes privadas**.
+Una sola computadora es la **principal**: guarda la base de datos. Las demás **se conectan** a ella con el
+navegador y ven la misma información, los mismos usuarios y sus perfiles. No hay sincronización: es una
+sola base.
 
-El acceso por red es **solo con HTTPS**. Si la PC del sistema cambia de IP, la dirección cambia: conviene
-pedir a sistemas una IP fija para ella.
+> **No instales el programa con datos en cada computadora.** Cada una tendría sus propios aspirantes,
+> usuarios y llaves de cifrado, y no se pueden juntar después.
+
+### 6.1 En la principal
+
+1. **Configuración → Otras computadoras → Activar el acceso por red**. Cierra y vuelve a abrir el programa.
+2. Si Windows pregunta por el firewall, permite a Prospectos en **Redes privadas** (no públicas).
+3. Pide a sistemas una **IP fija** para esta computadora.
+4. Activa **Abrir al iniciar sesión** para que, tras un reinicio, el programa se abra solo en cuanto alguien
+   inicie sesión. Lo ideal es que la principal sea una computadora que no se apague ni se use para otra cosa.
+5. Anota el **código de esta computadora** (por ejemplo `D011-3C26-70BE`): se compara al conectar las demás.
+
+### 6.2 Otro plantel o desde casa
+
+El programa no se abre a internet. Para entrar desde otra red:
+
+1. Sistemas conecta los planteles (red entre planteles) o da una **VPN** a quien la necesite.
+2. Sistemas te da la **dirección fija** con la que se llega a la principal desde esa red (una IP como
+   `10.20.1.15` o un nombre como `prospectos.udc.local`).
+3. Escríbela en **Otras computadoras → Otro plantel o VPN** y reinicia el programa: el certificado se
+   renueva solo con esa dirección.
+4. Recomendado: **Pedir la verificación en 2 pasos a todos** (misma pantalla).
+
+**Nunca** «redirijas el puerto 8443» en el módem para entrar desde internet: los datos de menores quedarían
+expuestos a cualquiera que adivine una contraseña.
+
+### 6.3 Conectar una computadora
+
+**Windows:** copia la carpeta del programa **sin** la carpeta `datos`, ábrelo y elige
+**C · Conectarme a la principal**. Escribe la dirección, compara el código con el de la principal y, si es
+igual, escribe **S**; Windows pregunta si instalas el certificado: **Sí**. Desde entonces, doble clic en
+`Prospectos.exe` comprueba que la principal responda y abre el navegador ahí. Si la principal está apagada,
+lo dice y reintenta durante 2 minutos. Para cambiar de principal: `Prospectos.exe conectar`.
+
+**Mac, o sin copiar el programa:** en el navegador abre `https://<dirección>:8443/conectar/`, compara el
+código, descarga e instala el certificado siguiendo los pasos de esa página.
+
+> Si Firefox sigue mostrando el aviso de seguridad (usa sus propios certificados), usa Edge o Chrome.
 
 ## 7. Protección de datos (obligatorio antes de usar datos reales)
 
