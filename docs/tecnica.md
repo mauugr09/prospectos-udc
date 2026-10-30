@@ -215,7 +215,7 @@ bash empaquetado/itv.sh                                  # todo lo que revisa Gi
 ## 10. Construir y publicar (CI/CD)
 
 **GitHub Actions** (`.github/workflows/compilar.yml`):
-1. **ITV** en cada push a cualquier rama y en cada pull request.
+1. **ITV** en cada pull request y en cada push a `main`.
 2. **Pruebas con MariaDB**, solo si pasó la ITV.
 3. En `main` (o con etiqueta): `.exe` en Windows y app de Mac, cada uno con prueba de humo (comandos, servidor
    local y HTTPS en red). Los artefactos se descargan de la ejecución.

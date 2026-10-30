@@ -1,6 +1,6 @@
 # Integración y entrega continuas (CI/CD).
 #  1. ITV: estilo, seguridad del código, dependencias con fallas conocidas, migraciones y pruebas con cobertura.
-#     Corre en cada push y en cada pull request; si no pasa, no se compila nada y el cambio no se puede unir a main.
+#     Corre en cada pull request y en cada push a main; si no pasa, no se compila nada y el cambio no se puede unir a main.
 #  2. Pruebas con MariaDB.
 #  3. Solo en main o con una etiqueta v1.2.3: compila y prueba en Windows y Mac reales (Prospectos-windows.zip y .dmg).
 #     Con una etiqueta además publica un «Release» con los dos archivos (la entrega).
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches: ['**']
+    branches: [main]   # las demás ramas pasan por pull request (así no corre dos veces)
     tags: ['v*']
 
 concurrency:
