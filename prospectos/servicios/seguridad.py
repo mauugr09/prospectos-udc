@@ -1,11 +1,9 @@
 """Anonimización irreversible, retención (LFPDPPP) y clasificación opcional con IA."""
 
-import json
 import logging
 import re
 from datetime import timedelta
 
-import requests
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
@@ -70,9 +68,27 @@ def anonimizar_inactivos() -> int:
     return n
 
 
-# --------------------------------------------------------------------------- IA (opcional)
+# --------------------------------------------------------------------------- temas de las respuestas abiertas (propio)
+# Antes esto usaba una IA externa; ahora son palabras clave propias: gratis, sin internet y sin enviar textos fuera.
+# Un texto puede tener varios temas (máximo 3). Para afinar, agrega palabras (sin acentos) a la lista del tema.
+PALABRAS_TEMA = {
+    'costos': ['costo', 'cuesta', 'caro', 'cara', 'precio', 'colegiatura', 'mensualidad', 'pagar', 'pago', 'dinero', 'economic',
+               'inscripcion cuesta', 'barato', 'cuota'],
+    'becas': ['beca', 'descuento', 'apoyo economico', 'financiamiento', 'credito educativo'],
+    'distancia': ['lejos', 'distancia', 'cerca', 'queda', 'ubicacion', 'donde esta'],
+    'transporte': ['transporte', 'camion', 'combi', 'pasaje', 'metro', 'mexibus', 'trasladar', 'llegar'],
+    'seguridad': ['seguro', 'segura', 'inseguridad', 'asalto', 'peligro', 'vigilancia'],
+    'tramites': ['tramite', 'inscripcion', 'inscribir', 'proceso', 'requisito', 'examen', 'ficha', 'revalid', 'equivalencia'],
+    'horarios': ['horario', 'sabado', 'sabatino', 'turno', 'matutino', 'vespertino', 'entre semana', 'fin de semana', 'domingo'],
+    'documentos': ['certificado', 'documento', 'acta', 'curp', 'papeles', 'constancia', 'titulo'],
+    'calificaciones': ['promedio', 'calificacion', 'reprob', 'materias', 'extraordinario', 'adeudo'],
+    'trabajo': ['trabajo', 'trabajar', 'empleo', 'laboral', 'practicas', 'servicio social', 'bolsa de trabajo'],
+    'familia': ['papas', 'mama', 'papa', 'familia', 'hijo', 'hija', 'tutor'],
+}
+
+
 def depurar(texto: str) -> str:
-    """Quita correos, URLs, teléfonos y números ANTES de enviar el texto fuera."""
+    """Quita correos, URLs y números (se usa antes de mostrar o analizar textos libres)."""
     texto = re.sub(r'[\w.+-]+@[\w-]+(\.[\w-]+)+', '[correo]', texto)
     texto = re.sub(r'https?://\S+|www\.\S+', '[url]', texto, flags=re.I)
     texto = re.sub(r'\+?\d[\d\s().-]{6,}\d', '[numero]', texto)
@@ -81,24 +97,16 @@ def depurar(texto: str) -> str:
 
 
 def ia_habilitada() -> bool:
-    return bool(P['IA_HABILITADA'] and P['IA_API_KEY'])
+    """Se conserva el nombre por compatibilidad: la clasificación propia siempre está disponible."""
+    return True
 
 
 def _clasificar(texto: str) -> list[str]:
-    temas = P['IA_TEMAS']
-    r = requests.post('https://api.anthropic.com/v1/messages', timeout=30, headers={
-        'x-api-key': P['IA_API_KEY'], 'anthropic-version': '2023-06-01', 'content-type': 'application/json',
-    }, json={
-        'model': P['IA_MODELO'], 'max_tokens': 100,
-        'system': ('Clasificas respuestas abiertas de una encuesta vocacional en temas. Responde SOLO con JSON '
-                   '{"temas": [...]} usando únicamente estos temas: ' + ', '.join(temas) + '. Máximo 3 temas.'),
-        'messages': [{'role': 'user', 'content': texto}],
-    })
-    r.raise_for_status()
-    salida = (r.json().get('content') or [{}])[0].get('text', '')
-    m = re.search(r'\{.*\}', salida, re.S)
-    datos = json.loads(m.group(0)) if m else {}
-    return [t for t in datos.get('temas', []) if t in temas]
+    from .texto import normalizar
+    t = f' {normalizar(texto)} '
+    puntos = {tema: sum(t.count(' ' + normalizar(p)) for p in palabras) for tema, palabras in PALABRAS_TEMA.items()}
+    temas = [tema for tema, n in sorted(puntos.items(), key=lambda x: -x[1]) if n][:3]
+    return temas or ['otro']
 
 
 def clasificar_pendientes(limite: int = 100) -> int:
@@ -117,7 +125,6 @@ def clasificar_pendientes(limite: int = 100) -> int:
             item.etiqueta_ia, item.clasificado_en = {'temas': _clasificar(texto)}, timezone.now()
             item.save(update_fields=['etiqueta_ia', 'clasificado_en'])
             hechos += 1
-        except Exception as e:  # noqa: BLE001 - cuota/red: se reintenta en la siguiente corrida
-            log.warning('Clasificación IA falló (item %s): %s', item.pk, type(e).__name__)
-            break
+        except Exception as e:  # noqa: BLE001 - un texto raro no detiene a los demás
+            log.warning('No se pudo clasificar el item %s: %s', item.pk, type(e).__name__)
     return hechos

@@ -85,7 +85,7 @@
       <textarea rows="1" placeholder="Pregunta algo…" aria-label="Tu pregunta" maxlength="1500"></textarea>
       <button type="submit" class="as-enviar" aria-label="Enviar"><span class="material-symbols-outlined">arrow_upward</span></button>
     </form>
-    <p class="as-pie">No escribas nombres ni teléfonos: no los recibe. Puede equivocarse: revisa antes de confirmar.
+    <p class="as-pie">Funciona en esta computadora, sin internet. Revisa lo que entendió y confirma antes de que cambie algo.
       <button type="button" class="as-ocultar"></button></p>`;
   document.body.appendChild(panel);
   panel.querySelector('h2').textContent = NOMBRE;
@@ -108,7 +108,7 @@
   function bienvenida() {
     hilo.innerHTML = '';
     const b = el('div', 'as-bienvenida');
-    b.appendChild(el('p', '', ficha ? `Hola, soy ${NOMBRE}. Puedo preparar la llamada o un mensaje para este aspirante. Su nombre lo pongo al final, en esta computadora.`
+    b.appendChild(el('p', '', ficha ? `Hola, soy ${NOMBRE}. Puedo preparar la llamada, un WhatsApp o ver en qué no coincide con su familia.`
       : `Hola, soy ${NOMBRE}. Pregúntame cifras, cómo hacer algo en el programa, o pídeme que prepare una visita o asigne aspirantes. Tú confirmas antes de que cambie algo.`));
     if (avisosSinLeer) {
       const av = el('button', 'as-sugerencia as-sugerencia-aviso', `Ver mis ${avisosSinLeer} aviso${avisosSinLeer === 1 ? '' : 's'} sin leer`);
@@ -251,6 +251,7 @@
       estado(null);
       if (!j.ok) { estado('preocupado', 3500); burbuja('aviso ' + (j.tipo || ''), j.mensaje); return; }
       const b = burbuja('ia', j.texto || '(sin respuesta)');
+      if (j.entendi) b.insertBefore(el('small', 'as-entendi', 'Entendí: ' + j.entendi), b.firstChild);
       if (j.visual && j.visual.filas && j.visual.filas.length) b.appendChild(grafica(j.visual));
       if (j.calculos && j.calculos.length) {
         const det = el('details', 'as-calculo');
@@ -261,7 +262,7 @@
           det.appendChild(p);
         });
         b.appendChild(det);
-      } else if (j.consulto && j.consulto.length) b.appendChild(el('small', 'as-fuente', 'Consultó: ' + j.consulto.map(nombreHerramienta).join(', ')));
+      }
       if (ficha && /whatsapp|mensaje|correo/i.test(texto)) botonCopiar(b, j.texto);
       (j.propuestas || []).forEach((p) => hilo.appendChild(tarjeta(p)));
       if (j.siguientes && j.siguientes.length) {
@@ -276,10 +277,6 @@
       burbuja('aviso', 'Sin conexión con la PC del sistema.');
     } finally { ocupado = false; campo.focus(); }
   }
-  const NOMBRES_H = { consultar_cifras: 'cifras', cruzar: 'cruce', conversion: 'conversión', pendientes: 'pendientes', embudo: 'embudo', consultar_visitas: 'visitas', buscar_ayuda: 'manual', manual: 'manual',
-    perfil_del_aspirante: 'perfil sin nombre', proponer_crear_visita: 'propuesta', proponer_crear_actividad: 'propuesta', proponer_asignar_asesor: 'propuesta' };
-  const nombreHerramienta = (n) => NOMBRES_H[n] || n;
-
   function ajustar() { campo.style.height = 'auto'; campo.style.height = Math.min(campo.scrollHeight, 140) + 'px'; }
   campo.addEventListener('input', ajustar);
   campo.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(campo.value); } });

@@ -4,13 +4,10 @@ from ...servicios import seguridad
 
 
 class Command(BaseCommand):
-    help = 'Clasifica respuestas abiertas por tema con IA (solo si IA_HABILITADA y hay IA_API_KEY).'
+    help = 'Clasifica por tema las respuestas abiertas pendientes (reglas propias, sin IA externa).'
 
     def add_arguments(self, parser):
-        parser.add_argument('--limite', type=int, default=100)
+        parser.add_argument('--limite', type=int, default=500)
 
     def handle(self, *args, limite, **o):
-        if not seguridad.ia_habilitada():
-            self.stdout.write('La clasificación con IA está desactivada (datos/config.json → IA_HABILITADA).')
-            return
         self.stdout.write(f'Clasificadas: {seguridad.clasificar_pendientes(limite)}')

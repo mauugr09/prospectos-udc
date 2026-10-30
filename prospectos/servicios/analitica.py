@@ -191,7 +191,7 @@ def cifras(user, args) -> dict:
                       reverse('prospectos:cola'), f'Se contaron los contactos registrados en las fichas {_rango_txt(desde, hasta)}.')
     qs = base(user, metrica)
     qs, desc, params = filtrar(qs, args)
-    por_fecha = metrica != 'por_llamar'
+    por_fecha = metrica != 'por_llamar' and not args.get('sin_periodo')
     actual = qs.filter(creado_en__range=(_aware(desde), _aware(hasta, True))) if por_fecha else qs
     previo = qs.filter(creado_en__range=(_aware(pdesde), _aware(phasta, True))) if por_fecha else None
     dim = args.get('agrupar_por') if args.get('agrupar_por') in DIMENSIONES else None

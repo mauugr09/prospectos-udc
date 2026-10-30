@@ -14,7 +14,7 @@
   de eso pasa; al volver a abrirla se pone al día.
 - Las demás computadoras **no instalan nada**: entran con el navegador por la red de la oficina
   (sección 6). Si instalas el programa en otra PC, tendrá datos separados.
-- Sale a internet solo para: Google Forms, el correo (si se configura), el mapa y la IA (si se activa).
+- Sale a internet solo para: Google Forms, el correo (si se configura), y el mapa. El asistente no usa internet.
 
 **Requisitos de la PC del sistema**
 

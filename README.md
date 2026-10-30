@@ -83,7 +83,6 @@ Sigue [docs/puesta-en-marcha.md](docs/puesta-en-marcha.md): primero en una carpe
 | `RETENCION_MESES` | Meses sin actividad tras los que se anonimiza un prospecto (18). |
 | `DIAS_SIN_CONTACTO` | Días sin contacto para crear una tarea automática (5). |
 | `RESPALDO_HORA`, `RESPALDO_DIAS_RETENCION` | Hora del respaldo diario y días que se guardan. |
-| `IA_HABILITADA`, `IA_API_KEY`, `IA_MODELO` | Clasificación opcional de respuestas abiertas (apagada). |
 | `GOOGLE_MAPS_API_KEY` | Opcional: llave de Google Maps (mejor ponerla en el panel: Configuración → Mapa). Sin llave se usa OpenStreetMap. |
 | `MAPA_TILES` | Opcional: otro proveedor de fondo de mapa (URL con `{z}/{x}/{y}`) y `MAPA_TILES_ATRIBUCION`. Por defecto OpenStreetMap, sin llave. (CARTO ya no sirve sin llave: si estaba configurado se ignora.) |
 
@@ -161,7 +160,7 @@ Requiere Python 3.13.
 
 ```bash
 python -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-dev.txt
-.venv/bin/pytest                          # 214 pruebas (SQLite)
+.venv/bin/pytest                          # 233 pruebas (SQLite)
 .venv/bin/pytest --ds=config.settings_pruebas_mariadb   # las mismas contra MariaDB 10.11+
 .venv/bin/python lanzador.py              # igual que el .exe (datos en ./datos)
 .venv/bin/python manage.py demo           # datos ficticios
@@ -185,7 +184,7 @@ python -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirement
 | Ruta | Qué |
 |---|---|
 | `lanzador.py` | Punto de entrada del .exe: prepara la base, primer arranque, servidor (waitress) y navegador. |
-| `prospectos/programador.py` | Tareas periódicas en un hilo (importar, tareas, respaldos, verificación, retención, IA). |
+| `prospectos/programador.py` | Tareas periódicas en un hilo (importar, tareas, respaldos, verificación, retención, clasificación local). |
 | `prospectos/servicios/` | Lógica: `importacion`, `fuentes` (Forms API / demo), `inteligencia` (enlace, score, segmentos, brechas, fusión), `seguimiento`, `seguridad` (anonimización, retención, IA), `respaldos`, `reportes` (métricas, comparativo, QR), `cifrado`, `texto`, `semillas`. |
 | `prospectos/admin.py`, `views.py` | Panel (Django admin con el tema django-unfold) y pantallas extra. |
 | `estilos/udc.css` | Fuente del CSS de la marca (Tailwind 4). Se compila a `prospectos/static/prospectos/css/udc.css` con `npm i tailwindcss@4 @tailwindcss/cli@4` y `npx tailwindcss -i estilos/udc.css -o prospectos/static/prospectos/css/udc.css --minify` (en la carpeta donde se instaló). |

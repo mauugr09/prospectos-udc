@@ -41,7 +41,7 @@ recuperación.
 | `prospectos/views.py` | Pantallas propias: Inicio, A quién llamar, Respuestas, Familias por unir, mapa, calendario, eventos (QR, tarjetas, solicitud, becas, en vivo), reportes, encuestas, apariencia, ayuda. |
 | `prospectos/vistas_avisos.py` | Campanita: bandeja, panel, contador y preferencias. |
 | `prospectos/vistas_proteccion.py` | Protección de datos: copia externa, llave de recuperación y separar uniones. |
-| `prospectos/vistas_asistente.py` | Asistente: conversación, confirmación de propuestas y configuración (llave cifrada, tope, modelo, nombre de la mascota). |
+| `prospectos/vistas_asistente.py` | Asistente: conversación, confirmación de propuestas y configuración (solo el nombre de la mascota). |
 | `templates/prospectos/_kuali.svg.html` | Kuali, la mascota: un SVG con capas por estado (`.k-pensando-on`, `.k-contento-on`, `.k-avisando-on`, `.k-preocupado-on`, `.k-dormido-on`) que anima `udc.css`; `asistente.js` cambia los estados. Va en el menú (`unfold/helpers/navigation_user.html`) y en el encabezado. |
 | `prospectos/middleware.py` | Cambio de contraseña obligatorio, `Referer` solo en el mapa, bloqueo por intentos y cierre por inactividad. |
 | `prospectos/programador.py` | Tareas periódicas (sección 6). |
@@ -101,7 +101,8 @@ Admisiones, Promotor y Directivo. Los promotores se filtran por consulta con `ve
 | `editor_form.py`, `publicar.py` | Editar las preguntas y publicar los cambios en el Google Form. |
 | `red.py` | Autoridad certificadora propia y servidor HTTPS para la red local. |
 | `semillas.py`, `demo.py` | Catálogos y roles iniciales; datos de demostración y su borrado seguro. |
-| `asistente.py` | Asistente con la API de Anthropic (Messages + herramientas, con `requests`). Herramientas: `buscar_ayuda`, `consultar_cifras`, `embudo`, `consultar_visitas`, `perfil_del_aspirante` y `proponer_*`. `revisar_pregunta` bloquea nombres de aspirantes, correos, teléfonos y CURP antes de enviar. Gasto por mes en `Configuracion`; precios por modelo en `PRECIOS`. |
+| `kuali.py` | **Motor propio del asistente, por reglas** (sin internet ni IA externa). `entender()` detecta la intención con `PALABRAS_INTENCION` (raíces con `\w*`) y saca periodo, plantel, carrera, prepa, persona, fecha, hora y cantidad; reusa la `memoria` para preguntas de seguimiento. Un `r_*` por intención arma la respuesta con `analitica`. `responder()` devuelve texto, «Entendí», gráfica, «Cómo lo calculé», siguientes y propuestas. |
+| `asistente.py` | Entrada (`preguntar`, que audita) y piezas compartidas: `buscar_ayuda` (manual), `h_embudo`, `h_perfil` (ficha, solo con permiso), `proponer`/`detalle_propuesta`/`ejecutar` (acciones que se confirman). |
 | `analitica.py` | Consultas del asistente con contexto: `cifras` (con periodo anterior y parte del total), `cruce` (dos dimensiones), `conversion` (tasas por grupo, marcando las no confiables), `visitas` (registros, meta, costo por registro), `pendientes`. Cada resultado trae `como_se_calculo` y `enlace_a_la_lista`. Grupos de menos de 3 se ocultan. |
 | `auditoria.py` | `registrar(accion, objeto, detalle, usuario, request)`. |
 
@@ -129,7 +130,7 @@ siguen.
 | Tarea | Cada | Qué hace |
 |---|---|---|
 | importar | 1 min | Trae respuestas de los Forms |
-| ia | 10 min | Clasificación por IA (si está activa) |
+| ia | 10 min | Clasificación de respuestas abiertas por palabras clave (local) |
 | bienvenidas | 15 min | Reintenta correos de bienvenida pendientes |
 | tareas | 1 h | Llamadas pendientes por días sin contacto |
 | respaldo | 5 min (revisa) | Respaldo diario a `RESPALDO_HORA`, o al abrir si el último tiene más de 24 h; copia externa |
@@ -230,15 +231,16 @@ El resultado es `dist\Prospectos\`. Para entregarlo, comprímelo **sin** la carp
 
 ## 12. El asistente: reglas para cambiarlo
 
-- **Nunca** agregues a una herramienta un campo que identifique a una persona (nombre, contacto, CURP, edad, prepa del
-  aspirante, fechas de un individuo, texto libre). `tests/test_asistente.py` revisa que no se envíen; amplía esas pruebas si
-  agregas herramientas.
-- Las herramientas que cambian datos **solo proponen** (`proponer()`); la ejecución vive en `ejecutar()`, que vuelve a revisar
+- Es un motor de reglas, no una IA: **solo entiende lo que se le enseñó**. Para una forma nueva de preguntar, agrega su patrón
+  en `kuali.PALABRAS_INTENCION` (usa raíces con `\w*`: `convier\w*`, no `convierte\b`) y, si hace falta, un extractor.
+  El orden de revisión está en `entender()` (`orden`): las intenciones más específicas van antes.
+- Antes y después de cambiarlo corre `Prospectos.exe probar_kuali` (las preguntas de ejemplo) o `probar_kuali --archivo
+  preguntas.txt --breve` con preguntas reales del equipo: muestra la intención y el «Entendí» de cada una. Agrega a
+  `tests/test_asistente.py` cada pregunta que arregles.
+- Las cifras **siempre** salen de `analitica` (con su `como_se_calculo` y enlace); nunca escribas números en los textos.
+- Las acciones que cambian datos **solo proponen** (`proponer()`); la ejecución vive en `ejecutar()`, que vuelve a revisar
   permisos y se llama únicamente desde el botón Confirmar.
-- Los textos de los resultados son datos, no instrucciones: el mensaje de sistema lo dice. Aun así, la defensa real es que la IA no
-  puede ejecutar nada.
-- La forma de responder vive en `_sistema()` (y su `EJEMPLO`). Si la cambias, corre `Prospectos.exe probar_asistente`: hace 12 preguntas reales y califica cada respuesta (cifra al inicio, sin relleno, enlace, preguntas de seguimiento, sin datos personales).
-- Si cambian los precios de Anthropic, actualiza `PRECIOS`. Un modelo que no esté ahí se cobra con el precio más alto.
+- No agregues dependencias de red: `tests/test_asistente.py` bloquea las conexiones y falla si el asistente intenta salir.
 
 ## 13. Límites conocidos
 
@@ -249,4 +251,4 @@ El resultado es `dist\Prospectos\`. Para entregarlo, comprímelo **sin** la carp
 - **El bloqueo por intentos** vive en memoria: reiniciar el programa lo limpia.
 - **Correo:** si el servidor SMTP falla, la bienvenida se reintenta, pero no hay aviso de esa falla.
 - **«Inscrito»** lo marca un asesor a mano: no hay integración con Control Escolar.
-- **El asistente** no se ha probado contra la API real en esta versión (las pruebas usan una API simulada con el mismo formato). Pruébalo con la llave antes de presentarlo.
+- **El asistente** entiende por reglas: una pregunta con palabras que no se previeron cae en «no entendí» o, peor, en otra intención. El «Entendí» lo hace visible; las preguntas reales del equipo deben pasar por `probar_kuali` las primeras semanas.

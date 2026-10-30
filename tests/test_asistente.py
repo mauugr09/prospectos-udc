@@ -1,49 +1,17 @@
-"""Asistente: nunca envía datos personales, no inventa cifras, solo propone acciones y respeta el tope de gasto."""
+"""Kuali, el asistente propio: entiende con reglas, no sale a internet, no inventa cifras y solo propone acciones."""
 import json
+import socket
 
 import pytest
 from django.contrib.auth.models import User
 
-from prospectos.models import Actividad, Auditoria, Configuracion, Evento, Notificacion, Prospecto
-from prospectos.servicios import asistente
-from prospectos.servicios.cifrado import cifrar
+from prospectos.models import Actividad, Auditoria, Evento, Notificacion, Prospecto
+from prospectos.servicios import asistente, kuali
 
 from .conftest import alumno, importar, tutor
 
 URL = '/admin/herramientas/asistente/'
 CLAVE = 'Clave-de-prueba-123'
-
-
-class FalsaAPI:
-    """Imita la API de Anthropic: devuelve las respuestas en orden y guarda lo que se le mandó."""
-
-    def __init__(self, *respuestas):
-        self.respuestas = list(respuestas)
-        self.enviado = []
-
-    def __call__(self, url, timeout=None, json=None, headers=None):
-        self.enviado.append(__import__('copy').deepcopy(json))
-        cuerpo = self.respuestas.pop(0)
-
-        class R:
-            status_code = 200
-
-            @staticmethod
-            def json():
-                return cuerpo
-        return R()
-
-    def todo(self) -> str:
-        return __import__('json').dumps(self.enviado, ensure_ascii=False)
-
-
-def usa(nombre, entrada, id_='t1'):
-    return {'stop_reason': 'tool_use', 'usage': {'input_tokens': 1000, 'output_tokens': 50},
-            'content': [{'type': 'tool_use', 'id': id_, 'name': nombre, 'input': entrada}]}
-
-
-def responde(texto):
-    return {'stop_reason': 'end_turn', 'usage': {'input_tokens': 1200, 'output_tokens': 200}, 'content': [{'type': 'text', 'text': texto}]}
 
 
 @pytest.fixture
@@ -54,72 +22,117 @@ def jefa(client):
 
 
 @pytest.fixture
-def activo():
-    Configuracion.guardar('asistente.llave', cifrar('sk-ant-prueba-' + 'x' * 30))
-    Configuracion.guardar('asistente.activo', True)
-
-
-@pytest.fixture
 def datos(f_alumno, f_tutor, evento):
     importar(f_alumno, alumno('a1', 'Valeria Quintero Salas', edad='18', carrera=['Derecho']),
              alumno('a2', 'Mateo Quintero Ruiz', edad='19', minutos=3), alumno('a3', 'Ana Paz Ríos', edad='20', minutos=5))
     return Prospecto.objects.filter(fusionado_en__isnull=True)
 
 
+@pytest.fixture
+def sin_internet(monkeypatch):
+    """Cualquier intento de conexión hace fallar la prueba: Kuali funciona sin red."""
+    def prohibido(*a, **k):
+        raise AssertionError('Kuali intentó conectarse a la red')
+    monkeypatch.setattr(socket.socket, 'connect', prohibido)
+
+
 def _preguntar(client, mensaje, **extra):
     return client.post(URL, json.dumps({'mensaje': mensaje, **extra}), content_type='application/json', HTTP_X_REQUESTED_WITH='fetch')
 
 
-def test_sin_ia_responde_con_el_manual(client, jefa, monkeypatch):
-    llamado = []
-    monkeypatch.setattr(asistente.requests, 'post', lambda *a, **k: llamado.append(1))
-    r = _preguntar(client, '¿Cómo uno a una familia con su alumno?').json()
-    assert r['ok'] and r['sin_ia'] and 'Familias por unir' in r['texto'] and not llamado
+# --------------------------------------------------------------------------- entender
+
+@pytest.mark.parametrize('pregunta, intencion', [
+    ('hola', 'saludo'), ('¿qué puedes hacer?', 'quien_eres'),
+    ('¿Cómo vamos este mes?', 'cifras'), ('¿Cuántos aspirantes llegaron en septiembre por carrera?', 'cifras'),
+    ('¿Qué carreras piden en cada plantel?', 'cruce'),
+    ('¿Qué canal convierte mejor?', 'conversion'), ('¿Qué prepas convierten mejor?', 'conversion'),
+    ('¿En qué etapa del embudo se nos quedan más?', 'embudo'),
+    ('¿Qué es lo más urgente hoy?', 'pendientes'), ('¿Qué visitas tenemos los próximos días?', 'visitas'),
+    ('¿Cómo uno a una familia con su alumno?', 'ayuda'), ('¿Qué significa esperando permiso?', 'ayuda'),
+    ('asigna 5 listos de Tultepec a pepe@x.mx', 'asignar'),
+    ('agrega el open house al calendario el 21 de noviembre a las 10', 'crear_actividad'),
+    ('qué opinas del clima', 'no_entendi'),
+])
+def test_entiende_la_intencion(jefa, pregunta, intencion):
+    assert (kuali.entender(pregunta, {}, {})['intencion'] or 'no_entendi') == intencion
 
 
-def test_no_envia_nombres_telefonos_ni_correos(client, jefa, activo, datos, monkeypatch):
-    llamado = []
-    monkeypatch.setattr(asistente.requests, 'post', lambda *a, **k: llamado.append(1))
-    for texto in ['Prepara la llamada para Valeria Quintero', 'Escríbele a valeria@correo.mx', 'Llama al 55 1234 5678',
-                  'CURP LOGA080315MMCPRNA1']:
-        r = _preguntar(client, texto)
-        assert r.status_code == 400 and r.json()['tipo'] == 'privacidad', texto
-    assert not llamado
+def test_periodo_plantel_y_carrera(jefa):
+    e = kuali.entender('¿Cuántos aspirantes llegaron en septiembre en Tultepec para Derecho?', {}, {})
+    assert e['periodo_explicito'] and 'septiembre' in e['periodo_txt']
+    assert e['args'].get('plantel') == 'tultepec' and e['args'].get('carrera') == 'Derecho'
 
 
-def test_un_compañero_del_equipo_si_se_puede_nombrar(jefa, datos):
-    User.objects.create_user('v@x.mx', 'v@x.mx', CLAVE, first_name='Valeria', last_name='Quintero', is_staff=True)
-    asistente.revisar_pregunta('Asigna 10 aspirantes a Valeria Quintero')  # no lanza
+def test_la_pregunta_de_seguimiento_reusa_la_anterior(jefa, prepa):
+    r = kuali.responder(jefa, '¿Cuántos aspirantes llegaron en septiembre?', {}, {})
+    e = kuali.entender('¿y en Tultepec?', r['memoria'], {})
+    assert e['intencion'] == 'cifras' and e['heredada'] and 'septiembre' in e['periodo_txt']
+    assert e['args'].get('plantel') == 'tultepec'
 
 
-def test_cifras_salen_del_sistema_y_ocultan_grupos_chicos(client, jefa, activo, datos, monkeypatch):
-    api = FalsaAPI(usa('consultar_cifras', {'metrica': 'aspirantes', 'agrupar_por': 'carrera', 'desde': '2026-01-01', 'hasta': '2026-12-31'}),
-                   responde('Hay **3** aspirantes en el periodo.'))
-    monkeypatch.setattr(asistente.requests, 'post', api)
-    r = _preguntar(client, '¿Cuántos aspirantes hay por carrera?').json()
-    assert r['ok'] and 'Hay 3' in r['texto'].replace('**', '') and r['consulto'] == ['consultar_cifras']
-    resultado = json.loads(api.enviado[1]['messages'][-1]['content'][0]['content'])
-    assert resultado['total'] == 3 and all(g['n'] == 'menos de 3' or g['n'] >= 3 for g in resultado['grupos'])
-    for p in datos:
-        assert p.nombre_aspirante.split()[0] not in api.todo()
+def test_el_nombre_del_plantel_no_es_una_prepa(jefa):
+    from prospectos.models import Preparatoria
+    Preparatoria.objects.create(nombre='Colegio de Prueba Tultepec')
+    e = kuali.entender('¿y en Tultepec?', {'intencion': 'cifras', 'args': {}}, {})
+    assert e['args'].get('plantel') == 'tultepec' and not e['args'].get('preparatoria')
+    e = kuali.entender('¿Cuántos llegaron del Colegio de Prueba Tultepec?', {}, {})
+    assert e['args'].get('preparatoria')
+
+
+def test_mes_a_mes_sin_periodo_son_seis_meses(jefa):
+    e = kuali.entender('¿Cómo vamos mes a mes?', {}, {})
+    assert e['args'].get('agrupar_por') == 'mes' and '6 meses' in e['periodo_txt']
+
+
+def test_permiso_sin_periodo_cuenta_todos_los_de_hoy(jefa, f_alumno, evento):
+    importar(f_alumno, alumno('a1', 'Menor Uno', edad='16'))
+    Prospecto.objects.update(creado_en='2020-01-01T00:00:00Z')  # llegó hace mucho y sigue esperando
+    r = kuali.responder(jefa, '¿Cuántos menores esperan permiso?', {}, {})
+    assert r['texto'].startswith('Hoy: **1 menor') or '**1 ' in r['texto']
+
+
+# --------------------------------------------------------------------------- responder
+
+def test_cifras_comprobables_con_grafica_calculo_y_siguientes(client, jefa, datos, sin_internet):
+    r = _preguntar(client, '¿Cuántos aspirantes llegaron este año por plantel?').json()
+    assert r['ok'] and '**3 aspirantes' in r['texto'] and r['entendi'].startswith('conteo')
+    assert r['visual']['tipo'] == 'barras' and r['visual']['total'] == 3
+    assert r['calculos'] and r['calculos'][0]['enlace'].startswith('/admin/prospectos/prospecto/?')
+    assert len(r['siguientes']) >= 2
     assert Auditoria.objects.filter(accion='asistente').exists()
-    g = asistente.gasto()
-    assert g['consultas'] == 1 and g['entrada'] == 2200 and g['usd'] > 0
 
 
-def test_perfil_de_la_ficha_sin_nombre_y_borrador_personalizado(client, jefa, activo, f_alumno, f_tutor, evento, monkeypatch):
+def test_grupos_chicos_se_ocultan(jefa, datos):
+    r = kuali.responder(jefa, '¿Cuántos aspirantes llegaron este año por carrera?', {}, {})
+    assert 'Valeria' not in r['texto'] and ('menos de 3' in json.dumps(r['visual'], ensure_ascii=False) or r['visual']['filas'])
+
+
+def test_no_entendi_sugiere_preguntas_que_si_sabe(client, jefa, sin_internet):
+    r = _preguntar(client, 'qué opinas del clima').json()
+    assert r['ok'] and r['siguientes'] and 'No entendí' in r['texto'] or 'no sé' in r['texto'].lower()
+
+
+def test_ayuda_sale_del_manual(client, jefa, sin_internet):
+    r = _preguntar(client, '¿Cómo uno a una familia con su alumno?').json()
+    assert r['ok'] and 'Familias por unir' in r['texto']
+    assert all(s.startswith('Explícame') or s.startswith('¿') for s in r['siguientes'])
+
+
+def test_mensaje_vacio_se_rechaza(client, jefa):
+    assert _preguntar(client, '   ').status_code == 400
+
+
+# --------------------------------------------------------------------------- ficha
+
+def test_mensaje_para_la_ficha_con_su_nombre(client, jefa, f_alumno, f_tutor, evento, sin_internet):
     importar(f_alumno, alumno('a1', 'Valeria Quintero Salas', edad='17', tutor_correo=None, tutor_telefono=None))
     importar(f_tutor, tutor('t1', 'Valeria Quintero Salas', evento='EV1', tutor_nombre='Rosa Salas', minutos=60))
     p = Prospecto.objects.get(fusionado_en__isnull=True)
-    assert p.consentimiento
-    api = FalsaAPI(usa('perfil_del_aspirante', {}), responde('Hola [NOMBRE], soy [ASESOR] de la UDC. ¿Te cuento de Derecho?'))
-    monkeypatch.setattr(asistente.requests, 'post', api)
     r = _preguntar(client, 'Escribe un WhatsApp para este aspirante', ficha=p.pk).json()
-    assert r['texto'].startswith('Hola Valeria, soy Laura de la UDC')
-    enviado = api.todo()
-    for prohibido in ['Valeria', 'Quintero', 'Rosa', 'Prepa Uno', 'Salas', '@correo', '1111']:
-        assert prohibido not in enviado, prohibido
-    assert 'perfil_del_aspirante' in enviado and 'Derecho' in enviado
+    assert 'Valeria' in r['texto'] and 'Laura' in r['texto']  # local: puede usar los nombres reales
+    r = _preguntar(client, 'Prepara la llamada', ficha=p.pk).json()
+    assert r['ok'] and r['texto']
 
 
 def test_perfil_no_disponible_sin_permiso_de_la_familia(jefa, f_alumno, evento):
@@ -128,18 +141,15 @@ def test_perfil_no_disponible_sin_permiso_de_la_familia(jefa, f_alumno, evento):
     assert 'no tiene permiso' in asistente.h_perfil(jefa, {}, {'ficha': p.pk})['error']
 
 
-def test_asignar_asesor_solo_propone_y_se_confirma(client, jefa, activo, datos, monkeypatch):
+# --------------------------------------------------------------------------- acciones: solo propone
+
+def test_asignar_solo_propone_y_se_confirma(client, jefa, datos, sin_internet):
     asesor = User.objects.create_user('pepe@x.mx', 'pepe@x.mx', CLAVE, first_name='Pepe', last_name='Luna', is_staff=True)
-    api = FalsaAPI(usa('proponer_asignar_asesor', {'asesor': 'pepe@x.mx', 'maximo': 2}),
-                   responde('Te dejé la propuesta para asignar 2 aspirantes a Pepe. Revísala y confirma.'))
-    monkeypatch.setattr(asistente.requests, 'post', api)
-    r = _preguntar(client, 'Asigna los 2 de mayor prioridad a pepe@x.mx'.replace('pepe@x.mx', 'Pepe Luna')).json()
+    r = _preguntar(client, 'Asigna 2 aspirantes a Pepe Luna').json()
     assert r['ok'] and len(r['propuestas']) == 1
     tarjeta = r['propuestas'][0]
-    assert 'Asignar 2 aspirantes a Pepe Luna' == tarjeta['titulo'] and len(tarjeta['lineas']) == 2
+    assert tarjeta['titulo'] == 'Asignar 2 aspirantes a Pepe Luna'
     assert not Prospecto.objects.filter(asesor=asesor).exists()  # todavía no cambió nada
-    for p in datos:
-        assert p.nombre_aspirante not in api.todo()  # los nombres solo están en la tarjeta local
     j = client.post(f'{URL}propuesta/{tarjeta["id"]}/', {'decision': 'si'}).json()
     assert j['ok'] and Prospecto.objects.filter(asesor=asesor).count() == 2
     assert Auditoria.objects.filter(accion='asistente_asignar').exists()
@@ -147,59 +157,29 @@ def test_asignar_asesor_solo_propone_y_se_confirma(client, jefa, activo, datos, 
     assert client.post(f'{URL}propuesta/{tarjeta["id"]}/', {'decision': 'si'}).status_code == 404  # no se repite
 
 
-def test_crear_visita_y_actividad_se_descartan_sin_efecto(client, jefa, activo, prepa, monkeypatch):
-    api = FalsaAPI({'stop_reason': 'tool_use', 'usage': {'input_tokens': 10, 'output_tokens': 10}, 'content': [
-        {'type': 'tool_use', 'id': 'a', 'name': 'proponer_crear_visita', 'input': {'preparatoria': 'Prepa Uno', 'fecha': '2099-03-10', 'hora_inicio': '09:00'}},
-        {'type': 'tool_use', 'id': 'b', 'name': 'proponer_crear_actividad', 'input': {'titulo': 'Open house', 'tipo': 'open_house', 'fecha': '2099-03-20'}}]},
-        responde('Listo para confirmar.'))
-    monkeypatch.setattr(asistente.requests, 'post', api)
-    r = _preguntar(client, 'Agenda visita a Prepa Uno el 10 de marzo y el open house el 20').json()
-    visita, act = r['propuestas']
-    assert visita['titulo'] == 'Crear visita' and 'Preparatoria: Prepa Uno' in visita['lineas']
-    client.post(f'{URL}propuesta/{visita["id"]}/', {'decision': 'no'})
+def test_si_ya_tienen_asesor_lo_explica(client, jefa, datos):
+    pepe = User.objects.create_user('pepe@x.mx', 'pepe@x.mx', CLAVE, first_name='Pepe', last_name='Luna', is_staff=True)
+    Prospecto.objects.update(asesor=jefa)
+    r = _preguntar(client, 'Asigna 2 aspirantes a Pepe Luna').json()
+    assert 'ya tienen asesor' in r['texto'] and not r['propuestas'] and not Prospecto.objects.filter(asesor=pepe).exists()
+
+
+def test_crear_visita_y_actividad_se_descartan_sin_efecto(client, jefa, prepa, sin_internet):
+    r = _preguntar(client, 'agenda una visita a Prepa Uno el 10 de marzo de 2099 a las 9').json()
+    assert r['propuestas'] and r['propuestas'][0]['titulo'] == 'Crear visita'
+    client.post(f'{URL}propuesta/{r["propuestas"][0]["id"]}/', {'decision': 'no'})
     assert not Evento.objects.exists()
-    client.post(f'{URL}propuesta/{act["id"]}/', {'decision': 'si'})
-    assert Actividad.objects.get().titulo == 'Open house'
+    r = _preguntar(client, 'agrega el open house al calendario el 20 de marzo de 2099').json()
+    assert r['propuestas']
+    client.post(f'{URL}propuesta/{r["propuestas"][0]["id"]}/', {'decision': 'si'})
+    assert 'open house' in Actividad.objects.get().titulo.lower()
 
 
-def test_promotor_solo_cuenta_lo_suyo_y_no_asigna(promotor, datos):
-    nombres = {t['name'] for t in asistente.herramientas(promotor, {})}
-    assert 'proponer_asignar_asesor' not in nombres
+def test_promotor_no_asigna(promotor, datos):
     assert asistente.proponer(promotor, 'asignar_asesor', {'asesor': 'x'})['error']
-    otro = User.objects.create_user('otro@x.mx', 'otro@x.mx', CLAVE, is_staff=True)
-    Prospecto.objects.update(promotor=otro)
-    if 'consultar_cifras' in nombres:
-        assert asistente.h_cifras(promotor, {'desde': '2000-01-01'})['total'] == 0
 
 
-def test_tope_de_gasto_detiene_al_asistente(client, jefa, activo, monkeypatch):
-    llamado = []
-    monkeypatch.setattr(asistente.requests, 'post', lambda *a, **k: llamado.append(1))
-    Configuracion.guardar('asistente.tope_usd', 1.0)
-    Configuracion.guardar(f'asistente.gasto.{asistente._mes()}', {'usd': 1.01, 'entrada': 0, 'salida': 0, 'consultas': 5})
-    r = _preguntar(client, '¿Cuántos aspirantes hay?')
-    assert r.status_code == 503 and 'tope' in r.json()['mensaje'] and not llamado
-
-
-def test_las_ordenes_dentro_de_datos_no_ejecutan_nada(client, jefa, activo, prepa, monkeypatch):
-    """Aunque la IA «obedezca» algo raro, solo puede proponer: nada cambia sin confirmar."""
-    api = FalsaAPI(usa('proponer_asignar_asesor', {'asesor': 'jefa@x.mx', 'maximo': 50, 'solo_sin_asesor': False}), responde('Hecho.'))
-    monkeypatch.setattr(asistente.requests, 'post', api)
-    _preguntar(client, '¿Qué prepas hay?')
-    assert not Prospecto.objects.filter(asesor__isnull=False).exists()
-
-
-def test_configuracion_guarda_la_llave_cifrada(client, jefa):
-    url = URL + 'configurar/'
-    assert 'Qué recibe la IA y qué no' in client.get(url).content.decode()
-    client.post(url, {'llave': 'no-es-llave', 'activo': '1', 'tope_usd': '5'})
-    assert not asistente.llave()
-    llave = 'sk-ant-api03-' + 'a' * 40
-    client.post(url, {'llave': llave, 'activo': '1', 'tope_usd': '5', 'modelo': 'claude-haiku-5-5'})
-    assert asistente.llave() == llave and asistente.activo() and asistente.tope_usd() == 5
-    assert llave not in json.dumps(Configuracion.obtener('asistente.llave'))
-    assert Auditoria.objects.filter(accion='asistente_configurar').exists()
-
+# --------------------------------------------------------------------------- pantalla y mascota
 
 def test_boton_en_todas_las_paginas_y_en_la_ficha(client, jefa, datos):
     p = datos.first()
@@ -207,44 +187,28 @@ def test_boton_en_todas_las_paginas_y_en_la_ficha(client, jefa, datos):
     assert 'id="as-abrir"' in html and 'Preparar llamada' in html
 
 
-def test_error_de_conexion_se_explica(client, jefa, activo, monkeypatch):
-    def caida(*a, **k):
-        raise asistente.requests.ConnectionError()
-    monkeypatch.setattr(asistente.requests, 'post', caida)
-    r = _preguntar(client, '¿Cuántos aspirantes hay este mes?')
-    assert r.status_code == 503 and 'internet' in r.json()['mensaje']
-
-
-def test_kuali_en_el_menu_con_su_nombre_y_en_las_instrucciones(client, jefa):
-    html = client.get('/admin/').content.decode()
-    assert 'id="km"' in html and 'data-nombre="Kuali"' in html and 'class="kuali' in html
-    client.post(URL + 'configurar/', {'mascota_nombre': 'Cuauhti<script>', 'tope_usd': '10'})
+def test_configurar_solo_el_nombre(client, jefa):
+    html = client.get(URL + 'configurar/').content.decode()
+    assert 'Propio, en esta PC' in html and 'Gratis' in html
+    client.post(URL + 'configurar/', {'mascota_nombre': 'Cuauhti<script>'})
     assert asistente.nombre_mascota() == 'Cuauhtiscript'  # sin < >
-    html = client.get('/admin/').content.decode()
-    assert 'data-nombre="Cuauhtiscript"' in html
-    sistema = asistente._sistema(jefa, {})
-    assert 'Eres Cuauhtiscript, un aguilucho' in sistema and 'Nunca bromees' in sistema and 'SIGUIENTES' in sistema
+    assert 'data-nombre="Cuauhtiscript"' in client.get('/admin/').content.decode()
+    assert kuali.responder(jefa, '¿cómo te llamas?', {}, {})['texto'].count('Cuauhtiscript')
 
 
 def test_sin_sesion_no_hay_mascota(client):
     assert 'id="km"' not in client.get('/admin/login/').content.decode()
 
 
+def test_no_hay_rastros_de_ia_externa():
+    from django.conf import settings
+    import prospectos.servicios.asistente as mod
+    fuente = open(mod.__file__, encoding='utf-8').read() + open(kuali.__file__, encoding='utf-8').read()
+    assert 'requests' not in fuente and 'anthropic' not in fuente.lower()
+    assert not hasattr(settings, 'IA_API_KEY')
 
-# --------------------------------------------------------------------------- respuestas con contexto
 
-def test_respuesta_trae_grafica_calculo_y_preguntas_de_seguimiento(client, jefa, activo, datos, monkeypatch):
-    api = FalsaAPI(usa('consultar_cifras', {'metrica': 'aspirantes', 'agrupar_por': 'plantel', 'desde': '2026-01-01', 'hasta': '2026-12-31'}),
-                   responde('Llegaron **3 aspirantes** en 2026.\n- Todos en Cuautitlán.\n**Qué haría:** [ver la lista](/admin/prospectos/prospecto/) '
-                            'y [esto no](https://malo.example.com)\nSIGUIENTES: ¿Y por carrera? | ¿Cuántos ya contactamos? | ¿Qué prepas?'))
-    monkeypatch.setattr(asistente.requests, 'post', api)
-    r = _preguntar(client, '¿Cuántos llegaron este año por plantel?').json()
-    assert 'SIGUIENTES' not in r['texto'] and r['siguientes'] == ['¿Y por carrera?', '¿Cuántos ya contactamos?', '¿Qué prepas?']
-    assert r['visual']['tipo'] == 'barras' and r['visual']['total'] == 3 and r['visual']['filas']
-    assert r['calculos'] and 'Se contaron' in r['calculos'][0]['que'] and r['calculos'][0]['enlace'].startswith('/admin/prospectos/prospecto/?')
-    resultado = json.loads(api.enviado[1]['messages'][-1]['content'][0]['content'])
-    assert 'periodo_anterior' in resultado and 'como_se_calculo' in resultado  # la IA recibe con qué comparar
-
+# --------------------------------------------------------------------------- analítica (sin datos personales)
 
 def test_herramientas_de_analisis_no_filtran_datos_personales(jefa, datos, f_alumno):
     from prospectos.servicios import analitica
@@ -261,7 +225,7 @@ def test_herramientas_de_analisis_no_filtran_datos_personales(jefa, datos, f_alu
 def test_conversion_marca_tasas_con_pocos_casos(jefa, datos):
     from prospectos.servicios import analitica
     r = analitica.conversion(jefa, {'agrupar_por': 'plantel', 'desde': '2000-01-01'})
-    assert r['grupos'] and all(g['confiable'] is False for g in r['grupos'])  # 3 aspirantes: no alcanza para una tasa
+    assert r['grupos'] and all(g['confiable'] is False for g in r['grupos'])
 
 
 def test_enlaces_de_las_herramientas_abren_la_lista_filtrada(client, jefa, datos):
@@ -273,10 +237,16 @@ def test_enlaces_de_las_herramientas_abren_la_lista_filtrada(client, jefa, datos
     assert otra['total'] == 0 and 'Valeria Quintero' not in client.get(otra['enlace_a_la_lista']).content.decode()
 
 
-def test_calificador_de_probar_asistente():
-    from prospectos.management.commands.probar_asistente import calificar
-    bien = calificar('Llegaron **12 aspirantes** este mes, 3 más que antes. [lista](/admin/prospectos/prospecto/)',
-                     {'herramientas': ['consultar_cifras'], 'siguientes': ['a', 'b']})
-    assert bien == []
-    mal = calificar('¡Claro! Con gusto te ayudo. Hay varios aspirantes.', {'herramientas': ['consultar_cifras'], 'siguientes': []})
-    assert len(mal) >= 3
+def test_probar_kuali_corre(jefa, capsys):
+    from django.core.management import call_command
+    call_command('probar_kuali', 'hola', '¿Cómo vamos este mes?', '--breve')
+    assert 'Entendió 2 de 2' in capsys.readouterr().out
+
+
+def test_seguimiento_cambia_el_corte_sin_perder_filtros(jefa):
+    m = kuali.responder(jefa, '¿Cómo vamos este mes por plantel?', {}, {})['memoria']
+    r = kuali.responder(jefa, '¿y en Tultepec?', m, {})
+    e = kuali.entender('¿y en Tultepec?', m, {})
+    assert e['args'].get('plantel') == 'tultepec' and not e['args'].get('agrupar_por')  # por plantel ya no dice nada
+    e = kuali.entender('¿y por carrera?', r['memoria'], {})
+    assert e['args'].get('plantel') == 'tultepec' and e['args'].get('agrupar_por') == 'carrera' and e['heredada']

@@ -106,11 +106,14 @@ Confirmar**. No puede borrar, unir, exportar ni cambiar estatus.
 
 ![Propuesta del asistente](img/asistente-propuesta.jpg)
 
-**Privacidad.** Kuali usa una inteligencia artificial externa (Claude, de Anthropic). Por eso:
-- Nunca recibe nombres, teléfonos, correos, CURP, edad, la prepa del aspirante ni lo que escribió con sus palabras.
-- Si escribes un nombre o un teléfono en la pregunta, el programa no la envía y te pide reformularla.
-- En la ficha recibe solo categorías (carrera, modalidad, grupos y lo que marcó en preguntas de opción). El nombre lo pone el
-  programa en el borrador después de que la IA responde.
+**Privacidad y costo.** Kuali es un programa propio que corre en esta computadora: **no usa internet ni inteligencia
+artificial externa** y no cuesta nada. Por eso puede escribir el nombre real del aspirante en un borrador, y nada de lo que
+preguntes sale de la UDC.
+
+**Cómo entiende.** Con reglas: busca qué preguntas (cifras, comparaciones, embudo, conversión, visitas, pendientes, ayuda),
+el periodo, el plantel, la carrera, la prepa y la persona del equipo. Arriba de cada respuesta dice **«Entendí: …»** con lo que
+tomó; si no es lo que querías, reformula. Recuerda la pregunta anterior: después de «¿cómo vamos este mes?» basta «¿y en Tultepec?».
+Si no entiende, te ofrece preguntas parecidas que sí sabe contestar.
 
 **Cómo responde.** Primero la cifra, luego con qué se compara (el periodo anterior, el otro plantel, la meta), qué llama la atención
 y qué haría, con el enlace a la lista exacta. Debajo trae:
@@ -131,8 +134,9 @@ y qué haría, con el enlace a la lista exacta. Debajo trae:
 
 Si no dices el periodo, toma los últimos 30 días y lo aclara. Con pocos casos (menos de 8) te avisa que el porcentaje no es confiable.
 
-Si el asistente no está activado, solo busca en este manual. Puede equivocarse al entender la pregunta: revisa el periodo y los
-filtros que menciona.
+**Sus límites.** Solo entiende formas de preguntar que se le enseñaron. No conversa de otros temas ni opina, y puede tomar mal
+una pregunta rara: revisa siempre el «Entendí». Si una pregunta frecuente no la entiende, avísale a quien da soporte para que
+se la enseñe.
 
 ## 6. A quién llamar hoy
 

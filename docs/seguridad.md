@@ -11,7 +11,7 @@
 | Correo y teléfono (aspirante y tutor) | `prospectos_prospecto` | **Cifrados** (Fernet: AES-128-CBC + HMAC-SHA256) + índice ciego HMAC-SHA256 para duplicados. Nunca en `respuestaitem` ni en el log. |
 | Respuesta original de Google | `prospectos_respuesta.raw_json` | **Cifrada**. Se reemplaza por `{"anonimizado": true}` al purgar. |
 | Respuestas económicas | `prospectos_respuestaitem` | Solo roles con acceso a fichas; reportes únicamente agregados. |
-| Respuestas abiertas | `prospectos_respuestaitem` | Se borran al anonimizar. A la IA (si se activa) solo va el texto depurado de correos, teléfonos, URLs y números. |
+| Respuestas abiertas | `prospectos_respuestaitem` | Se borran al anonimizar. Se clasifican por palabras clave en la misma PC (no salen). |
 
 ## Controles implementados
 
@@ -26,7 +26,7 @@
   de datos se protege igual que `config.json`. Para revocar, borra `datos/red/` (se crea otra autoridad) y
   quita el certificado viejo de cada computadora.
 - Sin CDN: Chart.js y Leaflet van dentro del programa. Solo salen a internet: Google (Forms API),
-  el SMTP configurado, la IA si se activa y los mosaicos del mapa.
+  el SMTP configurado y los mosaicos del mapa.
 - Llaves generadas al primer arranque en `datos\config.json`; la del índice ciego debe ser
   distinta de la de cifrado (el programa lo verifica).
 - Exportaciones a Excel con protección contra inyección de fórmulas.
@@ -65,8 +65,7 @@
    distribúyelo solo desde un canal interno y conserva el hash SHA-256 publicado con cada versión.
 6. **Correo de bienvenida a menores**: sale solo tras consentimiento del tutor. Revisa con jurídico
    si prefieren enviarlo únicamente al tutor.
-7. **IA externa** (si se activa): aunque el texto se depura, es una transferencia a un tercero que
-   debe declararse en el aviso de privacidad.
+7. **Asistente (Kuali)**: es local, sin IA externa; no transfiere datos a terceros.
 
 ## Checklist antes de usarlo con datos reales
 

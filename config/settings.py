@@ -60,9 +60,6 @@ def _cargar_config() -> dict:
         'DIAS_SIN_CONTACTO': 5,
         'RESPALDO_HORA': '02:30',
         'RESPALDO_DIAS_RETENCION': 14,
-        'IA_HABILITADA': False,
-        'IA_API_KEY': '',
-        'IA_MODELO': 'claude-haiku-5-5',
     }
     CONFIG_FILE.write_text(json.dumps(cfg, indent=2, ensure_ascii=False), encoding='utf-8')
     return cfg
@@ -255,9 +252,6 @@ PROSPECTOS = {
     'RESPALDOS_DIR': DATA_DIR / 'respaldos',
     'RESPALDO_HORA': CONFIG.get('RESPALDO_HORA', '02:30'),
     'RESPALDO_DIAS_RETENCION': int(CONFIG.get('RESPALDO_DIAS_RETENCION', 14)),
-    'IA_HABILITADA': bool(CONFIG.get('IA_HABILITADA')),
-    'IA_API_KEY': CONFIG.get('IA_API_KEY', ''),
-    'IA_MODELO': CONFIG.get('IA_MODELO', 'claude-haiku-5-5'),
     'IA_TEMAS': ['costos', 'becas', 'distancia', 'transporte', 'seguridad', 'tramites', 'horarios',
                  'documentos', 'calificaciones', 'trabajo', 'familia', 'otro'],
 }
