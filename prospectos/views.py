@@ -129,6 +129,12 @@ def _fondo_y() -> int:
         return 40
 
 
+def _nombre_corto(u) -> str:
+    from .models import Perfil
+    perfil = Perfil.de(u)
+    return perfil.apodo or (u.first_name or u.get_username().split('@')[0]).split()[0].capitalize()
+
+
 def _saludo() -> str:
     h = timezone.localtime().hour
     return 'Buenos días' if 5 <= h < 12 else 'Buenas tardes' if 12 <= h < 19 else 'Buenas noches'
@@ -149,7 +155,7 @@ def contexto_tablero(request, context=None) -> dict:
         'hoy': hoy, 'dias': dias, 'periodos': PERIODOS, 'periodo_txt': dict(PERIODOS)[dias].replace('12 meses', 'año'),
         'puede_reportes': u.has_perm('prospectos.ver_reportes'),
         'eventos_hoy': Evento.objects.filter(fecha=hoy).select_related('preparatoria'),
-        'saludo': _saludo(), 'fondo_y': _fondo_y(), 'nombre_corto': (u.first_name or u.get_username().split('@')[0]).split()[0].capitalize(),
+        'saludo': _saludo(), 'fondo_y': _fondo_y(), 'nombre_corto': _nombre_corto(u),
     })
     tarjetas = []
     if u.has_perm('prospectos.change_prospecto'):
@@ -352,7 +358,7 @@ def ayuda(request):
 
 TEMAS_AYUDA = [  # (ancla, icono, título) del índice de «¿Cómo funciona?»
     ('empezar', 'route', 'Cómo viaja una respuesta'), ('respuestas', 'inbox', 'Contestaron y no aparece'),
-    ('dia', 'support_agent', 'Día a día del asesor'), ('avisos', 'notifications', 'Avisos'), ('asistente', 'auto_awesome', 'El asistente'),
+    ('perfil', 'account_circle', 'Mi perfil y 2 pasos'), ('dia', 'support_agent', 'Día a día del asesor'), ('avisos', 'notifications', 'Avisos'), ('asistente', 'auto_awesome', 'El asistente'),
     ('familias', 'family_restroom', 'Alumno y familia'),
     ('visitas', 'qr_code_2', 'Visitas a prepas'), ('calendario', 'calendar_month', 'Calendario'),
     ('mapa', 'map', 'Preparatorias y mapa'), ('encuestas', 'edit_note', 'Cambiar las encuestas'),

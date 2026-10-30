@@ -90,11 +90,11 @@ class UsuarioAdmin(AccionesFila, UserAdmin, ModelAdmin):
     add_form = NuevoUsuarioForm
     change_password_form = AdminPasswordChangeForm
     inlines = [PerfilInline]
-    list_display = ['nombre', 'username', 'roles', 'activo', 'last_login']
-    list_filter = ['groups', 'is_active']
+    list_display = ['nombre', 'username', 'roles', 'dos_pasos', 'activo', 'last_login']
+    list_filter = ['groups', 'is_active', 'perfil__dos_pasos_activo']
     search_fields = ['username', 'first_name', 'last_name', 'email']
     ordering = ['-is_active', 'first_name']
-    actions = ['desactivar', 'reactivar']
+    actions = ['desactivar', 'reactivar', 'quitar_dos_pasos']
     add_fieldsets = ((None, {'fields': ('email', 'first_name', 'last_name', 'rol', 'codigo_promotor', 'clave'),
                              'description': 'Se crea en un paso. La contraseña temporal se muestra una sola vez al guardar.'}),)
 
@@ -114,7 +114,7 @@ class UsuarioAdmin(AccionesFila, UserAdmin, ModelAdmin):
         return [PerfilInline] if obj else []  # al crear, el formulario ya arma el perfil
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request).prefetch_related('groups')
+        qs = super().get_queryset(request).prefetch_related('groups').select_related('perfil')
         return qs if request.user.is_superuser else qs.filter(is_superuser=False)  # nadie toca a un administrador salvo otro
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
@@ -146,6 +146,28 @@ class UsuarioAdmin(AccionesFila, UserAdmin, ModelAdmin):
     @display(description='Activo', boolean=True, ordering='is_active')
     def activo(self, obj):
         return obj.is_active
+
+    @display(description='2 pasos', boolean=True)
+    def dos_pasos(self, obj):
+        try:
+            return obj.perfil.dos_pasos_activo
+        except Perfil.DoesNotExist:
+            return False
+
+    @admin.action(description='Quitar la verificación en 2 pasos (perdió su teléfono y sus códigos)')
+    def quitar_dos_pasos(self, request, queryset):
+        if not request.user.is_superuser:
+            self.message_user(request, 'Solo un administrador puede hacerlo.', messages.ERROR)
+            return
+        from .servicios import dos_pasos
+        n = 0
+        for u in queryset.exclude(pk=request.user.pk):
+            dos_pasos.desactivar(Perfil.de(u))
+            auditoria.registrar('dos_pasos_quitar', u, {'por': request.user.get_username()}, request=request)
+            n += 1
+        self.message_user(request, f'Se quitó la verificación en 2 pasos a {n} usuario(s). Los administradores tendrán que '
+                                   'configurarla de nuevo al entrar.' + (' La tuya no se puede quitar desde aquí: usa Mi perfil.'
+                                                                          if queryset.filter(pk=request.user.pk).exists() else ''))
 
     @admin.action(description='Desactivar (ya no puede entrar; se conserva su historial)')
     def desactivar(self, request, queryset):

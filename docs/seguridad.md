@@ -37,6 +37,13 @@
 - Datos de contacto **enmascarados siempre**; quien tiene permiso los revela con un botón y
   la consulta queda en bitácora.
 - Contraseñas de 12+ caracteres, no comunes, no numéricas; sesión de 8 horas; cookies `HttpOnly`.
+- **Verificación en 2 pasos** (TOTP, RFC 6238; Google/Microsoft Authenticator), obligatoria para
+  administradores y opcional para los demás. El secreto se guarda cifrado; los 10 códigos de recuperación,
+  solo como hash. Un código no se acepta dos veces y 5 equivocados bloquean la cuenta 15 minutos.
+  Al entrar con contraseña, cada sesión vuelve a pedir el código. Quitarla a otra persona (acción de
+  administrador o `quitar_dos_pasos` en la consola de la PC) queda en la bitácora.
+- **Cuentas de demostración** (`@demo.local`, contraseña publicada en los manuales): no pueden entrar en cuanto
+  existe un administrador real, y la demostración se niega a cargarse en una carpeta con datos reales.
 - **Bitácora de auditoría** de solo inserción (el modelo rechaza editar o borrar): ver ficha,
   ver datos de contacto, exportar (con o sin contacto), cambiar estatus, fusionar, rechazar
   coincidencias, anonimizar, generar tarjetas, cambios de scoring, usuarios, respaldos.
@@ -70,7 +77,7 @@
 ## Checklist antes de usarlo con datos reales
 
 - [ ] Carpeta en `C:\Prospectos` (fuera de OneDrive), BitLocker activo en la PC.
-- [ ] Datos de demostración borrados; administrador real creado con **A**.
+- [ ] Administrador real creado (sin demostración en esta carpeta) y con la verificación en 2 pasos activa.
 - [ ] Copia de `datos\config.json` guardada fuera de la PC.
 - [ ] Aviso de privacidad aprobado por jurídico y enlazado en ambos Forms.
 - [ ] `Prospectos.exe respaldo crear` y `Prospectos.exe respaldo verificar` con resultado correcto.

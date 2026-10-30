@@ -12,3 +12,5 @@ CORREO_SINCRONO = True
 PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
 ALLOWED_HOSTS = ['*']
 LOGGING['root']['handlers'] = ['archivo']  # noqa: F405
+
+CONFIG = {**CONFIG, 'DOS_PASOS_ADMINS': False}  # noqa: F405  (las pruebas de 2 pasos lo encienden)

@@ -1,4 +1,4 @@
-# Puesta en marcha: de la demo a tus datos reales
+# Puesta en marcha: de la prueba a tus datos reales
 
 Sigue el orden. Cada paso dice cómo comprobar que salió bien antes de pasar al siguiente.
 
@@ -16,7 +16,7 @@ solo una.
 
 ## Paso 1 · Crear el administrador (en la carpeta de pruebas)
 
-1. Doble clic en `C:\ProspectosPrueba\Prospectos.exe` → elige **A** → correo y contraseña.
+1. Doble clic en `C:\ProspectosPrueba\Prospectos.exe` → correo y contraseña del administrador.
 2. Entra al panel. Debe verse el tablero vacío.
 
 ## Paso 2 · Conectar Google

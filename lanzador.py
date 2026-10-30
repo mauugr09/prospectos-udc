@@ -68,17 +68,10 @@ def _primera_vez():
         return
     print()
     print('=' * 70)
-    print(' PRIMERA VEZ: no hay usuarios.')
-    print('  [D] Cargar datos de DEMOSTRACIÓN (ficticios) para conocer el sistema')
-    print('  [A] Crear el usuario ADMINISTRADOR para usarlo con datos reales')
+    print(' PRIMERA VEZ: crea el usuario ADMINISTRADOR.')
+    print(' (Para capacitar sin datos reales usa OTRA carpeta: Prospectos.exe demo)')
     print('=' * 70)
-    opcion = ''
-    while opcion not in ('d', 'a'):
-        opcion = input('Elige D o A y presiona Enter: ').strip().lower()
-    if opcion == 'd':
-        call_command('demo')
-    else:
-        call_command('crear_admin')
+    call_command('crear_admin')
 
 
 def main():

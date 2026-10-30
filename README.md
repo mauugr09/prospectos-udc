@@ -83,6 +83,8 @@ Sigue [docs/puesta-en-marcha.md](docs/puesta-en-marcha.md): primero en una carpe
 | `RETENCION_MESES` | Meses sin actividad tras los que se anonimiza un prospecto (18). |
 | `DIAS_SIN_CONTACTO` | Días sin contacto para crear una tarea automática (5). |
 | `RESPALDO_HORA`, `RESPALDO_DIAS_RETENCION` | Hora del respaldo diario y días que se guardan. |
+| `INACTIVIDAD_MINUTOS` | Minutos sin uso tras los que se cierra la sesión (30; 0 = nunca). |
+| `DOS_PASOS_ADMINS` | Verificación en 2 pasos obligatoria para administradores (`true`). No se recomienda apagarla. |
 | `GOOGLE_MAPS_API_KEY` | Opcional: llave de Google Maps (mejor ponerla en el panel: Configuración → Mapa). Sin llave se usa OpenStreetMap. |
 | `MAPA_TILES` | Opcional: otro proveedor de fondo de mapa (URL con `{z}/{x}/{y}`) y `MAPA_TILES_ATRIBUCION`. Por defecto OpenStreetMap, sin llave. (CARTO ya no sirve sin llave: si estaba configurado se ignora.) |
 
@@ -160,7 +162,7 @@ Requiere Python 3.13.
 
 ```bash
 python -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-dev.txt
-.venv/bin/pytest                          # 233 pruebas (SQLite)
+.venv/bin/pytest                          # 252 pruebas (SQLite)
 .venv/bin/pytest --ds=config.settings_pruebas_mariadb   # las mismas contra MariaDB 10.11+
 .venv/bin/python lanzador.py              # igual que el .exe (datos en ./datos)
 .venv/bin/python manage.py demo           # datos ficticios

@@ -83,9 +83,31 @@ class Perfil(models.Model):
     debe_cambiar_clave = models.BooleanField('debe cambiar su contraseña al entrar', default=False,
                                              help_text='Se activa al crear la cuenta o al restablecer la contraseña.')
     avisos_apagados = models.JSONField('avisos que no quiere recibir', default=list, blank=True)
+    # Mi perfil
+    apodo = models.CharField(max_length=30, blank=True, help_text='Cómo te saluda el programa.')
+    telefono = models.CharField('teléfono de trabajo', max_length=20, blank=True)
+    firma = models.TextField(max_length=300, blank=True, help_text='Se agrega al final de los borradores de mensajes.')
+    foto = models.BinaryField(null=True, blank=True, editable=False)  # JPEG cuadrado, pequeño
+    foto_version = models.PositiveIntegerField(default=0, editable=False)
+    kuali_oculto = models.BooleanField('ocultar a la mascota del menú', default=False)
+    # Verificación en 2 pasos (TOTP, RFC 6238)
+    dos_pasos_secreto = CampoCifrado(null=True, blank=True, editable=False)
+    dos_pasos_activo = models.BooleanField('verificación en 2 pasos', default=False, editable=False)
+    dos_pasos_desde = models.DateTimeField(null=True, blank=True, editable=False)
+    dos_pasos_codigos = models.JSONField(default=list, blank=True, editable=False)  # sha256 de los códigos de recuperación
+    dos_pasos_ultimo = models.BigIntegerField(default=0, editable=False)  # último intervalo usado: un código no sirve dos veces
 
     class Meta:
         verbose_name = 'perfil'
+
+    @classmethod
+    def de(cls, usuario) -> 'Perfil':
+        return cls.objects.get_or_create(usuario=usuario)[0]
+
+    @property
+    def nombre_corto(self) -> str:
+        u = self.usuario
+        return self.apodo or u.first_name or u.get_username().split('@')[0]
 
     def __str__(self):
         return str(self.usuario)

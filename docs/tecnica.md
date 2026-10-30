@@ -43,7 +43,9 @@ recuperación.
 | `prospectos/vistas_proteccion.py` | Protección de datos: copia externa, llave de recuperación y separar uniones. |
 | `prospectos/vistas_asistente.py` | Asistente: conversación, confirmación de propuestas y configuración (solo el nombre de la mascota). |
 | `templates/prospectos/_kuali.svg.html` | Kuali, la mascota: un SVG con capas por estado (`.k-pensando-on`, `.k-contento-on`, `.k-avisando-on`, `.k-preocupado-on`, `.k-dormido-on`) que anima `udc.css`; `asistente.js` cambia los estados. Va en el menú (`unfold/helpers/navigation_user.html`) y en el encabezado. |
-| `prospectos/middleware.py` | Cambio de contraseña obligatorio, `Referer` solo en el mapa, bloqueo por intentos y cierre por inactividad. |
+| `prospectos/middleware.py` | Cambio de contraseña obligatorio, `Referer` solo en el mapa, bloqueo por intentos, cierre por inactividad y `VerificacionEnDosPasos` (va antes del cambio de contraseña: con 2 pasos activa no se puede cambiar la contraseña sin el código). |
+| `prospectos/vistas_perfil.py` | Mi perfil (datos, foto, contraseña, preferencias), la pantalla del código (`verificar`) y activar o administrar los 2 pasos. La foto llega ya recortada del navegador (`js/perfil.js`) como JPEG de 256 px; se valida el encabezado y se guarda en `Perfil.foto` (sin Pillow). `apps.py` agrega `User.avatar_url` para que unfold la muestre. |
+| `prospectos/backends.py` | `SinDemoConDatosReales`: las cuentas `@demo.local` no entran si hay un administrador real. |
 | `prospectos/programador.py` | Tareas periódicas (sección 6). |
 | `prospectos/servicios/` | La lógica, separada de las vistas (sección 4). |
 | `prospectos/catalogos.py` | Preguntas y opciones del cuestionario base (los códigos internos). |
@@ -101,6 +103,7 @@ Admisiones, Promotor y Directivo. Los promotores se filtran por consulta con `ve
 | `editor_form.py`, `publicar.py` | Editar las preguntas y publicar los cambios en el Google Form. |
 | `red.py` | Autoridad certificadora propia y servidor HTTPS para la red local. |
 | `semillas.py`, `demo.py` | Catálogos y roles iniciales; datos de demostración y su borrado seguro. |
+| `dos_pasos.py` | TOTP propio (RFC 6238, SHA1, 6 dígitos, 30 s, ±1 intervalo, sin reutilizar), QR con `segno`, códigos de recuperación (sha256 con `SECRET_KEY`), `obligatoria()` (`CONFIG['DOS_PASOS_ADMINS']`, salvo demo). |
 | `kuali.py` | **Motor propio del asistente, por reglas** (sin internet ni IA externa). `entender()` detecta la intención con `PALABRAS_INTENCION` (raíces con `\w*`) y saca periodo, plantel, carrera, prepa, persona, fecha, hora y cantidad; reusa la `memoria` para preguntas de seguimiento. Un `r_*` por intención arma la respuesta con `analitica`. `responder()` devuelve texto, «Entendí», gráfica, «Cómo lo calculé», siguientes y propuestas. |
 | `asistente.py` | Entrada (`preguntar`, que audita) y piezas compartidas: `buscar_ayuda` (manual), `h_embudo`, `h_perfil` (ficha, solo con permiso), `proponer`/`detalle_propuesta`/`ejecutar` (acciones que se confirman). |
 | `analitica.py` | Consultas del asistente con contexto: `cifras` (con periodo anterior y parte del total), `cruce` (dos dimensiones), `conversion` (tasas por grupo, marcando las no confiables), `visitas` (registros, meta, costo por registro), `pendientes`. Cada resultado trae `como_se_calculo` y `enlace_a_la_lista`. Grupos de menos de 3 se ocultan. |

@@ -1,0 +1,97 @@
+{% extends "prospectos/base.html" %}
+{% load static %}
+{% block ayuda %}perfil{% endblock %}
+{% block pagina %}
+<div class="pd pf">
+  <section class="grupo pf-cabeza">
+    <div class="pf-foto">
+      {% if perfil.foto %}<img src="{% url 'prospectos:perfil_foto' request.user.pk %}?v={{ perfil.foto_version }}" alt="Tu foto">
+      {% else %}<span aria-hidden="true">{{ request.user.get_full_name.0|default:request.user.get_username.0|upper }}</span>{% endif %}
+    </div>
+    <div class="pf-quien">
+      <b>{{ perfil.nombre_corto }}</b>
+      <span>{{ request.user.get_full_name|default:request.user.get_username }} · {{ request.user.get_username }}</span>
+      <small>{% for g in request.user.groups.all %}{{ g.name }}{% if not forloop.last %}, {% endif %}{% empty %}{% if request.user.is_superuser %}Administrador{% endif %}{% endfor %}
+        {% if request.user.last_login %} · entraste el {{ request.user.last_login|date:"j M, H:i" }}{% endif %}</small>
+      <form method="post" class="pf-foto-acciones" id="pf-foto-form">{% csrf_token %}
+        <input type="hidden" name="accion" value="foto"><input type="hidden" name="foto">
+        <button type="button" class="udc-btn secundario chico" id="pf-elegir"><span class="material-symbols-outlined">photo_camera</span>{% if perfil.foto %}Cambiar foto{% else %}Poner foto{% endif %}</button>
+        {% if perfil.foto %}<button class="udc-btn secundario chico" form="pf-quitar"><span class="material-symbols-outlined">delete</span>Quitar</button>{% endif %}
+      </form>
+      <form method="post" id="pf-quitar" hidden>{% csrf_token %}<input type="hidden" name="accion" value="quitar_foto"></form>
+      <div class="pf-recorte" id="pf-recorte" hidden>
+        <canvas width="256" height="256" aria-label="Vista previa"></canvas>
+        <label class="pf-zoom"><span class="material-symbols-outlined">zoom_in</span><input type="range" min="1" max="3" step="0.01" value="1" aria-label="Acercar"></label>
+        <small>Arrastra para encuadrar.</small>
+        <div class="pd-acciones"><button type="button" class="udc-btn chico" id="pf-guardar-foto"><span class="material-symbols-outlined">check</span>Guardar foto</button>
+          <button type="button" class="udc-btn secundario chico" id="pf-cancelar">Cancelar</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grupo" id="datos">
+    <header class="grupo-cabecera"><h2>Tus datos</h2></header>
+    <form method="post" class="grupo-cuerpo pf-form">{% csrf_token %}<input type="hidden" name="accion" value="datos">
+      <div class="pf-rejilla">
+        <label class="pf-campo"><span>Nombre</span><input class="udc-campo" name="first_name" value="{{ request.user.first_name }}" maxlength="150" autocomplete="given-name"></label>
+        <label class="pf-campo"><span>Apellidos</span><input class="udc-campo" name="last_name" value="{{ request.user.last_name }}" maxlength="150" autocomplete="family-name"></label>
+        <label class="pf-campo"><span>Apodo <em>cómo te saluda el programa</em></span><input class="udc-campo" name="apodo" value="{{ perfil.apodo }}" maxlength="30" placeholder="{{ request.user.first_name|default:'' }}"></label>
+        <label class="pf-campo"><span>Teléfono de trabajo</span><input class="udc-campo" name="telefono" value="{{ perfil.telefono }}" maxlength="20" inputmode="tel" autocomplete="tel"></label>
+        <label class="pf-campo ancho"><span>Firma <em>se agrega al final de los borradores de WhatsApp y correo</em></span>
+          <textarea class="udc-campo" name="firma" maxlength="300" rows="3" placeholder="Laura Hernández · Admisiones UDC Cuautitlán · 55 0000 0000">{{ perfil.firma }}</textarea></label>
+      </div>
+      <p class="pf-nota">Tu correo es tu usuario para entrar; solo un administrador puede cambiarlo.</p>
+      <div class="pd-acciones"><button class="udc-btn"><span class="material-symbols-outlined">save</span>Guardar</button></div>
+    </form>
+  </section>
+
+  <section class="grupo" id="seguridad">
+    <header class="grupo-cabecera"><h2>Seguridad</h2></header>
+    <div class="grupo-cuerpo">
+      <div class="pf-2p {% if perfil.dos_pasos_activo %}bien{% elif obligatoria %}mal{% endif %}">
+        <span class="material-symbols-outlined" aria-hidden="true">{% if perfil.dos_pasos_activo %}verified_user{% else %}phonelink_lock{% endif %}</span>
+        <div><b>Verificación en 2 pasos: {% if perfil.dos_pasos_activo %}activa{% else %}apagada{% endif %}</b>
+          <span>{% if perfil.dos_pasos_activo %}Desde el {{ perfil.dos_pasos_desde|date:"j M Y" }} · te quedan {{ codigos_restantes }} códigos de recuperación.
+            {% elif es_demo %}Las cuentas de demostración no la necesitan.
+            {% else %}Además de tu contraseña, se pide un código de 6 dígitos de una app en tu teléfono. Si alguien adivina tu contraseña, no puede entrar.{% endif %}</span></div>
+        <a class="udc-btn {% if perfil.dos_pasos_activo %}secundario {% endif %}chico" href="{% url 'prospectos:dos_pasos' %}">{% if perfil.dos_pasos_activo %}Administrar{% else %}Activar{% endif %}</a>
+      </div>
+
+      <form method="post" class="pf-form pf-clave">{% csrf_token %}<input type="hidden" name="accion" value="clave">
+        <h3>Cambiar tu contraseña</h3>
+        <div class="pf-rejilla">
+          <label class="pf-campo ancho"><span>Contraseña actual</span><input class="udc-campo" type="password" name="old_password" autocomplete="current-password" required></label>
+          <label class="pf-campo"><span>Nueva <em>12 caracteres o más; mejor una frase</em></span><input class="udc-campo" type="password" name="new_password1" autocomplete="new-password" required minlength="12"></label>
+          <label class="pf-campo"><span>Repite la nueva</span><input class="udc-campo" type="password" name="new_password2" autocomplete="new-password" required minlength="12"></label>
+        </div>
+        {% if form_clave.errors %}{% for campo in form_clave %}{% for e in campo.errors %}<p class="pd-error"><span class="material-symbols-outlined">error</span>{{ e }}</p>{% endfor %}{% endfor %}{% for e in form_clave.non_field_errors %}<p class="pd-error"><span class="material-symbols-outlined">error</span>{{ e }}</p>{% endfor %}{% endif %}
+        <div class="pd-acciones"><button class="udc-btn secundario"><span class="material-symbols-outlined">key</span>Cambiar contraseña</button></div>
+      </form>
+    </div>
+  </section>
+
+  <section class="grupo" id="preferencias">
+    <header class="grupo-cabecera"><h2>Preferencias</h2></header>
+    <div class="grupo-cuerpo pf-prefs">
+      <div class="pf-tema"><span>Tema</span>{% include "unfold/helpers/theme_switch.html" %}</div>
+      <form method="post" class="av-prefs">{% csrf_token %}<input type="hidden" name="accion" value="preferencias">
+        <label class="av-pref">
+          <span class="av-icono material-symbols-outlined" aria-hidden="true">pets</span>
+          <span class="av-texto"><b>Mostrar a {{ mascota_nombre }} en el menú</b><small>Si lo apagas, sigue arriba a la derecha.</small></span>
+          <input type="checkbox" class="av-switch" name="kuali_visible" value="1"{% if not perfil.kuali_oculto %} checked{% endif %}>
+        </label>
+        <p class="pf-sub">Qué avisos recibir en la campanita</p>
+        {% for t in tipos %}
+        <label class="av-pref">
+          <span class="av-icono av-{{ t.valor }} material-symbols-outlined" aria-hidden="true">{{ t.icono }}</span>
+          <span class="av-texto"><b>{{ t.nombre }}</b><small>{{ t.descripcion }}</small></span>
+          <input type="checkbox" class="av-switch" name="tipo" value="{{ t.valor }}"{% if t.encendido %} checked{% endif %}{% if t.fijo %} checked disabled{% endif %}>
+        </label>
+        {% endfor %}
+        <div class="av-prefs-pie"><button type="submit" class="udc-btn"><span class="material-symbols-outlined">save</span>Guardar</button></div>
+      </form>
+    </div>
+  </section>
+</div>
+<script src="{% static 'prospectos/js/perfil.js' %}" defer></script>
+{% endblock %}

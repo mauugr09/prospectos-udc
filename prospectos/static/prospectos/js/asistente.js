@@ -46,8 +46,8 @@
   }, { passive: true }));
   setInterval(() => { if (!estadoFijo && Date.now() - ultimoMovimiento > 5 * 60000) estado('dormido'); }, 30000);
   // Si la tarjeta del menú no se ve (menú cerrado, celular u oculta), queda el botón de arriba.
-  let oculta = false;
-  try { oculta = localStorage.getItem('kuali-oculto') === '1'; } catch (e) { /* sin almacenamiento */ }
+  // Se guarda en «Mi perfil» (sigue a la persona en cualquier computadora).
+  let oculta = !!(tarjetaKuali && tarjetaKuali.dataset.oculto === '1');
   function acomodar() {
     if (tarjetaKuali) tarjetaKuali.hidden = oculta;
     const visible = tarjetaKuali && !oculta && tarjetaKuali.offsetParent !== null && tarjetaKuali.getBoundingClientRect().width > 0;
@@ -97,8 +97,13 @@
   textoOcultar();
   ocultar.onclick = () => {
     oculta = !oculta;
-    try { localStorage.setItem('kuali-oculto', oculta ? '1' : '0'); } catch (e) { /* sin almacenamiento */ }
     textoOcultar(); acomodar();
+    if (tarjetaKuali && tarjetaKuali.dataset.perfil) {
+      const datos = new FormData();
+      datos.append('accion', 'kuali'); datos.append('oculto', oculta ? '1' : '0');
+      fetch(tarjetaKuali.dataset.perfil, { method: 'POST', body: datos, credentials: 'same-origin',
+        headers: { 'X-CSRFToken': boton.dataset.csrf, 'X-Requested-With': 'fetch' } }).catch(() => {});
+    }
   };
   if (tarjetaKuali) tarjetaKuali.querySelector('button').addEventListener('click', () => (panel.hidden ? abrir() : cerrar()));
   const hilo = panel.querySelector('.as-hilo');

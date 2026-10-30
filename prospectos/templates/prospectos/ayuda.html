@@ -274,6 +274,28 @@
       </ul>
     </section>
 
+    <section class="gu-guia" id="perfil" data-palabras="perfil foto apodo firma telefono contraseña cambiar dos pasos verificacion codigo authenticator telefono perdi tema oscuro">
+      <header><span class="gu-icono"><span class="material-symbols-outlined">account_circle</span></span><div><h2>Mi perfil y verificación en 2 pasos</h2><p>Tu foto, cómo te saluda el programa, tu firma, tu contraseña y tus preferencias.</p></div></header>
+      <ol class="gu-pasos">
+        <li>Abre <b>Ayuda → Mi perfil</b> (o tu nombre, abajo del menú → Mi perfil).</li>
+        <li><b>Foto:</b> «Poner foto», encuádrala arrastrando y con el control de acercar, y «Guardar foto».</li>
+        <li><b>Apodo</b> es cómo te saluda el programa. La <b>firma</b> se agrega al final de los borradores de WhatsApp que prepara {{ mascota_nombre }}.</li>
+      </ol>
+      <h3>Activar la verificación en 2 pasos</h3>
+      <ol class="gu-pasos">
+        <li>Instala en tu teléfono <b>Google Authenticator</b> o <b>Microsoft Authenticator</b> (gratis).</li>
+        <li>En Mi perfil → <b>Activar</b>, escanea el código QR con la app y escribe el código de 6 dígitos que aparece.</li>
+        <li><b>Guarda los 10 códigos de recuperación</b> (imprímelos): solo se muestran una vez.</li>
+      </ol>
+      <ul class="gu-saber">
+        <li>Después, al entrar se pide tu contraseña <b>y</b> el código de la app. Si alguien adivina tu contraseña, no puede entrar.</li>
+        <li>Para los <b>administradores es obligatoria</b>. Para los demás, opcional y recomendada.</li>
+        <li>¿El código no sirve? La hora del teléfono y la de la computadora deben estar en automático.</li>
+        <li>¿Perdiste el teléfono? Entra con un código de recuperación y vuelve a configurarla. Sin códigos: otro administrador te la quita en <b>Configuración → Usuarios</b> (acción «Quitar la verificación en 2 pasos»).</li>
+        <li>5 códigos equivocados bloquean la cuenta 15 minutos, igual que las contraseñas.</li>
+      </ul>
+    </section>
+
     <section class="gu-guia" id="proteccion" data-palabras="proteccion respaldo copia usb memoria llave recuperacion separar union error bloqueo sesion inactividad contraseña">
       <header><span class="gu-icono"><span class="material-symbols-outlined">shield_lock</span></span><div><h2>Protección de datos</h2><p>Que nada se pierda y que nadie entre sin permiso. Solo administradores.</p></div></header>
       <h3>Copia fuera de esta computadora</h3>
@@ -289,7 +311,7 @@
       </ol>
       <h3>Si la computadora se pierde o se daña</h3>
       <ol class="gu-pasos">
-        <li>En la computadora nueva descomprime el programa y ábrelo una vez; ciérralo cuando pregunte D o A.</li>
+        <li>En la computadora nueva descomprime el programa y ábrelo una vez; ciérralo cuando pida crear el administrador.</li>
         <li>Copia la llave guardada (<code>config.json</code>) dentro de la carpeta <code>datos</code>, reemplazando la que se creó.</li>
         <li>En esa carpeta, abre una ventana de comandos y ejecuta <code>{{ comando }} respaldo restaurar "E:\Respaldos Prospectos\prospectos-AAAAMMDD-HHMMSS.sqlite3.gz.cifrado"</code> con la copia más reciente.</li>
       </ol>

@@ -926,6 +926,8 @@ body.login button[type=submit] { background: var(--c-boton-acento) !important; b
   transition: transform .3s var(--resorte), filter .15s; }
 body.login button[type=submit]:active { transform: scale(.97); }
 body.login button[type=submit] .material-symbols-outlined { display: none; }
+body.login input.vf-salir { background: none; border: 0; color: var(--c-acento); font-size: 14px; cursor: pointer; padding: 6px; }
+body.login input.vf-salir:hover { text-decoration: underline; }
 
 /* Mapas fuera de capa: leaflet.css no usa capas y si no, ganaría (fondo gris #ddd, controles blancos). */
 /* ============================================================ mapas: el mapa es el fondo; controles y leyendas flotan en vidrio */
@@ -1371,6 +1373,59 @@ button.udc-btn.fm-confirmando { background-color: var(--c-rojo); color: #fff; }
 .pd-union-texto small { font-size: 12px; color: var(--c-texto-3); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .pd-union-texto em { font-style: normal; font-weight: 600; color: var(--c-rojo); background: rgba(215,0,21,.10); padding: 0 7px; border-radius: 8px; }
 @media (max-width: 720px) { .pd-estado { grid-template-columns: 1fr; } }
+
+/* ---------------------------------------------------------------- Mi perfil y verificación en 2 pasos */
+.pf-cabeza { display: flex; gap: 20px; align-items: flex-start; padding: 20px; }
+.pf-foto { flex: none; width: 96px; height: 96px; border-radius: 50%; overflow: hidden; display: grid; place-items: center;
+  background: var(--c-acento-suave); color: var(--c-acento); font-size: 38px; font-weight: 650; }
+.pf-foto img { width: 100%; height: 100%; object-fit: cover; }
+.pf-quien { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pf-quien > b { font-size: 22px; font-weight: 700; color: var(--c-texto); letter-spacing: -.01em; }
+.pf-quien > span { font-size: 14px; color: var(--c-texto-2); overflow-wrap: anywhere; }
+.pf-quien > small { font-size: 12px; color: var(--c-texto-3); }
+.pf-foto-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.pf-recorte { margin-top: 12px; display: grid; gap: 8px; justify-items: start; }
+.pf-recorte canvas { width: 192px; height: 192px; border-radius: 50%; cursor: grab; touch-action: none; background: var(--c-relleno);
+  box-shadow: 0 0 0 1px var(--c-separador); }
+.pf-recorte canvas:active { cursor: grabbing; }
+.pf-recorte small { font-size: 12px; color: var(--c-texto-3); }
+.pf-zoom { display: flex; align-items: center; gap: 6px; color: var(--c-texto-2); } .pf-zoom input { width: 160px; }
+.pf-rejilla { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.pf-campo { display: grid; gap: 4px; font-size: 13px; color: var(--c-texto-2); min-width: 0; }
+.pf-campo.ancho { grid-column: 1 / -1; }
+.pf-campo em { font-style: normal; color: var(--c-texto-3); }
+.pf-campo input, .pf-campo textarea { width: 100%; font-family: inherit; }
+.pf-campo textarea { resize: vertical; min-height: 72px; padding-top: 8px; }
+.pf-nota { margin-top: 10px; font-size: 13px; color: var(--c-texto-3); }
+.pf-2p { display: flex; gap: 12px; align-items: center; padding: 14px; border-radius: 12px; background: var(--c-relleno); margin-bottom: 20px; }
+.pf-2p > .material-symbols-outlined { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 10px; font-size: 22px;
+  background: var(--c-superficie); color: var(--c-texto-2); }
+.pf-2p.bien > .material-symbols-outlined { background: rgba(36,138,61,.12); color: var(--c-verde); }
+.pf-2p.mal > .material-symbols-outlined { background: rgba(215,0,21,.10); color: var(--c-rojo); }
+.pf-2p > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pf-2p b { font-size: 15px; font-weight: 600; color: var(--c-texto); } .pf-2p span { font-size: 13px; color: var(--c-texto-2); }
+.pf-clave h3, .pf-sub { font-size: 15px; font-weight: 600; color: var(--c-texto); margin: 4px 0 12px; }
+.pf-sub { margin: 18px 0 4px; font-size: 13px; color: var(--c-texto-2); font-weight: 600; }
+.pf-tema { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; margin-bottom: 6px; border-bottom: .5px solid var(--c-separador);
+  font-size: 14px; color: var(--c-texto); font-weight: 550; }
+.pf-tema > div { border: 0 !important; margin: 0 !important; padding: 0 !important; flex: 1; max-width: 420px; }
+.pf-pasos { list-style: decimal; padding-left: 22px; display: grid; gap: 16px; font-size: 14px; color: var(--c-texto-2); }
+.pf-pasos b { color: var(--c-texto); font-weight: 600; }
+.pf-qr { display: flex; gap: 18px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+.pf-qr svg { width: 180px; height: 180px; border-radius: 12px; background: #fff; padding: 4px; box-shadow: 0 0 0 1px var(--c-separador); }
+.pf-qr > div { flex: 1 1 220px; display: grid; gap: 6px; } .pf-qr small { font-size: 12px; color: var(--c-texto-3); }
+.pf-secreto { font: 600 15px/1.4 ui-monospace, Menlo, Consolas, monospace; letter-spacing: .04em; color: var(--c-texto);
+  background: var(--c-relleno); padding: 8px 10px; border-radius: 8px; overflow-wrap: anywhere; user-select: all; }
+.pf-codigo-form { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.pf-codigo { width: 150px !important; font: 600 20px ui-monospace, Menlo, Consolas, monospace !important; letter-spacing: .15em; text-align: center; }
+.pf-desactivar { margin-top: 18px; padding-top: 18px; border-top: .5px solid var(--c-separador); }
+.pf-lista-codigos { display: grid; grid-template-columns: repeat(2, minmax(0, 160px)); gap: 8px 24px; margin: 6px 0 4px; list-style: none; padding: 0; }
+.pf-lista-codigos code { font: 600 17px ui-monospace, Menlo, Consolas, monospace; letter-spacing: .08em; color: var(--c-texto); }
+.pf-codigos { box-shadow: 0 0 0 2px var(--c-naranja); }
+@media (max-width: 720px) { .pf-rejilla { grid-template-columns: 1fr; } .pf-cabeza { flex-direction: column; align-items: center; text-align: center; }
+  .pf-foto-acciones { justify-content: center; } .pf-recorte { justify-items: center; } }
+@media print { body * { visibility: hidden; } .pf-codigos, .pf-codigos * { visibility: visible; } .pf-codigos { position: absolute; inset: 0; box-shadow: none; }
+  .pf-codigos .pd-acciones { display: none; } }
 
 /* ============================================================ asistente */
 button.as-abrir { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px 0 11px; border-radius: 18px; font-size: 14px; font-weight: 550;

@@ -100,6 +100,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'prospectos.middleware.ProteccionDeAcceso',
+    'prospectos.middleware.VerificacionEnDosPasos',
     'prospectos.middleware.CambioDeClaveObligatorio',
     'prospectos.middleware.ReferrerEnMapas',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -163,6 +164,8 @@ if ES_MARIADB:
         DATABASES['sqlite'] = _SQLITE  # origen para «pasar_a_mariadb»
 else:
     DATABASES = {'default': _SQLITE}
+
+AUTHENTICATION_BACKENDS = ['prospectos.backends.SinDemoConDatosReales']
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -366,7 +369,7 @@ UNFOLD = {
             ]},
             {'title': 'Ayuda', 'separator': True, 'items': [
                 {'title': '¿Cómo funciona?', 'icon': 'help', 'link': reverse_lazy('prospectos:ayuda')},
-                {'title': 'Cambiar mi contraseña', 'icon': 'key', 'link': reverse_lazy('admin:password_change')},
+                {'title': 'Mi perfil', 'icon': 'account_circle', 'link': reverse_lazy('prospectos:perfil')},
             ]},
         ],
     },

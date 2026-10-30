@@ -770,6 +770,10 @@ def r_ficha_mensaje(user, ent, contexto) -> dict:
                f"{' sobre becas' if becas else ''}?")
     formal = (f"Buen día, {nombre}. Le saluda {asesor}, de Admisiones de la Universidad de Cuautitlán. Con gusto le compartimos "
               f"información {tema}{' y de nuestros apoyos económicos' if becas else ''}. ¿Le interesaría agendar su visita a {motivo}?")
+    from ..models import Perfil
+    firma = Perfil.de(user).firma.strip()
+    if firma:
+        cercana, formal = f'{cercana}\n{firma}', f'{formal}\n{firma}'
     lineas = ['**Cercana:**', cercana, '', '**Formal:**', formal, '',
               f"_{len(cercana)} y {len(formal)} caracteres. Revísalo antes de enviarlo: no prometas porcentajes de beca._"]
     return _salida(lineas, ['Prepara la llamada con este aspirante', '¿En qué no coincide con su familia?'], None, None)
@@ -865,7 +869,8 @@ def r_crear_actividad(user, ent) -> tuple:
 def r_saludo(user, ent, nombre) -> dict:
     if re.search(r'gracias|perfecto|listo', ent['q']):
         return _salida(['¡Con gusto! Aquí estoy cuando me necesites.'], ['¿Qué es lo más urgente hoy?'], None, None)
-    return _salida([f"¡Hola, {_asesor(user)}! Soy {nombre}. Pregúntame cifras, cómo hacer algo en el programa, o pídeme preparar una "
+    from ..models import Perfil
+    return _salida([f"¡Hola, {Perfil.de(user).nombre_corto}! Soy {nombre}. Pregúntame cifras, cómo hacer algo en el programa, o pídeme preparar una "
                     'visita o asignar aspirantes.'], ['¿Qué es lo más urgente hoy?', '¿Cómo vamos este mes contra el anterior, por plantel?'],
                    None, None)
 

@@ -1,0 +1,67 @@
+{% extends "prospectos/base.html" %}
+{% block ayuda %}perfil{% endblock %}
+{% block pagina %}
+<div class="pd pf">
+  {% if codigos %}
+  <section class="grupo pf-codigos" id="codigos">
+    <header class="grupo-cabecera"><h2>Tus códigos de recuperación</h2></header>
+    <div class="grupo-cuerpo">
+      <p class="pd-texto"><b>Guárdalos ahora: no se vuelven a mostrar.</b> Si pierdes o cambias tu teléfono, cada código te deja entrar
+        <b>una sola vez</b> en lugar del de la app. Imprímelos o escríbelos y guárdalos lejos de la computadora; no los guardes en un archivo en ella.</p>
+      <ol class="pf-lista-codigos">{% for c in codigos %}<li><code>{{ c }}</code></li>{% endfor %}</ol>
+      <div class="pd-acciones">
+        <button type="button" class="udc-btn secundario chico" onclick="window.print()"><span class="material-symbols-outlined">print</span>Imprimir</button>
+        <button type="button" class="udc-btn secundario chico" data-copiar="{{ codigos|join:' ' }}" onclick="navigator.clipboard && navigator.clipboard.writeText(this.dataset.copiar); this.lastChild.textContent='Copiados'"><span class="material-symbols-outlined">content_copy</span><span>Copiar</span></button>
+        <a class="udc-btn chico" href="{% url 'prospectos:perfil' %}">Ya los guardé</a>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if not perfil.dos_pasos_activo %}
+  <section class="grupo">
+    <header class="grupo-cabecera"><h2>Activar en 3 pasos</h2></header>
+    <div class="grupo-cuerpo pf-activar">
+      <ol class="pf-pasos">
+        <li><b>Instala una app de códigos</b> en tu teléfono: Google Authenticator, Microsoft Authenticator o Authy (gratis). No necesita internet para funcionar.</li>
+        <li><b>Escanea este código</b> con la app (botón «+» o «Agregar cuenta»).
+          <div class="pf-qr">{{ qr|safe }}
+            <div><small>¿No puedes escanear? Escribe esta clave en la app («Ingresar clave»), tipo «Basada en tiempo»:</small><code class="pf-secreto">{{ secreto }}</code></div>
+          </div></li>
+        <li><b>Escribe el código de 6 dígitos</b> que muestra la app para «Prospectos UDC».
+          <form method="post" class="pf-codigo-form">{% csrf_token %}<input type="hidden" name="accion" value="activar">
+            <input class="udc-campo pf-codigo" name="codigo" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,7}" maxlength="7" placeholder="123 456" required autofocus aria-label="Código de 6 dígitos">
+            <button class="udc-btn"><span class="material-symbols-outlined">verified_user</span>Activar</button>
+          </form></li>
+      </ol>
+      <ul class="pd-notas">
+        <li>Desde entonces, al entrar se pide tu contraseña <b>y</b> el código de la app. El código cambia cada 30 segundos.</li>
+        <li>La hora de esta computadora y la de tu teléfono deben estar bien (automáticas). Si no coinciden, el código no sirve.</li>
+        {% if obligatoria %}<li>Es obligatoria para administradores: quien entre con tu cuenta puede ver y exportar todo.</li>{% endif %}
+      </ul>
+    </div>
+  </section>
+  {% else %}
+  <section class="grupo">
+    <header class="grupo-cabecera"><h2>Verificación en 2 pasos activa</h2></header>
+    <div class="grupo-cuerpo">
+      <p class="pd-texto">Activa desde el {{ perfil.dos_pasos_desde|date:"j \d\e F \d\e Y" }}. Te quedan <b>{{ codigos_restantes }}</b> códigos de recuperación.</p>
+      <form method="post" class="pd-fila">{% csrf_token %}<input type="hidden" name="accion" value="regenerar">
+        <label class="pf-campo"><span>Código de la app</span><input class="udc-campo pf-codigo" name="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="7" required></label>
+        <button class="udc-btn secundario"><span class="material-symbols-outlined">autorenew</span>Nuevos códigos de recuperación</button>
+      </form>
+      {% if not obligatoria %}
+      <form method="post" class="pd-fila pf-desactivar">{% csrf_token %}<input type="hidden" name="accion" value="desactivar">
+        <label class="pf-campo"><span>Código de la app</span><input class="udc-campo pf-codigo" name="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="7" required></label>
+        <label class="pf-campo"><span>Tu contraseña</span><input class="udc-campo" type="password" name="clave" autocomplete="current-password" required></label>
+        <button class="udc-btn secundario peligro"><span class="material-symbols-outlined">remove_moderator</span>Quitar</button>
+      </form>
+      {% else %}
+      <p class="pf-nota">Las cuentas de administrador no pueden quitarla. Si cambias de teléfono: entra con un código de recuperación y pide a otro
+        administrador que te la quite en Configuración → Usuarios (acción «Quitar la verificación en 2 pasos»); al entrar la configuras otra vez.</p>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

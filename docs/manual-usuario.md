@@ -34,6 +34,37 @@ El camino de una respuesta:
   la restablece.
 - Si pasas **30 minutos sin usar** el programa, o cierras el navegador, la sesión se cierra sola. Es para
   que una computadora abierta no deje a la vista los datos de los aspirantes.
+- Si activaste la **verificación en 2 pasos** (obligatoria para administradores), después de la contraseña
+  se pide el código de 6 dígitos de la app de tu teléfono.
+
+![Código de verificación](img/verificar.jpg)
+
+### Mi perfil
+
+**Ayuda → Mi perfil** (o tu nombre, abajo del menú) junta lo tuyo:
+
+![Mi perfil](img/perfil.jpg)
+
+- **Foto:** «Poner foto», encuádrala arrastrando y con el control de acercar, y «Guardar foto». Se ve en el menú.
+- **Apodo:** cómo te saluda el programa («Buenos días, Lau»).
+- **Teléfono de trabajo y firma:** la firma se agrega al final de los borradores de WhatsApp que prepara Kuali.
+- **Contraseña:** escribe la actual y la nueva dos veces (12 caracteres o más; mejor una frase).
+- **Preferencias:** tema claro u oscuro, mostrar u ocultar a Kuali y qué avisos recibir en la campanita.
+- Tu correo es tu usuario: solo un administrador puede cambiarlo.
+
+### Verificación en 2 pasos
+
+![Activar la verificación en 2 pasos](img/dos-pasos.jpg)
+
+1. Instala en tu teléfono **Google Authenticator** o **Microsoft Authenticator** (gratis; funciona sin internet).
+2. En Mi perfil → **Activar**, escanea el código QR con la app y escribe el código de 6 dígitos.
+3. **Guarda los 10 códigos de recuperación** (imprímelos y guárdalos lejos de la computadora). Solo se muestran una vez;
+   cada uno sirve para entrar **una vez** si pierdes el teléfono.
+
+- Es **obligatoria para administradores**: al entrar, el programa los lleva a activarla. Para los demás es opcional.
+- ¿El código no sirve? La hora del teléfono y la de la computadora deben estar en automático.
+- ¿Perdiste el teléfono y los códigos? Otro administrador te la quita en **Configuración → Usuarios**.
+- **5 códigos equivocados** bloquean la cuenta 15 minutos.
 
 **Qué ve cada rol**
 

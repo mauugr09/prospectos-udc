@@ -33,10 +33,9 @@
    Escritorio sincronizado ni en OneDrive: la base se daña si se sincroniza mientras está abierta.
 2. Doble clic en `Prospectos.exe`. Si Windows dice «Windows protegió su PC», elige **Más información →
    Ejecutar de todas formas**. El programa no está firmado digitalmente, por eso avisa.
-3. La primera vez pregunta:
-   - **D**: datos de **demostración** (ficticios) para conocerlo. Usuario `admin@demo.local`, contraseña
-     `Demo-Prospectos-2026!`.
-   - **A**: crear el **administrador real**.
+3. La primera vez pide crear el **administrador**: tu correo y una contraseña de 12 caracteres o más.
+   Al entrar te pide activar la **verificación en 2 pasos** (sección 5): ten a la mano tu teléfono con
+   Google Authenticator o Microsoft Authenticator.
 4. Se abre el navegador en `http://127.0.0.1:8000/admin/`. **Deja abierta la ventana negra.** Para
    apagar el programa, ciérrala.
 
@@ -55,8 +54,10 @@ El Inicio del administrador muestra una lista de **Primeros pasos** hasta que to
 4. **Ubicar los planteles y las prepas** en el mapa.
 5. **Crear los usuarios** (sección 5).
 6. **Configurar la protección de datos** (sección 7). No lo dejes para después.
-7. Si instalaste con la demostración, en el Inicio pulsa **Borrar** en «Hay datos de demostración», ya
-   con tu usuario real. Se respalda antes de borrar.
+7. **Para capacitar** sin tocar los datos reales, usa otra carpeta (por ejemplo `C:\Capacitacion`) y ahí
+   ejecuta `Prospectos.exe demo`: carga aspirantes ficticios (usuario `admin@demo.local`, contraseña
+   `Demo-Prospectos-2026!`). El programa se niega a cargar la demostración en una carpeta que ya tiene
+   usuarios o respuestas reales.
 
 ## 4. Configuración del archivo `datos\config.json`
 
@@ -95,6 +96,16 @@ cambiarla al entrar.
 - **Una cuenta por persona.** No compartan contraseñas: la bitácora registra quién vio cada teléfono.
 - **5 contraseñas equivocadas** bloquean el usuario 15 minutos. Restablecer la contraseña lo desbloquea
   al entrar con la nueva.
+- **Verificación en 2 pasos:** obligatoria para administradores (se configura al entrar por primera vez),
+  opcional para los demás. La columna **2 pasos** de la lista de usuarios muestra quién la tiene.
+  - Si alguien perdió su teléfono y sus códigos de recuperación: selecciónalo en la lista → acción
+    **Quitar la verificación en 2 pasos**. Queda en la bitácora.
+  - Si el **único administrador** la perdió: en la PC del programa, abre una ventana de comandos en la
+    carpeta y ejecuta `Prospectos.exe quitar_dos_pasos correo@udc.mx`. Por eso la PC del programa debe
+    estar en un lugar con acceso controlado.
+  - Para apagar la obligación (no recomendado), en `datos\config.json`: `"DOS_PASOS_ADMINS": false`.
+- **Cuentas de demostración** (`@demo.local`): dejan de poder entrar en cuanto existe un administrador
+  real, aunque nadie haya borrado la demostración.
 
 ## 6. Usarlo desde otras computadoras
 
@@ -171,7 +182,7 @@ Si algo sale mal, restaura la copia previa (sección 10) y avisa a NullSpace Stu
    estaba.
 
 ### En una computadora nueva (la anterior se perdió o se dañó)
-1. Descomprime el programa en `C:\Prospectos` y ábrelo una vez. Cuando pregunte **D o A**, cierra la ventana.
+1. Descomprime el programa en `C:\Prospectos` y ábrelo una vez. Cuando pida crear el administrador, cierra la ventana.
 2. Copia la **llave de recuperación** (`config.json`) dentro de `C:\Prospectos\datos`, reemplazando la que
    se creó.
 3. Conecta la memoria con las copias y, en una terminal dentro de `C:\Prospectos`:

@@ -92,6 +92,7 @@ def _entro(sender, request, user, **kw):
     cache.delete(_llaves(user.get_username(), _ip(request))[0])
     if request is not None and hasattr(request, 'session'):
         request.session['ultima_actividad'] = time.time()
+        request.session.pop('dos_pasos_ok', None)  # cada entrada con contraseña vuelve a pedir el código
 
 
 class ProteccionDeAcceso:
@@ -133,3 +134,56 @@ class ProteccionDeAcceso:
                 logout(request)
                 return JsonResponse({'sin_leer': 0, 'sesion': False}, status=401)
         return self.get_response(request)
+
+
+# --------------------------------------------------------------------------- verificación en 2 pasos
+SESION_DOS_PASOS = 'dos_pasos_ok'
+INTENTOS_CODIGO = 5
+
+
+class VerificacionEnDosPasos:
+    """
+    Con la verificación activa, después de la contraseña solo se puede ver la pantalla del código (o salir).
+    A un administrador sin ella (obligatoria) se le lleva a activarla; mientras tanto puede cambiar su contraseña temporal.
+    Se revisa una vez por sesión: al pasar, la sesión queda marcada con el id del usuario.
+    """
+    LIBRES = ('/static/', '/salud/', '/marca/', '/favicon')
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        u = getattr(request, 'user', None)
+        if (u is not None and u.is_authenticated and not request.path.startswith(self.LIBRES)
+                and request.session.get(SESION_DOS_PASOS) != u.pk):
+            from .models import Perfil
+            from .servicios import dos_pasos
+            perfil = Perfil.de(u)
+            salir = reverse('admin:logout')
+            if perfil.dos_pasos_activo:
+                verificar = reverse('prospectos:verificar')
+                if request.path not in (verificar, salir):
+                    if request.headers.get('x-requested-with') == 'fetch':
+                        return JsonResponse({'ok': False, 'mensaje': 'Falta el código de verificación. Recarga la página.'}, status=401)
+                    return redirect(f'{verificar}?next={request.get_full_path()}')
+            elif dos_pasos.obligatoria(u):
+                permitidas = (reverse('prospectos:dos_pasos'), salir, reverse('admin:password_change'), reverse('admin:password_change_done'))
+                if request.path not in permitidas:
+                    if request.headers.get('x-requested-with') == 'fetch':
+                        return JsonResponse({'ok': False, 'mensaje': 'Activa la verificación en 2 pasos. Recarga la página.'}, status=401)
+                    messages.info(request, 'Por seguridad, las cuentas de administrador necesitan la verificación en 2 pasos. '
+                                           'Actívala para continuar (toma un minuto).')
+                    return redirect(reverse('prospectos:dos_pasos'))
+            else:
+                request.session[SESION_DOS_PASOS] = u.pk
+        return self.get_response(request)
+
+
+def fallo_de_codigo(request) -> bool:
+    """Cuenta un código equivocado como intento fallido de acceso. True si con eso la cuenta quedó bloqueada."""
+    usuario = request.user.get_username()
+    user_login_failed.send(sender=__name__, credentials={'username': usuario}, request=request)
+    if bloqueado(usuario, _ip(request)):
+        logout(request)
+        return True
+    return False

@@ -14,11 +14,11 @@ ANTES DE INSTALAR: ¿esta PC va a CORRER el programa o solo a USARLO?
    - Si aparece "Windows protegió su PC": Más información -> Ejecutar de todas formas.
      (El programa no está firmado digitalmente; por eso Windows avisa.)
 
-3. La primera vez pregunta:
-   D = datos de DEMOSTRACIÓN (ficticios)
-       usuarios: admin@demo.local, admisiones@demo.local, directivo@demo.local, promotor1@demo.local
-       contraseña: Demo-Prospectos-2026!
-   A = crear el ADMINISTRADOR real
+3. La primera vez pide crear el ADMINISTRADOR (tu correo y una contraseña de 12 caracteres o más).
+   Al entrar te pedirá activar la verificación en 2 pasos: ten a la mano tu teléfono con
+   Google Authenticator o Microsoft Authenticator.
+   ¿Quieres practicar sin datos reales? Copia esta carpeta a otro lado (por ejemplo C:\Capacitacion),
+   abre ahí una ventana de comandos y escribe:  Prospectos.exe demo
 
 4. Se abre el navegador. DEJA ABIERTA LA VENTANA NEGRA mientras usas el sistema:
    ahí se importan las respuestas, se crean tareas y se hacen los respaldos.
