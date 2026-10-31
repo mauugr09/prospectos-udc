@@ -170,5 +170,16 @@ window.MapaMX = (function () {
     } else sinInternet();
   }
 
-  return { crear, cuandoTengaTamano, google, enlaceGoogle, ZONA_PLANTELES };
+  /** Marcador de un plantel: el escudo de su universidad en una insignia, con el nombre debajo (o solo el escudo). */
+  function escudoSede(s, compacto) {
+    const caja = document.createElement('div');
+    caja.className = 'mc-sede mc-sede-' + (s.clave || '') + (compacto ? ' compacto' : '');
+    const disco = document.createElement('span'); disco.className = 'mc-sede-disco';
+    const img = document.createElement('img'); img.src = s.escudo; img.alt = ''; img.draggable = false;
+    disco.append(img); caja.append(disco);
+    if (!compacto) { const n = document.createElement('span'); n.className = 'mc-sede-nombre'; n.textContent = s.nombre; caja.append(n); }
+    return caja;
+  }
+
+  return { crear, cuandoTengaTamano, google, enlaceGoogle, escudoSede, ZONA_PLANTELES };
 })();

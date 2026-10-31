@@ -380,7 +380,9 @@ def qr_svg(contenido: str) -> str:
 
 
 def formulario_activo(tipo: str):
-    return Formulario.objects.filter(tipo=tipo, activo=True).order_by('-id').first()
+    """El Form que abren los QR: el marcado «para los QR» o, si ninguno, el más reciente."""
+    qs = Formulario.objects.filter(tipo=tipo, activo=True)
+    return qs.filter(para_qr=True).order_by('-id').first() or qs.order_by('-id').first()
 
 
 def _codigo_promotor(evento):

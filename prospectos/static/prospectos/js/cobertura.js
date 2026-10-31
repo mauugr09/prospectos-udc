@@ -70,16 +70,15 @@
         etiqueta.on('add', () => { const e = etiqueta.getElement(); if (e) e.replaceChildren(el('span', '', `${k} km`)); });
         radios.addLayer(etiqueta);
       });
-      // Debajo de las burbujas: nunca tapa una prepa; el nombre sale al pasar el cursor.
-      const m = L.marker([s.lat, s.lng], { zIndexOffset: -1000, title: `Plantel ${s.nombre}`,
+      // Encima de las burbujas: el escudo de cada universidad marca su plantel.
+      const m = L.marker([s.lat, s.lng], { zIndexOffset: 100000, title: s.universidad || `Plantel ${s.nombre}`,
         icon: L.divIcon({ className: 'mc-sede-icono', html: '', iconSize: [0, 0] }) }).addTo(mapa);
       m.on('add', pintarSede); pintarSede.call(m);
       function pintarSede() {
         const e = this.getElement?.(); if (!e) return;
-        const caja = el('div', 'mc-sede'); caja.append(icono('school'));
-        e.replaceChildren(caja);
+        e.replaceChildren(MapaMX.escudoSede(s));
       }
-      m.bindTooltip(`Plantel ${s.nombre}`, { direction: 'top', offset: [0, -18], className: 'mc-tip', permanent: false });
+      m.bindTooltip(s.universidad || `Plantel ${s.nombre}`, { direction: 'top', offset: [0, -30], className: 'mc-tip', permanent: false });
     });
     const interruptor = $('mc-radios');
     const verRadios = () => (!interruptor || interruptor.checked ? radios.addTo(mapa) : radios.remove());

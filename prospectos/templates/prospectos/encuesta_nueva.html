@@ -1,0 +1,44 @@
+{% extends "prospectos/base.html" %}
+{% block ayuda %}encuestas{% endblock %}
+{% block pagina %}
+<div class="pd en-nueva">
+  <section class="grupo">
+    <header class="grupo-cabecera"><h2>Crear una encuesta en Google Forms</h2></header>
+    <form method="post" class="grupo-cuerpo pf-form">{% csrf_token %}
+      <div class="pf-rejilla">
+        <label class="pf-campo ancho"><span>Título <em>lo que verá quien la conteste</em></span>
+          <input class="udc-campo" name="titulo" value="{{ datos.titulo }}" maxlength="200" required placeholder="Cuestionario vocacional · Feria de Universidades 2027"></label>
+        <fieldset class="pf-campo ancho en-opciones"><legend>¿Para quién es?</legend>
+          {% for valor, nombre in tipos %}
+          <label class="en-opcion"><input type="radio" name="tipo" value="{{ valor }}" {% if datos.tipo == valor %}checked{% endif %}>
+            <span class="material-symbols-outlined" aria-hidden="true">{% if valor == 'ALUMNO' %}school{% else %}family_restroom{% endif %}</span>
+            <span><b>{% if valor == 'ALUMNO' %}Aspirantes{% else %}Padres o tutores{% endif %}</b>
+              <small>{% if valor == 'ALUMNO' %}Sus respuestas crean o actualizan fichas de aspirantes{% else %}Se unen con la ficha de su hijo o hija y dan el permiso{% endif %}</small></span></label>
+          {% endfor %}
+        </fieldset>
+        <fieldset class="pf-campo ancho en-opciones"><legend>¿Con qué preguntas empieza?</legend>
+          <label class="en-opcion"><input type="radio" name="base" value="copiar" {% if datos.base != 'programa' %}checked{% endif %}>
+            <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
+            <span><b>Copia del Form actual</b><small>Alumnos: {{ origenes.ALUMNO|default:"no hay" }} · Padres: {{ origenes.TUTOR|default:"no hay" }}. Igual que el de siempre; después lo cambias en Encuestas.</small></span></label>
+          <label class="en-opcion"><input type="radio" name="base" value="programa" {% if datos.base == 'programa' %}checked{% endif %}>
+            <span class="material-symbols-outlined" aria-hidden="true">checklist</span>
+            <span><b>Solo las preguntas del programa</b><small>{{ preguntas.ALUMNO }} para aspirantes, {{ preguntas.TUTOR }} para padres (Configuración → Preguntas). Lo mínimo para que todo funcione.</small></span></label>
+        </fieldset>
+        <label class="pf-campo ancho"><span>Descripción <em>opcional, aparece bajo el título</em></span>
+          <textarea class="udc-campo" name="descripcion" rows="3" maxlength="4000">{{ datos.descripcion }}</textarea></label>
+        {% if cuenta_servicio %}
+        <label class="pf-campo ancho"><span>Compartir en Google con <em>opcional: tu correo de Google, para abrirla y editarla allá</em></span>
+          <input class="udc-campo" type="email" name="compartir" value="{{ datos.compartir }}" placeholder="admisiones@udc.edu.mx"></label>
+        {% endif %}
+      </div>
+      <ul class="pd-notas">
+        <li>Se crea en Google, se publica y queda abierta a respuestas. El programa la registra y la importa cada minuto, como las demás.</li>
+        <li><b>No cambia los QR de las visitas</b>: siguen abriendo la encuesta de siempre hasta que en Encuestas elijas «Usar para los QR de las visitas».</li>
+        <li>Como las preguntas se llaman igual que en el programa, sus respuestas llegan a las fichas sin configurar nada.</li>
+      </ul>
+      <div class="pd-acciones"><button class="udc-btn"><span class="material-symbols-outlined">add_circle</span>Crear encuesta</button>
+        <a class="udc-btn secundario" href="{% url 'prospectos:encuestas' %}">Cancelar</a></div>
+    </form>
+  </section>
+</div>
+{% endblock %}

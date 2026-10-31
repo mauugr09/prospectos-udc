@@ -27,7 +27,7 @@
       <button type="button" role="tab" data-modo="visita">Última visita</button>
       <button type="button" role="tab" data-modo="plantel">Plantel</button>
     </div>
-    {% if not sedes and request.user.is_superuser %}<a class="mc-interruptor mc-vidrio" href="{% url 'prospectos:configurar_mapa' %}#sedes"><span class="material-symbols-outlined" style="font-size:18px">school</span>Ubicar planteles</a>{% endif %}
+    {% if sedes_faltan and request.user.is_superuser %}<a class="mc-interruptor mc-vidrio" href="{% url 'prospectos:configurar_mapa' %}#sedes"><span class="material-symbols-outlined" style="font-size:18px">add_location</span>Ubicar {{ sedes_faltan|join:" y " }}</a>{% endif %}
     {% if sedes %}<label class="mc-interruptor mc-vidrio"><input type="checkbox" id="mc-radios" checked> Distancias</label>{% endif %}
   </div>
 

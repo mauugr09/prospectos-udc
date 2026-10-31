@@ -180,6 +180,40 @@ class FuenteGoogle:
             raise ErrorFuente(explicar_http(r.status_code, r.text[:300]))
         return r.json()
 
+    def _post(self, url: str, cuerpo: dict, token: str | None = None) -> dict:
+        r = self.sesion.post(url, json=cuerpo, timeout=60,
+                             headers={'Authorization': f'Bearer {token or self.token()}', 'Accept': 'application/json'})
+        if r.status_code == 403 and 'scope' in r.text.lower():
+            raise ErrorFuente('La cuenta de Google conectada solo tiene permiso de lectura. En modo OAuth vuelve a ejecutar '
+                              f'«{settings.COMANDO} conectar_google» y acepta el permiso para editar los Forms.')
+        if r.status_code >= 400:
+            raise ErrorFuente(explicar_http(r.status_code, r.text[:300]))
+        return r.json() if r.content else {}
+
+    def crear_form(self, titulo: str) -> dict:
+        """forms.create: un Form vacío (Google solo acepta el título al crearlo). Devuelve formId y responderUri."""
+        return self._post(f'{BASE}/forms', {'info': {'title': titulo, 'documentTitle': titulo}})
+
+    def publicar_form(self, form_id: str) -> bool:
+        """Los Forms creados por la API pueden quedar «sin publicar»: se publica y se abre a respuestas.
+        Si esta versión de la API no lo tiene, el Form ya está publicado: no es error."""
+        try:
+            self._post(f'{BASE}/forms/{form_id}:setPublishSettings',
+                       {'publishSettings': {'publishState': {'isPublished': True, 'isAcceptingResponses': True}}, 'updateMask': '*'})
+            return True
+        except ErrorFuente:
+            return False
+
+    def compartir(self, form_id: str, correo: str) -> None:
+        """Da permiso de edición en Google a una persona (solo hace falta con cuenta de servicio: el Form es suyo)."""
+        from google.oauth2 import service_account
+        from google.auth.transport.requests import Request
+        cred = service_account.Credentials.from_service_account_file(str(ruta_cuenta_servicio()),
+                                                                     scopes=['https://www.googleapis.com/auth/drive.file'])
+        cred.refresh(Request())
+        self._post(f'https://www.googleapis.com/drive/v3/files/{form_id}/permissions?sendNotificationEmail=true',
+                   {'role': 'writer', 'type': 'user', 'emailAddress': correo}, token=cred.token)
+
     def info(self, formulario) -> dict:
         """Título, URL pública y preguntas del Form (para registrarlo y armar el mapeo)."""
         return self._get(f'/forms/{formulario.google_form_id}', {})
