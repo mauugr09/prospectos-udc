@@ -2,15 +2,21 @@
 {% block ayuda %}encuestas{% endblock %}
 {% block pagina %}
 {% if not f %}
-  <section class="grupo"><p class="lista-vacia">Todavía no hay un Google Form registrado. Agrégalo en Configuración → Formularios de Google.</p></section>
+  <section class="grupo"><p class="lista-vacia">Todavía no hay un Google Form registrado. Agrégalo en Configuración → Formularios de Google
+    {% if puede_crear %}o <a class="underline" href="{% url 'prospectos:encuesta_nueva' %}">crea una encuesta nueva</a>{% endif %}.</p></section>
 {% else %}
 <div class="enc-escritorio">
   <aside class="enc-indice">
-    {% if formularios|length > 1 %}
-    <nav class="seg enc-seg" aria-label="Encuesta">
-      {% for t, fo in formularios.items %}<a href="?tipo={{ t }}" class="{% if t == tipo %}activo{% endif %}">{% if t == 'ALUMNO' %}Alumno{% else %}Familia{% endif %}</a>{% endfor %}
+    <p class="enc-indice-titulo">Encuestas</p>
+    <nav class="enc-lista" aria-label="Encuestas">
+      {% for fo in formularios %}
+      <a href="?f={{ fo.pk }}" class="enc-lista-item{% if fo.pk == f.pk %} activo{% endif %}">
+        <span class="material-symbols-outlined" aria-hidden="true">{% if fo.tipo == 'ALUMNO' %}school{% else %}family_restroom{% endif %}</span>
+        <span class="enc-lista-txt"><b>{{ fo.nombre }}</b><small>{% if fo.tipo == 'ALUMNO' %}Aspirantes{% else %}Padres o tutores{% endif %}{% if fo.para_qr %} · la abren los QR{% endif %}</small></span>
+      </a>
+      {% endfor %}
     </nav>
-    {% endif %}
+    {% if puede_crear %}<a class="udc-btn chico secundario enc-nueva" href="{% url 'prospectos:encuesta_nueva' %}"><span class="material-symbols-outlined">add</span>Nueva encuesta</a>{% endif %}
     {% if secciones %}
     <p class="enc-indice-titulo">Secciones</p>
     <ol>
@@ -25,7 +31,7 @@
     <header class="enc-portada">
       <div class="enc-portada-banda"></div>
       <div class="enc-portada-cuerpo">
-        <p class="enc-eyebrow">{% if tipo == 'ALUMNO' %}Cuestionario del alumno{% else %}Encuesta para la familia{% endif %}</p>
+        <p class="enc-eyebrow">{% if tipo == 'ALUMNO' %}Cuestionario del alumno{% else %}Encuesta para padres o tutores{% endif %}{% if f.para_qr %} · la abren los QR de las visitas{% endif %}</p>
         <h2>{{ titulo_form|default:f.nombre }}</h2>
         {% if not error %}
         <div class="enc-cifras">
@@ -35,14 +41,35 @@
         </div>
         {% endif %}
         <div class="enc-portada-acciones">
-          {% if url %}<a class="udc-btn chico" href="{{ url }}" target="_blank" rel="noopener"><span class="material-symbols-outlined">visibility</span>Ver como la ve el alumno</a>{% endif %}
-          <a class="udc-btn chico secundario" href="https://docs.google.com/forms/d/{{ f.google_form_id }}/edit" target="_blank" rel="noopener"><span class="material-symbols-outlined">open_in_new</span>Abrir en Google</a>
+          {% if url %}<a class="udc-btn chico" href="{{ url }}" target="_blank" rel="noopener"><span class="material-symbols-outlined">edit_note</span>Contestar</a>{% endif %}
+          {% if not es_demo %}<a class="udc-btn chico secundario" href="https://docs.google.com/forms/d/{{ f.google_form_id }}/edit" target="_blank" rel="noopener"><span class="material-symbols-outlined">open_in_new</span>Abrir en Google</a>{% endif %}
+          {% if qr %}<details class="enc-qr"><summary class="udc-btn chico secundario"><span class="material-symbols-outlined">qr_code_2</span>QR</summary>
+            <div class="enc-qr-caja">{{ qr|safe }}<small>Para contestarla desde el celular. Sin código de visita: las respuestas no quedan ligadas a una visita.</small></div></details>{% endif %}
+          {% if not f.para_qr %}<form method="post" class="enc-usar-qr">{% csrf_token %}<input type="hidden" name="f" value="{{ f.pk }}">
+            <button class="udc-btn chico secundario" name="accion" value="usar_qr" onclick="return confirm('Los QR de las visitas y las tarjetas abrirán esta encuesta en lugar de la actual. ¿Continuar?')"><span class="material-symbols-outlined">swap_horiz</span>Usar para los QR de las visitas</button></form>{% endif %}
         </div>
       </div>
     </header>
 
     {% if error %}
-    <div class="aviso aviso-rojo"><span class="material-symbols-outlined">cloud_off</span><div><b>No se pudo leer el Form.</b> {{ error }}</div></div>
+    <div class="aviso aviso-rojo"><span class="material-symbols-outlined">cloud_off</span><div>{% if es_demo %}<b>Encuesta de demostración:</b> no existe en Google, solo sirve para conocer el programa.{% else %}<b>No se pudo leer el Form en Google</b>, así que no se puede editar desde aquí. {{ error }}{% endif %}
+      <br><small>Abajo están las preguntas que el programa espera en esta encuesta.{% if url %} Para contestarla usa «Contestar».{% endif %}</small></div></div>
+    {% if vista_programa %}
+    <section class="enc-seccion">
+      <header class="enc-seccion-cab"><span class="enc-seccion-num">Lo que el programa espera</span><h3>{{ vista_programa|length }} preguntas</h3></header>
+      {% for p in vista_programa %}
+      <article class="enc-tarjeta">
+        <div class="enc-tarjeta-cab"><span class="enc-chip-tipo"><span class="material-symbols-outlined">{% if p.tipo == 'oculto' %}qr_code_2{% elif p.con_opciones %}radio_button_checked{% else %}short_text{% endif %}</span>{% if p.tipo == 'oculto' %}Oculta (QR){% elif p.con_opciones %}Opciones{% else %}Respuesta escrita{% endif %}</span>
+          {% if p.de_sistema %}<span class="enc-chip sistema"><span class="material-symbols-outlined">lock</span>La usa el programa</span>{% endif %}</div>
+        <div class="enc-vista"><h4>{{ p.texto }}</h4>
+          {% if p.tipo == 'oculto' %}<p class="enc-oculto"><span class="material-symbols-outlined">qr_code_2</span>Se llena sola con el código del QR.</p>
+          {% elif p.con_opciones %}<ul class="enc-opciones-vista opcion">{% for o in p.etiquetas_opciones.values|slice:":6" %}<li>{{ o }}</li>{% endfor %}</ul>
+          {% else %}<div class="enc-respuesta-linea">Respuesta</div>{% endif %}
+        </div>
+      </article>
+      {% endfor %}
+    </section>
+    {% endif %}
     {% else %}
 
     {% if pendientes %}

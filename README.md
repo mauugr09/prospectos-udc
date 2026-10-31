@@ -167,7 +167,7 @@ Requiere Python 3.13.
 ```bash
 python -m venv .venv && .venv/bin/pip install -r requirements.txt -r requirements-dev.txt
 git config core.hooksPath .githooks       # la ITV corre sola antes de cada git push
-bash empaquetado/itv.sh                   # ITV: ruff, bandit, pip-audit, migraciones, 281 pruebas, cobertura ≥ 80 %
+bash empaquetado/itv.sh                   # ITV: ruff, bandit, pip-audit, migraciones, 286 pruebas, cobertura ≥ 80 %
 .venv/bin/pytest                          # solo las pruebas (SQLite)
 .venv/bin/pytest --ds=config.settings_pruebas_mariadb   # las mismas contra MariaDB 10.11+
 .venv/bin/python lanzador.py              # igual que el .exe (datos en ./datos)

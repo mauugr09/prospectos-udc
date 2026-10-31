@@ -146,9 +146,9 @@ def preparar() -> None:
 # Los Forms reales de la UDC (los de producción). Se registran solos al crear el administrador real;
 # el tipo se confirma con el título del Form al conectar Google (importacion.sincronizar).
 FORMS_UDC = [
-    {'nombre': 'Cuestionario vocacional (alumno)', 'tipo': 'ALUMNO', 'google_form_id': '15yKpCaIUBX98tBvfdVcd7uqPXEppT6jfOjc9BSM2XgU',
+    {'nombre': 'Cuestionario vocacional (alumno)', 'tipo': 'ALUMNO', 'para_qr': True, 'google_form_id': '15yKpCaIUBX98tBvfdVcd7uqPXEppT6jfOjc9BSM2XgU',
      'url_publica': 'https://docs.google.com/forms/d/e/1FAIpQLSebI1Qa5nzAUCj36XNA0ZQL5AruA_JpT3SSzfoyW9NQ6kIThg/viewform'},
-    {'nombre': 'Encuesta para padres de familia', 'tipo': 'TUTOR', 'google_form_id': '1BCtE0gVnEPGF-nNZw5ePRhsyeaOpgdHzoLoWNwf8UvI',
+    {'nombre': 'Encuesta para padres de familia', 'tipo': 'TUTOR', 'para_qr': True, 'google_form_id': '1BCtE0gVnEPGF-nNZw5ePRhsyeaOpgdHzoLoWNwf8UvI',
      'url_publica': 'https://docs.google.com/forms/d/e/1FAIpQLSedhaCrlP8lMTzcBbgFguxsqOGWpqW-qAzflOsFRS9-Bl2pOQ/viewform'},
 ]
 

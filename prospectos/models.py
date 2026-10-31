@@ -356,6 +356,8 @@ class Formulario(models.Model):
     mapeo_campos = models.JSONField('mapeo questionId → código', default=dict, blank=True)
     campos_prellenado = models.JSONField('campos prellenados (código → entry.NNNN)', default=dict, blank=True)
     activo = models.BooleanField(default=True)
+    para_qr = models.BooleanField('lo abren los QR de las visitas', default=False,
+                                  help_text='Uno por tipo. Un Form nuevo no cambia los QR hasta que lo elijas.')
     ultima_respuesta_en = models.DateTimeField(null=True, blank=True, editable=False)
     ultima_importacion_en = models.DateTimeField(null=True, blank=True, editable=False)
     ultimo_error = models.TextField(blank=True, editable=False)

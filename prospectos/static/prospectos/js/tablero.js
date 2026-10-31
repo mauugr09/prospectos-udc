@@ -108,6 +108,13 @@
   const caja = document.getElementById('tb-mapa');
   const crearMapa = () => {
     const mapa = MapaMX.crear(caja, { tiles: d.tiles, zoomControl: false });
+    (d.sedes || []).forEach((s) => {  // los planteles, con el escudo de su universidad
+      const m = L.marker([s.lat, s.lng], { zIndexOffset: 100000, keyboard: false,
+        icon: L.divIcon({ className: 'mc-sede-icono', html: '', iconSize: [0, 0] }) }).addTo(mapa);
+      const pintar = () => { const e = m.getElement(); if (e) e.replaceChildren(MapaMX.escudoSede(s, true)); };
+      m.on('add', pintar); pintar();
+      m.bindTooltip(s.universidad, { direction: 'top', offset: [0, -24], className: 'tb-mapa-tip' });
+    });
     const puntos = d.puntos.filter((p) => p.lat && p.lng);
     if (!puntos.length) return;  // queda la vista de la zona de los planteles
     const limites = L.latLngBounds(puntos.map((p) => [p.lat, p.lng]));

@@ -342,6 +342,15 @@ En **Configuración → Encuestas** (Coordinación y Administrador) se agregan, 
 Forms sin entrar a Google. Las preguntas que usa el programa para la prioridad y el permiso **no se pueden
 borrar**, solo cambiar su texto. Al publicar, el Form de Google se actualiza.
 
+- A la izquierda están **todas las encuestas**: la de aspirantes y la de **padres o tutores**. Elige una para verla.
+- **Contestar** abre la encuesta como la ve quien la llena; **QR** muestra un código para contestarla desde el celular.
+- Si el programa no puede conectarse con Google, igual se ven las preguntas que espera esa encuesta.
+
+**Nueva encuesta.** Botón **Nueva encuesta**: título, para quién es (aspirantes o padres) y con qué preguntas empieza
+(**copia del Form actual** o **solo las preguntas del programa**). El programa la crea en Google, la publica, la registra y
+la importa cada minuto, como las demás. **No cambia los QR de las visitas**: siguen abriendo la encuesta de siempre hasta
+que, en esa encuesta, pulses **Usar para los QR de las visitas**. Las imágenes o videos del Form original no se copian.
+
 ## 15. Exportar y derechos de las personas (ARCO)
 
 - **Exportar a Excel** (sin contacto) o **con datos de contacto**: este segundo queda en la bitácora. Borra

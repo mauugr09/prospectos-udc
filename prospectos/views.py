@@ -259,7 +259,7 @@ def contexto_tablero(request, context=None) -> dict:
             'recientes': recientes, 'embudo': embudo, 'ranking_hoy': ranking[:5], 'carreras': carreras,
             'info_pct': round(100 * piden_info / total_periodo) if total_periodo else 0,
             'actividad': actividad, 'barras_edad': barras_edad, 'anillos': anillos,
-            'datos_tablero': {'actividad': actividad, 'anillos': anillos, 'puntos': puntos, 'tiles': TILES()},
+            'datos_tablero': {'actividad': actividad, 'anillos': anillos, 'puntos': puntos, 'tiles': TILES(), 'sedes': sedes_udc()},
             'kpi_listos_pct': anillos[0]['pct'] if anillos else 0,
         })
     ctx['tarjetas'] = tarjetas
@@ -706,17 +706,27 @@ def mapa(request):
     return render(request, 'prospectos/mapa.html', _ctx(
         request, 'Mapa de cobertura', puntos=puntos, plantel=plantel, planteles=catalogos.PLANTELES_CORTO.items(),
         sin_ubicar=sin_ubicar, puede_ubicar=u.has_perm('prospectos.change_preparatoria'), tiles=TILES(),
-        resumen=resumen, acciones=acciones, sedes=sedes_udc(), hoy=timezone.localdate().isoformat()))
+        resumen=resumen, acciones=acciones, sedes=sedes_udc(), hoy=timezone.localdate().isoformat(),
+        sedes_faltan=[n for c, n in catalogos.PLANTELES_CORTO.items() if c not in {s['clave'] for s in sedes_udc()}]))
+
+
+# Ubicación conocida de cada plantel (se puede corregir en Configuración → Mapa). Cuautitlán: Plan de Ayala 29,
+# Lázaro Cárdenas, 54870 (Google Maps). Tultepec no tiene una ubicación confirmada: hay que ponerla a mano.
+SEDES_CONOCIDAS = {'cuautitlan': {'lat': 19.675869, 'lng': -99.1711303}}
+ESCUDOS = {'cuautitlan': ('aguila', 'Universidad de Cuautitlán'), 'tultepec': ('toro', 'Universidad de Tultepec')}
 
 
 def sedes_udc() -> list[dict]:
-    """Ubicación de los planteles de la UDC (Configuración → Mapa). Sin ella el mapa no dibuja las sedes ni las distancias."""
+    """Ubicación de los planteles (Configuración → Mapa). Sin ella el mapa no dibuja esa sede ni sus distancias."""
+    from django.templatetags.static import static
     guardadas = Configuracion.obtener('mapa.sedes') or {}
     res = []
     for clave, nombre in catalogos.PLANTELES_CORTO.items():
-        d = guardadas.get(clave) or {}
+        d = guardadas.get(clave) or SEDES_CONOCIDAS.get(clave) or {}
         if d.get('lat') is not None and d.get('lng') is not None:
-            res.append({'clave': clave, 'nombre': nombre, 'lat': float(d['lat']), 'lng': float(d['lng'])})
+            archivo, universidad = ESCUDOS.get(clave, ('aguila', nombre))
+            res.append({'clave': clave, 'nombre': nombre, 'universidad': universidad, 'lat': float(d['lat']), 'lng': float(d['lng']),
+                        'escudo': static(f'prospectos/marca/{archivo}.svg')})
     return res
 
 
@@ -816,10 +826,21 @@ def encuestas(request):
     _permiso(request, 'change_formulario')
     from .servicios import editor_form, publicar
     from .servicios.fuentes import ErrorFuente, FuenteGoogle
-    formularios = {f.tipo: f for f in Formulario.objects.filter(activo=True).exclude(google_form_id__startswith='demo-').order_by('-id')}
-    tipo = request.GET.get('tipo') if request.GET.get('tipo') in formularios else next(iter(sorted(formularios)), None)
-    f = formularios.get(tipo)
-    if request.method == 'POST' and f:
+    lista = list(Formulario.objects.filter(activo=True).order_by('tipo', '-para_qr', 'id'))
+    if any(not x.google_form_id.startswith('demo-') for x in lista):
+        lista = [x for x in lista if not x.google_form_id.startswith('demo-')]  # con Forms reales, los de demostración sobran
+    elegido = request.GET.get('f') or request.POST.get('f')
+    f = (next((x for x in lista if str(x.pk) == elegido), None)
+         or next((x for x in lista if x.tipo == request.GET.get('tipo') and x.para_qr), None)
+         or next((x for x in lista if x.tipo == request.GET.get('tipo')), None)
+         or (lista[0] if lista else None))
+    tipo = f.tipo if f else None
+    if request.method == 'POST' and f and request.POST.get('accion') == 'usar_qr':
+        from .servicios import crear_form
+        crear_form.usar_para_qr(f, request.user)
+        messages.success(request, f'Desde ahora los QR de las visitas abren «{f.nombre}».')
+        return redirect(f'{request.path}?f={f.pk}')
+    if request.method == 'POST' and f and not f.google_form_id.startswith('demo-'):
         fuente = FuenteGoogle(edicion=True)
         x = request.POST
         accion = x.get('accion')
@@ -848,9 +869,16 @@ def encuestas(request):
                 messages.success(request, f'Se aplicaron {r["aplicados"]} cambios en el Form.')
         except (ErrorFuente, ValueError) as e:
             messages.error(request, str(e))
-        return redirect(f'{request.path}?tipo={tipo}')
-    ctx = {'formularios': formularios, 'tipo': tipo, 'f': f, 'tipos': editor_form.TIPOS, 'secciones': [], 'pendientes': [], 'error': None}
-    if f:
+        return redirect(f'{request.path}?f={f.pk}')
+    ctx = {'formularios': lista, 'tipo': tipo, 'f': f, 'tipos': editor_form.TIPOS, 'secciones': [], 'pendientes': [], 'error': None,
+           'puede_crear': request.user.has_perm('prospectos.add_formulario'), 'url': f.url_publica if f else None}
+    if f and f.url_publica:
+        from .servicios.reportes import qr_svg
+        ctx['qr'] = qr_svg(f.url_publica)
+    if f and f.google_form_id.startswith('demo-'):
+        ctx['error'], ctx['es_demo'], ctx['url'], ctx['qr'] = 'demo', True, None, None
+        ctx['vista_programa'] = list(Pregunta.objects.filter(cuestionario=f.tipo, retirada=False).prefetch_related('opciones_lista').order_by('orden'))
+    elif f:
         try:
             form = FuenteGoogle().info(f)
             ctx['secciones'] = editor_form.leer(f, form)
@@ -864,7 +892,41 @@ def encuestas(request):
             ctx['url'] = form.get('responderUri') or f.url_publica
         except ErrorFuente as e:
             ctx['error'] = str(e)
+            # Sin conexión con Google igual se ve la encuesta: las preguntas que el programa espera, en orden.
+            ctx['vista_programa'] = list(Pregunta.objects.filter(cuestionario=f.tipo, retirada=False).prefetch_related('opciones_lista').order_by('orden'))
     return render(request, 'prospectos/encuestas.html', _ctx(request, 'Encuestas', **ctx))
+
+
+@staff_member_required
+def encuesta_nueva(request):
+    """Crear un Google Form nuevo desde el programa (copia del actual o con las preguntas del programa)."""
+    _permiso(request, 'add_formulario')
+    from .servicios import crear_form
+    from .servicios.fuentes import ErrorFuente, FuenteGoogle, modo_google
+    origenes = {t: reportes.formulario_activo(t) for t in ('ALUMNO', 'TUTOR')}
+    datos = {'tipo': request.GET.get('tipo', 'ALUMNO'), 'base': 'copiar', 'titulo': '', 'descripcion': '', 'compartir': ''}
+    if request.method == 'POST':
+        x = request.POST
+        datos = {k: (x.get(k) or '').strip() for k in datos}
+        try:
+            f, r = crear_form.crear(datos['titulo'], datos['tipo'], datos['base'], datos['descripcion'], FuenteGoogle(edicion=True),
+                                    request.user, origen=origenes.get(datos['tipo']), compartir_con=datos['compartir'] or None)
+        except (ErrorFuente, ValueError) as e:
+            messages.error(request, str(e))
+        else:
+            texto = f'Listo: «{f.nombre}» ya está en Google con {r["preguntas"]} preguntas y el programa la importa como las demás.'
+            if r['omitidos']:
+                texto += f' No se copiaron {len(r["omitidos"])} imágenes o videos: agrégalos en Google si los necesitas.'
+            if not r['publicado']:
+                texto += ' Revisa en Google que el Form esté «Publicado» y aceptando respuestas.'
+            messages.success(request, texto)
+            if r['compartido'] and str(r['compartido']).startswith('error'):
+                messages.warning(request, f'No se pudo compartir el Form en Google: {r["compartido"][7:]}')
+            return redirect(f"{reverse('prospectos:encuestas')}?f={f.pk}")
+    return render(request, 'prospectos/encuesta_nueva.html', _ctx(
+        request, 'Nueva encuesta', datos=datos, bases=crear_form.BASES, tipos=Cuestionario.choices,
+        origenes={t: (o.nombre if o else None) for t, o in origenes.items()}, cuenta_servicio=modo_google() != 'oauth',
+        preguntas={t: Pregunta.objects.filter(cuestionario=t, retirada=False).count() for t in ('ALUMNO', 'TUTOR')}))
 
 
 # --------------------------------------------------------------------------- familias por unir
