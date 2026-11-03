@@ -1,6 +1,7 @@
 {% extends 'prospectos/acceso_base.html' %}
+{% load static %}
 {% block panel %}
-  <div class="sl-hecho" aria-hidden="true"><span class="material-symbols-outlined">{% if inactividad %}schedule{% else %}waving_hand{% endif %}</span></div>
+  <div class="sl-kuali" aria-hidden="true"><img class="kuali-cuerpo" src="{% static 'prospectos/marca/kuali/kuali-reposo-34.webp' %}" alt="" width="640" height="640"></div>
   <h2 class="ac-titulo">{% if inactividad %}Tu sesión se cerró{% else %}Sesión cerrada{% endif %}</h2>
   {% if explicacion %}<p class="ac-aviso" role="status">{{ explicacion }}</p>
   {% else %}<p class="sl-texto">Listo, ya nadie puede ver los datos desde esta computadora con tu cuenta. ¡Hasta pronto!</p>{% endif %}

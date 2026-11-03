@@ -1675,41 +1675,37 @@ button.as-chip:hover { background: color-mix(in srgb, var(--c-acento) 18%, trans
 .as-config { display: grid; gap: 14px; }
 @media print { .as-abrir, .as-panel, .as-ficha { display: none !important; } }
 
-/* ============================================================ Kuali (mascota del asistente) */
-.kuali { display: block; overflow: visible; }
-.kuali .k-extra, .kuali .k-ojos-felices, .kuali .k-ojos-dormidos, .kuali .k-pico-abierto { opacity: 0; transition: opacity .25s ease; }
-.kuali .k-todo { transform-origin: 60px 108px; animation: k-respira 4s ease-in-out infinite; }
-.kuali .k-cabeza { transform-origin: 60px 70px; transition: transform .35s cubic-bezier(.32,.72,0,1); }
-.kuali .k-ala { transition: transform .35s cubic-bezier(.32,.72,0,1); }
-.kuali .k-ala-izq { transform-origin: 34px 68px; } .kuali .k-ala-der { transform-origin: 86px 68px; }
-.kuali .k-ojo { transform-box: fill-box; transform-origin: center; transition: transform .12s ease; }
-.kuali .k-ojos { transition: transform .3s ease; }
-.kuali .k-ceja-izq, .kuali .k-ceja-der { transition: transform .3s ease; transform-box: fill-box; transform-origin: center; }
-.kuali.parpadea .k-ojo { transform: scaleY(.1); }
-@keyframes k-respira { 50% { transform: scale(1.025, .985); } }
+/* ============================================================ Kuali (mascota del asistente): render del modelo 3D */
+/* La foto es la cara del modelo (marca/kuali/). Los gestos ya no mueven partes: inclinan, brincan o atenúan la foto
+   y encima aparece un detalle (puntos al pensar, globo rojo al avisar, «z» al dormir, destellos al festejar). */
+.kuali { position: relative; display: block; overflow: visible; aspect-ratio: 1; }
+.kuali .k-todo { position: absolute; inset: 0; display: block; transform-origin: 50% 90%; animation: k-respira 4s ease-in-out infinite;
+  transition: transform .35s cubic-bezier(.32,.72,0,1), filter .4s ease; }
+.kuali .k-foto { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; pointer-events: none; user-select: none;
+  background: radial-gradient(circle at 50% 35%, #fff4e8, #ffd9b3); box-shadow: 0 0 0 1.5px rgba(255,255,255,.9), 0 2px 6px rgba(12,52,91,.18); }
+.kuali .k-capa { position: absolute; inset: -8% -8% auto auto; width: 116%; height: 116%; overflow: visible; pointer-events: none; }
+.kuali .k-extra { opacity: 0; transition: opacity .25s ease; }
+@keyframes k-respira { 50% { transform: scale(1.03, .985); } }
+.kuali.parpadea .k-foto { filter: brightness(.97); }
 /* estados */
 .kuali.k-pensando-on .k-pensando { opacity: 1; animation: k-puntos 1.2s ease-in-out infinite; }
-.kuali.k-pensando-on .k-ojos { transform: translate(2px, -3px); }
-.kuali.k-pensando-on .k-cabeza { transform: rotate(-6deg); }
+.kuali.k-pensando-on .k-todo { transform: rotate(-8deg); }
 @keyframes k-puntos { 50% { opacity: .35; } }
-.kuali.k-contento-on .k-ojos { opacity: 0; } .kuali.k-contento-on .k-ojos-felices, .kuali.k-contento-on .k-pico-abierto, .kuali.k-contento-on .k-brillos { opacity: 1; }
-.kuali.k-contento-on .k-pico { opacity: 0; }
-.kuali.k-contento-on .k-ala-izq { transform: rotate(35deg); } .kuali.k-contento-on .k-ala-der { transform: rotate(-35deg); }
+.kuali.k-contento-on .k-brillos { opacity: 1; }
 .kuali.k-contento-on .k-todo { animation: k-brinca .5s cubic-bezier(.32,.72,0,1) 2; }
-@keyframes k-brinca { 40% { transform: translateY(-8px); } }
+@keyframes k-brinca { 40% { transform: translateY(-14%) scale(1.04); } }
 .kuali.k-avisando-on .k-alerta { opacity: 1; }
-.kuali.k-avisando-on .k-ala-der { transform: rotate(-55deg); }
-.kuali.k-avisando-on .k-ceja-izq { transform: translateY(-2px) rotate(-6deg); } .kuali.k-avisando-on .k-ceja-der { transform: translateY(-2px) rotate(6deg); }
-.kuali.k-preocupado-on .k-ceja-izq { transform: rotate(14deg) translateY(1px); } .kuali.k-preocupado-on .k-ceja-der { transform: rotate(-14deg) translateY(1px); }
-.kuali.k-preocupado-on .k-ojos { transform: translateY(2px); }
-.kuali.k-preocupado-on .k-cabeza { transform: rotate(4deg); }
-.kuali.k-dormido-on .k-ojos { opacity: 0; } .kuali.k-dormido-on .k-ojos-dormidos, .kuali.k-dormido-on .k-zzz { opacity: 1; }
-.kuali.k-dormido-on .k-cejas { opacity: 0; }
-.kuali.k-dormido-on .k-cabeza { transform: rotate(8deg) translateY(2px); }
-.kuali.k-dormido-on .k-todo { animation-duration: 6s; }
+.kuali.k-avisando-on .k-todo { animation: k-sacude .6s ease 2; }
+@keyframes k-sacude { 25% { transform: rotate(-7deg); } 75% { transform: rotate(7deg); } }
+.kuali.k-preocupado-on .k-todo { transform: rotate(5deg) translateY(4%); }
+.kuali.k-dormido-on .k-zzz { opacity: 1; }
+.kuali.k-dormido-on .k-todo { transform: rotate(9deg) translateY(4%); filter: saturate(.55) brightness(.92); animation-duration: 6s; }
 @media (prefers-reduced-motion: reduce) { .kuali .k-todo, .kuali .k-pensando { animation: none !important; } }
-.dark .kuali .k-silueta { stroke: rgba(255, 255, 255, .22); stroke-width: 1.2; }
-.dark .kuali .k-sombra { fill: #fff; opacity: .08; }
+.dark .kuali .k-foto { box-shadow: 0 0 0 1.5px rgba(255,255,255,.28), 0 2px 8px rgba(0,0,0,.5); }
+/* Kuali de cuerpo entero (sesión cerrada, configuración del asistente) */
+.kuali-cuerpo { display: block; width: 100%; height: auto; filter: drop-shadow(0 14px 18px rgba(5, 12, 40, .28)); user-select: none; }
+.sl-kuali { width: 150px; margin: -8px 0 6px -6px; animation: ac-sube .8s .15s cubic-bezier(.2,.8,.2,1) both; }
+.sl-kuali img { animation: k-respira 4s ease-in-out 1s infinite; transform-origin: 50% 95%; }
 .km { padding: 4px 12px 10px; }
 .km[hidden] { display: none; }
 button.km-boton { width: 100%; display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 4px; border-radius: 14px; text-align: left;
@@ -1729,6 +1725,7 @@ button.as-abrir.con-kuali-visible { display: none; }
 button.as-ocultar { font-size: 11.5px; color: var(--c-texto-3); background: none; text-decoration: underline; }
 .as-mascota-config { display: flex; align-items: flex-end; gap: 14px; }
 .as-mascota-config .kuali { width: 72px; height: 72px; flex: none; }
+.as-kuali-giro { width: 150px; flex: none; filter: none; }
 button.as-sugerencia-aviso { margin-top: 8px; width: 100%; color: var(--c-rojo); border-color: rgba(215, 0, 21, .25); background: rgba(215, 0, 21, .05); }
 /* El botón de arriba ya no es la píldora morada: es Kuali sobre vidrio, como la campanita. */
 button.as-abrir { background: var(--vidrio-fondo, var(--c-relleno)); color: var(--c-texto); border: .5px solid var(--vidrio-borde, var(--c-separador));

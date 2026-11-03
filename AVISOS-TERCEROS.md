@@ -61,3 +61,8 @@ de un programa propietario si se conservan sus avisos. Por eso esta lista viaja 
 El nombre, el logotipo, la hoja membretada y las fotografías de la **Universidad de Cuautitlán** son
 de esa institución. Están en el programa solo para que ella lo use, y deben quitarse de cualquier
 copia que se muestre o entregue a otra institución (por ejemplo, en un portafolio).
+
+**Kuali, la mascota** (`prospectos/static/prospectos/marca/kuali/`): imágenes renderizadas de un modelo 3D que la
+universidad generó con **Meshy AI** (noviembre de 2026). Su uso queda sujeto a las condiciones del plan de Meshy con
+que se generó; antes de usarlo en publicidad o mercancía, confirmar que ese plan permite el uso comercial. La
+chamarra lleva el escudo de la Universidad de Cuautitlán, que también es de esa institución.
