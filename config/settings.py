@@ -272,6 +272,14 @@ def _permiso(codigo):
     return lambda request: request.user.has_perm(codigo)
 
 
+def _activa(*rutas):
+    """Marca el elemento del menú en cualquiera de sus pantallas (las pestañas cambian la ruta)."""
+    def _f(request):
+        from django.urls import reverse
+        return any(request.path.startswith(reverse(r)) for r in rutas)
+    return _f
+
+
 UNFOLD = {
     'SITE_TITLE': 'Prospectos UDC',
     'SITE_HEADER': 'Cuautitlán · Tultepec',
@@ -308,16 +316,12 @@ UNFOLD = {
         'navigation': [
             {'title': 'Día a día', 'separator': False, 'items': [
                 {'title': 'Inicio', 'icon': 'space_dashboard', 'link': reverse_lazy('admin:index')},
-                {'title': 'A quién llamar hoy', 'icon': 'support_agent', 'link': reverse_lazy('prospectos:cola'),
-                 'permission': _permiso('prospectos.change_prospecto'), 'badge': 'prospectos.views.badge_tareas'},
-                {'title': 'Respuestas de los Forms', 'icon': 'inbox', 'link': reverse_lazy('prospectos:respuestas'),
-                 'permission': _permiso('prospectos.view_prospecto'), 'badge': 'prospectos.views.badge_esperando'},
-                {'title': 'Prospectos', 'icon': 'groups', 'link': reverse_lazy('admin:prospectos_prospecto_changelist'),
-                 'permission': _permiso('prospectos.view_prospecto')},
-                {'title': 'Familias por unir', 'icon': 'family_restroom', 'link': reverse_lazy('prospectos:familias'),
-                 'permission': _permiso('prospectos.resolver_coincidencias'), 'badge': 'prospectos.views.badge_familias'},
-                {'title': 'Posibles duplicados', 'icon': 'join_inner', 'link': reverse_lazy('admin:prospectos_posiblecoincidencia_changelist'),
-                 'permission': _permiso('prospectos.resolver_coincidencias'), 'badge': 'prospectos.views.badge_coincidencias'},
+                {'title': 'Prospectos', 'icon': 'groups', 'link': reverse_lazy('prospectos:prospectos'),
+                 'permission': _permiso('prospectos.view_prospecto'), 'badge': 'prospectos.views.badge_tareas',
+                 'active': _activa('prospectos:prospectos', 'prospectos:cola', 'prospectos:respuestas', 'admin:prospectos_prospecto_changelist')},
+                {'title': 'Por revisar', 'icon': 'rule', 'link': reverse_lazy('prospectos:revisar'),
+                 'permission': _permiso('prospectos.resolver_coincidencias'), 'badge': 'prospectos.vistas_prospectos.badge_por_revisar',
+                 'active': _activa('prospectos:familias', 'prospectos:duplicados')},
             ]},
             {'title': 'Visitas a preparatorias', 'separator': True, 'items': [
                 {'title': 'Calendario', 'icon': 'calendar_month', 'link': reverse_lazy('prospectos:calendario'),

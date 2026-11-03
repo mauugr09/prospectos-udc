@@ -20,7 +20,7 @@ El camino de una respuesta:
 1. El alumno escanea el **QR** de la visita y contesta el Form. Su familia contesta el suyo.
 2. En menos de 2 minutos el programa la trae, siempre que esté abierto en la PC de Admisiones.
 3. Si es **menor de edad**, espera el **permiso** de su familia antes de poder usarse.
-4. Se une con la respuesta de su familia, recibe una **prioridad de 0 a 100** y entra a **A quién llamar hoy**.
+4. Se une con la respuesta de su familia, recibe una **prioridad de 0 a 100** y entra a **Prospectos → Llamar hoy**.
 5. Un asesor lo contacta, registra la llamada y lo lleva por el embudo: Contactado → Open house →
    Solicitó inscripción → Inscrito.
 
@@ -91,7 +91,7 @@ El camino de una respuesta:
   su lista.
 - Avisos amarillos o rojos si algo requiere atención: un evento en curso, datos de demostración o un Form
   que no se pudo leer.
-- **A quién llamar hoy**: los primeros de la lista. **Pendientes**: cuántos hay en cada lista de trabajo.
+- **Llamar hoy**: los primeros de la lista. **Pendientes**: cuántos hay en cada lista de trabajo.
 - **Reporte** descarga el resumen del periodo.
 
 ## 4. Avisos (la campanita)
@@ -180,17 +180,44 @@ Si no dices el periodo, toma los últimos 30 días y lo aclara. Con pocos casos 
 una pregunta rara: revisa siempre el «Entendí». Si una pregunta frecuente no la entiende, avísale a quien da soporte para que
 se la enseñe.
 
-## 6. A quién llamar hoy
+## 6. Prospectos: una sola lista con pestañas
 
-![A quién llamar hoy](img/cola.jpg)
+![Prospectos](img/cola.jpg)
 
-1. La lista está ordenada por **prioridad**. Entre dos con la misma prioridad va primero quien lleva más
-   tiempo sin contacto.
-2. Filtros: *Asignados a mí*, *Con tareas abiertas*, por grupo («Listo para inscribirse», «Sensible a
-   beca»…) o *con diferencias entre el alumno y su familia*.
-3. Abre la ficha (siguiente sección), contacta y registra lo que pasó.
+Todo lo de los aspirantes está en **Prospectos** (menú *Día a día*). Arriba eliges qué ver:
 
-Quien contestó **«No, gracias»** a recibir información no aparece aquí y **no se le llama**.
+| Pestaña | Qué muestra |
+|---|---|
+| **Llamar hoy** | Aspirantes activos que aceptan contacto, del más prioritario al que lleva más tiempo sin contacto. |
+| **Nuevos** | Los que llegaron en los últimos 7 días. |
+| **Todos** | Todos los que dieron permiso, también inscritos, descartados y quienes no quieren información. |
+| **Esperando permiso** | Menores sin el permiso de su familia (sección 8). |
+| **Respuestas de los Forms** | Cada envío de los Forms tal como llegó (sección 8). |
+
+- **Buscar:** nombre del aspirante, del tutor o de la prepa. Al lado, plantel, grupo y estatus.
+  **Más filtros:** WhatsApp o correo, *Asignados a mí*, *Con llamadas pendientes* y *Alumno y familia contestaron
+  distinto*. **Quitar filtros** regresa a la lista completa de esa pestaña.
+- Cada fila dice la prioridad, la prepa y la carrera, sus grupos, el estatus, quién contestó (alumno, familia o
+  ambos), cuándo fue el último contacto y su asesor.
+- **Editar** abre la ficha (sección 7) para contactar, registrar lo que pasó o corregir datos.
+- **Baja** (solo administradores): ver «Dar de baja» abajo.
+- **Tabla completa y exportar** (debajo del título): la tabla con todas las columnas, para exportar a Excel o
+  hacer cambios a varios a la vez.
+
+Quien contestó **«No, gracias»** a recibir información no aparece en *Llamar hoy* y **no se le llama**.
+
+### Dar de baja a un aspirante
+
+El programa **no borra** registros: los **da de baja**. Se eliminan su nombre, teléfonos, correos, CURP y lo
+que escribió, y queda solo como una cifra anónima en los reportes. Así se cumple la ley de datos personales
+sin descuadrar las estadísticas. **No se puede deshacer.**
+
+1. Pulsa **Baja** en su fila.
+2. Elige el motivo: *Pidió que se borren sus datos*, *Es una prueba o datos basura* u *Otro* (escríbelo).
+3. Escribe **BAJA** para confirmar.
+
+Queda en la bitácora quién lo hizo, cuándo y por qué. Si la persona solo ya no quiere que la llamen, **no la
+des de baja**: abre su ficha y marca «No quiere información».
 
 ## 7. La ficha del aspirante
 
@@ -216,6 +243,8 @@ une solo. Un correo de bienvenida que ya se haya enviado no se puede deshacer.
 
 ## 8. Respuestas de los Forms: «contestaron y no aparece»
 
+En **Prospectos → Respuestas de los Forms** (o **Esperando permiso**, para ver solo las retenidas).
+
 ![Respuestas de los Forms](img/respuestas.jpg)
 
 Aquí está **todo** lo que llegó, aunque todavía no se pueda usar:
@@ -234,9 +263,12 @@ y el medio (llamada, WhatsApp, en persona, por escrito). Queda tu nombre, la fec
 Si una respuesta **ni siquiera aparece aquí**: el programa estaba cerrado (se pone al día al abrirlo) o
 el Form tiene un problema de conexión (aviso rojo en el Inicio).
 
-## 9. Familias por unir
+## 9. Por revisar: familias por unir
 
-![Familias por unir](img/familias.jpg)
+![Por revisar: familias](img/familias.jpg)
+
+**Por revisar** (menú *Día a día*) junta todo lo que necesita que una persona decida. Tiene dos pestañas:
+**Familias por unir** y **Duplicados**. El número del menú es la suma de las dos.
 
 La encuesta de la familia y el cuestionario del alumno llegan por separado. Si el programa está seguro,
 los une solo. Si duda, aparecen aquí: **una tarjeta por familia** con sus posibles hijos(as), el más
@@ -254,18 +286,22 @@ probable primero, con sus puntos y por qué se parecen.
 > **Importante:** mientras un menor no se une con su familia, el permiso que dio la familia no le llega y
 > sigue «Esperando permiso». Revisa esta pantalla al menos dos veces por semana.
 
-## 10. Posibles duplicados
+## 10. Por revisar: duplicados
 
-![Posibles duplicados](img/duplicados.jpg)
+![Por revisar: duplicados](img/duplicados.jpg)
 
-Dos respuestas que parecen de **la misma persona** (contestó dos veces, o con el nombre escrito distinto).
-El programa **nunca** las une solo. Revisa cada una:
+Dos registros que parecen de **la misma persona** (contestó dos veces, o con el nombre escrito distinto).
+El programa **nunca** los une solo. Cada par aparece **una sola vez**, con los dos registros lado a lado:
+el que llegó primero (se queda) y el que llegó después (se integra al otro). Pulsa cualquiera para abrir su
+ficha en otra pestaña.
 
-- **Es la misma persona: fusionar.** Se queda una ficha con todo el historial.
-- **Son personas distintas: rechazar.**
+- **Es la misma persona: unir.** Queda una ficha con todo el historial de las dos.
+- **Son personas distintas.** No se vuelven a proponer.
+- Filtros: buscar por nombre, y *Muy parecidos / Parecidos / Dudosos*.
 
-Pistas: misma prepa, mismo apellido materno, el mismo teléfono. Si te equivocas al fusionar, se separa
-desde la ficha (sección 7).
+Pistas: misma prepa, mismo apellido materno, el mismo teléfono. Si te equivocas al unir, se separa
+desde la ficha (sección 7). El historial completo (unidos y descartados) está en
+*Configuración → Bitácora* y en la tabla de coincidencias.
 
 ## 11. Visitas a preparatorias
 
@@ -363,7 +399,7 @@ que, en esa encuesta, pulses **Usar para los QR de las visitas**. Las imágenes 
 
 | Pregunta | Respuesta |
 |---|---|
-| Un alumno dice que contestó y no aparece. | Busca en **Respuestas de los Forms**. Si está «Esperando permiso», falta su familia. Si no está, el programa estaba cerrado: se pone al día al abrirlo. |
+| Un alumno dice que contestó y no aparece. | Busca en **Prospectos → Respuestas de los Forms**. Si está «Esperando permiso», falta su familia. Si no está, el programa estaba cerrado: se pone al día al abrirlo. |
 | ¿Por qué un aspirante tiene prioridad 100? | En su ficha, pestaña **Prioridad y grupos**, dice de dónde salen los puntos. |
 | Me salió «Se cerró tu sesión». | Pasaron 30 minutos sin uso. Vuelve a entrar; no se perdió nada. |
 | ¿El asistente puede ver los datos de un aspirante? | No. Recibe cifras y categorías, nunca nombres ni teléfonos. Ver sección 5. |

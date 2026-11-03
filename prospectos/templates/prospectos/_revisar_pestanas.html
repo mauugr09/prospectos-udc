@@ -1,0 +1,8 @@
+<nav class="pp-pestanas" aria-label="Qué revisar">
+  {% for p in pestanas_revisar %}
+  <a href="{{ p.url }}" class="pp-pestana{% if p.activa %} activa{% endif %}" title="{{ p.ayuda }}"{% if p.activa %} aria-current="page"{% endif %}>
+    <span class="material-symbols-outlined" aria-hidden="true">{{ p.icono }}</span>{{ p.titulo }}{% if p.n %}<b class="pp-n">{{ p.n }}</b>{% endif %}
+  </a>
+  {% endfor %}
+</nav>
+{% for p in pestanas_revisar %}{% if p.activa %}<p class="pp-ayuda">{{ p.ayuda }}</p>{% endif %}{% endfor %}

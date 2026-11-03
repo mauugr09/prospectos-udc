@@ -459,10 +459,10 @@ def r_cifras(user, ent) -> dict:
     if m in ('aspirantes', 'por_llamar') and total:
         cola = reverse('prospectos:cola') + (f"?plantel={a['plantel']}" if a.get('plantel') else '')
         lineas.append(f"\n**Qué haría:** {_enlace('revisar la lista', r.get('enlace_a_la_lista'))} y empezar por los de mayor "
-                      f"prioridad en {_enlace('A quién llamar hoy', cola)}.")
+                      f"prioridad en {_enlace('Prospectos → Llamar hoy', cola)}.")
     elif m == 'esperando_permiso' and total:
-        lineas.append(f"\n**Qué haría:** revisar {_enlace('Familias por unir', reverse('prospectos:familias'))}: muchos ya tienen el "
-                      f"permiso de su familia pero no se han unido. A los demás, pedir el permiso desde {_enlace('Respuestas de los Forms', reverse('prospectos:respuestas'))}.")
+        lineas.append(f"\n**Qué haría:** revisar {_enlace('Por revisar → Familias', reverse('prospectos:familias'))}: muchos ya tienen el "
+                      f"permiso de su familia pero no se han unido. A los demás, pedir el permiso desde {_enlace('Prospectos → Esperando permiso', reverse('prospectos:prospectos_ver', args=['permiso']))}.")
     elif total:
         lineas.append(f"\n{_enlace('Ver la lista', r.get('enlace_a_la_lista'))}.")
     # siguientes
@@ -643,7 +643,7 @@ def r_pendientes(user, ent) -> dict:
     for p in activos[1:6]:
         lineas.append(f"- {_enlace(p['que'], p['enlace'])}: **{_num(p['n'])}**" + (f" ({p['por_que_importa']})" if p.get('por_que_importa') else ''))
     lineas.append(f"\n**Qué haría:** empezar por {_enlace('esa lista', primero['enlace'])} y, antes de terminar el día, "
-                  f"{_enlace('Familias por unir', reverse('prospectos:familias'))}, porque destraba permisos.")
+                  f"{_enlace('Por revisar → Familias', reverse('prospectos:familias'))}, porque destraba permisos.")
     return _salida(lineas, ['¿Cuántos listos para inscribirse hay por plantel?', '¿Qué canal convierte mejor?'], r, 'pendientes')
 
 
@@ -651,7 +651,7 @@ PANTALLA_DE_SECCION = [  # (palabra del título del manual, ruta de la pantalla)
     ('familias', 'prospectos:familias'), ('respuestas de los forms', 'prospectos:respuestas'), ('llamar', 'prospectos:cola'),
     ('avisos', 'prospectos:avisos'), ('visitas', 'admin:prospectos_evento_changelist'), ('calendario', 'prospectos:calendario'),
     ('mapa', 'prospectos:mapa'), ('reporte', 'prospectos:reporte'), ('encuestas', 'prospectos:encuestas'),
-    ('duplicados', 'admin:prospectos_posiblecoincidencia_changelist'), ('proteccion', 'prospectos:proteccion'),
+    ('duplicados', 'prospectos:duplicados'), ('proteccion', 'prospectos:proteccion'),
 ]
 
 

@@ -64,7 +64,7 @@ def test_con_duda_va_a_familias_por_unir_y_se_resuelve_con_un_clic(client, f_alu
     client.force_login(User.objects.create_superuser('f@x.mx', 'f@x.mx', 'Clave-de-prueba-123'))
     html = client.get('/admin/herramientas/familias/').content.decode()
     assert 'data-accion="unir"' in html and 'Diego Hernández Ruiz' in html
-    assert 'Familias por unir' in client.get('/admin/').content.decode()  # en el menú
+    assert 'Por revisar' in client.get('/admin/').content.decode()  # en el menú
     client.post('/admin/herramientas/familias/', {'accion': 'unir', 'propuesta': prop.pk})
     p = Prospecto.objects.get(fusionado_en__isnull=True)
     assert p.tiene_alumno and p.tiene_tutor and p.nombre_aspirante == 'Diego Hernández Ruiz'

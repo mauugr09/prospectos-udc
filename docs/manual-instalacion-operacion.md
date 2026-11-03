@@ -51,6 +51,11 @@ Al crear el administrador, el programa **ya registra los dos Forms de la UDC** (
 Encuesta para padres de familia). En cuanto se conecta Google (anexo B), los lee, ajusta las preguntas y empieza a
 importar; si se registraron al revés, el título del Form lo corrige.
 
+**Cada vez que abre**, revisa que esos dos sigan bien. Si un registro del mismo tipo apunta a un Form que Google no
+encuentra (o que nunca importó nada), lo corrige con el ID bueno. Si queda otro registro repetido que sigue fallando,
+lo apaga, sin borrarlo. Si aun así el Form de padres marca **«Google no deja ver ese Form»**, es de permisos: ábrelo
+en Google con la cuenta dueña → *Compartir* → agrega como **editor** la cuenta que dice el mensaje.
+
 
 
 El Inicio del administrador muestra una lista de **Primeros pasos** hasta que todo está configurado:
@@ -254,7 +259,7 @@ Si algo sale mal, restaura la copia previa (sección 10) y avisa a NullSpace Stu
 | Cada… | Qué | Dónde |
 |---|---|---|
 | Día | Que la ventana negra esté abierta; revisar la campanita | PC del sistema |
-| 2 veces por semana | Familias por unir y Posibles duplicados | Admisiones |
+| 2 veces por semana | Por revisar (familias y duplicados) | Admisiones |
 | Semana | Que «Copia fuera de esta PC» diga **Al día**; si se usa una sola memoria, llevarla a otro lugar | Protección de datos |
 | Mes | Revisar la **Bitácora**: exportaciones con contacto, bloqueos de acceso, descargas de la llave | Configuración → Bitácora |
 | Mes | Desactivar a quien ya no trabaja en Admisiones | Usuarios |

@@ -1,0 +1,52 @@
+{% extends "prospectos/base.html" %}
+{% block ayuda %}familias{% endblock %}
+{% block pagina %}
+<div class="pp">
+  {% include "prospectos/_revisar_pestanas.html" %}
+
+  <form method="get" class="pp-filtros" role="search">
+    <label class="pp-buscar"><span class="material-symbols-outlined" aria-hidden="true">search</span>
+      <input type="search" name="q" value="{{ q }}" placeholder="Buscar por nombre" aria-label="Buscar"></label>
+    <nav class="seg" aria-label="Seguridad">
+      <a href="?{% if q %}q={{ q|urlencode }}{% endif %}" class="{% if not nivel %}activo{% endif %}">Todas</a>
+      <a href="?nivel=alta{% if q %}&q={{ q|urlencode }}{% endif %}" class="{% if nivel == 'alta' %}activo{% endif %}">Muy parecidos</a>
+      <a href="?nivel=media{% if q %}&q={{ q|urlencode }}{% endif %}" class="{% if nivel == 'media' %}activo{% endif %}">Parecidos</a>
+      <a href="?nivel=baja{% if q %}&q={{ q|urlencode }}{% endif %}" class="{% if nivel == 'baja' %}activo{% endif %}">Dudosos</a>
+    </nav>
+    {% if nivel %}<input type="hidden" name="nivel" value="{{ nivel }}">{% endif %}
+    <button class="udc-btn" type="submit"><span class="material-symbols-outlined" aria-hidden="true">search</span>Buscar</button>
+    {% if q or nivel %}<a class="udc-btn secundario" href="?">Quitar filtros</a>{% endif %}
+  </form>
+
+  <div class="dp-lista">
+  {% for x in pares %}
+    <article class="dp-par">
+      <header class="dp-cabeza">
+        <span class="dp-puntos {{ x.nivel }}" title="Qué tan parecidos son">{{ x.puntos }} %</span>
+        <p>{{ x.motivo }}</p>
+      </header>
+      <div class="dp-lados">
+        {% for lado, p in x.items %}{% if lado == 'queda' or lado == 'sale' %}
+        <a class="dp-lado" href="{% url 'admin:prospectos_prospecto_change' p.pk %}" target="_blank" rel="noopener" title="Abrir la ficha en otra pestaña">
+          <small class="dp-etiqueta">{% if lado == 'queda' %}Registrado primero · se queda{% else %}Registrado después · se integra al otro{% endif %}</small>
+          <b>{{ p.nombre_aspirante }}</b>
+          <small>{{ p.preparatoria|default:"Sin preparatoria" }} · {{ p.carrera|default:"Aún no decide" }}{% if p.plantel %} · {{ p.get_plantel_display }}{% endif %}</small>
+          <small>{{ p.quien }} · {{ p.get_estatus_display }} · llegó el {{ p.creado_en|date:"j M Y" }}</small>
+        </a>
+        {% endif %}{% endfor %}
+      </div>
+      <form method="post" class="dp-botones">{% csrf_token %}
+        {% for i in x.ids %}<input type="hidden" name="propuesta" value="{{ i }}">{% endfor %}
+        <button class="udc-btn secundario" name="accion" value="distintas"><span class="material-symbols-outlined">call_split</span>Son personas distintas</button>
+        <button class="udc-btn" name="accion" value="unir"><span class="material-symbols-outlined">join_inner</span>Es la misma persona: unir</button>
+      </form>
+    </article>
+  {% empty %}
+    <div class="ay-vacio"><span class="material-symbols-outlined">task_alt</span>
+      <b>{% if q or nivel %}Ningún par coincide con estos filtros.{% else %}No hay duplicados por revisar.{% endif %}</b>
+      {% if q or nivel %}<p><a class="underline" href="?">Quitar filtros</a></p>{% endif %}</div>
+  {% endfor %}
+  </div>
+  <p class="pp-ayuda mt-4">Al unir, las respuestas, llamadas y etiquetas del registro nuevo pasan a la ficha del primero. Queda en la bitácora.</p>
+</div>
+{% endblock %}

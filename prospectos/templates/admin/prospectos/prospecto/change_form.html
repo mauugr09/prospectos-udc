@@ -32,7 +32,7 @@
     <div class="text-sm"><a class="underline" href="{% url 'admin:prospectos_prospecto_change' c.prospecto.pk %}">{{ c.prospecto }}</a> ↔
       <a class="underline" href="{% url 'admin:prospectos_prospecto_change' c.candidato.pk %}">{{ c.candidato }}</a>. Similitud {{ c.similitud|floatformat:2 }}: {{ c.motivo }}</div>
   {% endfor %}
-  <a class="font-semibold underline" href="{% url 'admin:prospectos_posiblecoincidencia_changelist' %}">Resolver en Coincidencias</a></div>
+  <a class="font-semibold underline" href="{% url 'prospectos:duplicados' %}">Resolver en Coincidencias</a></div>
 </div>
 {% endif %}
 {% if original.consentimiento and not original.no_contactar %}
@@ -73,7 +73,7 @@
       {% if original.tutor_nombre %}<small style="color:var(--c-texto)">{{ original.tutor_nombre }}</small>{% endif %}
       {% if c.tutor %}<small>Contestó el {{ c.tutor.enviada_en|date:"j M Y, H:i" }}</small>
       {% elif familia_posible %}<small>¿Es su familia? {% for f in familia_posible %}<a class="underline" href="{% url 'admin:prospectos_prospecto_change' f.prospecto.pk %}">{{ f.prospecto.tutor_nombre|default:f.prospecto.nombre_aspirante }}</a> ({{ f.puntos }} pts){% if not forloop.last %}, {% endif %}{% endfor %}.
-        <a class="underline" href="{% url 'prospectos:familias' %}">Revisar en Familias por unir</a></small>
+        <a class="underline" href="{% url 'prospectos:familias' %}">Revisar en Por revisar → Familias</a></small>
       {% else %}<small>Aún no contesta: pídele que llene su cuestionario</small>{% endif %}</div>
     {% if c.tutor %}<a class="rs-ver" href="{% url 'prospectos:respuesta' c.tutor.pk %}" title="Ver la respuesta completa"><span class="material-symbols-outlined">open_in_new</span></a>{% endif %}
   </section>

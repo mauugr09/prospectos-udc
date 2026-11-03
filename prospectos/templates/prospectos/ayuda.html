@@ -41,9 +41,9 @@
       <header><span class="gu-icono"><span class="material-symbols-outlined">route</span></span><div><h2>Cómo viaja una respuesta</h2><p>Del celular del alumno a la lista de llamadas.</p></div></header>
       <ol class="gu-flujo">
         <li><b>Contestan el Form</b><span>En la visita, con el QR. El alumno elige plantel, carreras y cómo quiere que lo contacten; su familia contesta otra encuesta.</span></li>
-        <li><b>Llega sola al programa</b><span>Cada minuto, <u>mientras la ventana negra esté abierta</u>. Aparece en Respuestas de los Forms.</span></li>
+        <li><b>Llega sola al programa</b><span>Cada minuto, <u>mientras la ventana negra esté abierta</u>. Aparece en Prospectos → Respuestas de los Forms.</span></li>
         <li><b>Se revisa el permiso</b><span>Mayor de edad que aceptó el aviso: lista. Menor: espera el permiso de su familia.</span></li>
-        <li><b>Se le llama</b><span>Entra a «A quién llamar hoy», ordenado por prioridad.</span></li>
+        <li><b>Se le llama</b><span>Entra a Prospectos → «Llamar hoy», ordenado por prioridad.</span></li>
       </ol>
     </section>
 
@@ -61,7 +61,7 @@
     <section class="gu-guia" id="dia" data-palabras="llamar llamada cola asesor contacto whatsapp correo ficha seguimiento tarea estatus">
       <header><span class="gu-icono"><span class="material-symbols-outlined">support_agent</span></span><div><h2>El día a día del asesor</h2><p>A quién llamar, qué decir y cómo dejarlo registrado.</p></div></header>
       <ol class="gu-pasos">
-        <li>Abre <b>A quién llamar hoy</b>. Arriba van los de mayor prioridad y, entre iguales, quien lleva más tiempo sin contacto.</li>
+        <li>Abre <b>Prospectos</b>, pestaña <b>Llamar hoy</b>. Arriba van los de mayor prioridad y, entre iguales, quien lleva más tiempo sin contacto.</li>
         <li>Abre la ficha. Revisa primero <b>en qué no coinciden</b> el alumno y su familia (carrera, horario, quién paga): es lo primero que conviene aclarar.</li>
         <li>Para ver teléfono o correo, pulsa <b>Mostrar</b>. Queda registrado quién lo consultó.</li>
         <li>Al terminar, registra el contacto en la ficha (llamada, WhatsApp, correo) y cambia el estatus si avanzó.</li>
@@ -70,7 +70,7 @@
         <li>Quien contestó «No, gracias» no aparece en la lista y <b>no se le llama</b>.</li>
         <li>Si alguien pasa {{ sin_contacto }} días sin contacto, se crea una llamada pendiente automática.</li>
       </ul>
-      <a class="gu-ir" href="{% url 'prospectos:cola' %}">Ir a A quién llamar hoy<span class="material-symbols-outlined">arrow_forward</span></a>
+      <a class="gu-ir" href="{% url 'prospectos:cola' %}">Ir a Llamar hoy<span class="material-symbols-outlined">arrow_forward</span></a>
     </section>
 
     <section class="gu-guia" id="avisos" data-palabras="avisos notificaciones campanita campana alerta vencidas asignado recordatorio respaldo">
@@ -94,17 +94,17 @@
       <header><span class="gu-icono"><span class="material-symbols-outlined">family_restroom</span></span><div><h2>Unir al alumno con su familia</h2><p>La encuesta de la familia y la del alumno se juntan en una sola ficha.</p></div></header>
       <ol class="gu-pasos">
         <li>Cuando el programa está seguro, las une solo al importar.</li>
-        <li>Las dudosas aparecen en <b>Familias por unir</b>, una tarjeta por familia con sus posibles hijos(as), el más probable primero. Pulsa <b>Unir</b> en el correcto, la <b>✕</b> en el que no es, o <b>Ninguno es su hijo(a)</b>.</li>
+        <li>Las dudosas aparecen en <b>Por revisar → Familias por unir</b>, una tarjeta por familia con sus posibles hijos(as), el más probable primero. Pulsa <b>Unir</b> en el correcto, la <b>✕</b> en el que no es, o <b>Ninguno es su hijo(a)</b>.</li>
         <li>Usa el buscador de arriba para encontrar una familia, tutor, alumno o prepa (no importan los acentos), y filtra por seguridad: <b>Alta</b> (60 puntos o más), <b>Media</b> o <b>Baja</b>. Tecla <b>/</b> para ir al buscador.</li>
         <li>Si el hijo(a) no está entre las propuestas, escribe su nombre en <b>«¿Es otro alumno?»</b> dentro de la tarjeta. Las encuestas sin ninguna propuesta están en <b>Sin pareja</b>.</li>
       </ol>
       <ul class="gu-saber">
         <li>Si el alumno es menor, al unirlo con su familia ya cuenta con el permiso de ella.</li>
         <li>Las <b>tarjetas familiares</b> del evento (dos QR con el mismo código) unen a la familia sin dudas.</li>
-        <li><b>Posibles duplicados</b> son dos fichas que parecen la misma persona; el programa nunca las une solo.</li>
+        <li><b>Por revisar → Duplicados</b> son dos fichas que parecen la misma persona; el programa nunca las une solo.</li>
         <li>Unir no tiene botón de deshacer. Si un alumno de la búsqueda no tiene nada en común con la familia, el programa pide un segundo clic.</li>
       </ul>
-      <a class="gu-ir" href="{% url 'prospectos:familias' %}">Ir a Familias por unir<span class="material-symbols-outlined">arrow_forward</span></a>
+      <a class="gu-ir" href="{% url 'prospectos:revisar' %}">Ir a Por revisar<span class="material-symbols-outlined">arrow_forward</span></a>
     </section>
 
     <section class="gu-guia" id="visitas" data-palabras="evento visita prepa qr tarjetas solicitud reporte en vivo carta beca folio imprimir permanente">

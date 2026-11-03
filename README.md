@@ -43,7 +43,7 @@ Los PDF se regeneran con `python empaquetado/manuales/generar.py`.
 Si abres `Prospectos.exe` otra vez con el programa ya abierto, solo abre el navegador.
 
 **¿No sabes por dónde empezar?** Menú lateral → **¿Cómo funciona?** Y si contestaron un Form y
-«no aparece», revisa **Respuestas de los Forms**: casi siempre está *Esperando permiso* (dice qué falta).
+«no aparece», revisa **Prospectos → Respuestas de los Forms**: casi siempre está *Esperando permiso* (dice qué falta).
 
 El programa ya está hecho para el **Cuestionario Vocacional** y la **Encuesta para padres de familia**
 de la universidad (Cuautitlán y Tultepec). Lo que conviene agregarle al Form está en [docs/formularios.md](docs/formularios.md), sección 3.

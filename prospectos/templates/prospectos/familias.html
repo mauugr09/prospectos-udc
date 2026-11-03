@@ -2,6 +2,7 @@
 {% load static %}
 {% block ayuda %}familias{% endblock %}
 {% block pagina %}
+{% include "prospectos/_revisar_pestanas.html" %}
 <div class="fm" id="fm" data-buscar="{% url 'prospectos:familias_alumnos' %}" data-csrf="{{ csrf_token }}">
 
   <div class="fm-barra" role="search">

@@ -56,6 +56,10 @@ def explicar_http(codigo: int, cuerpo: str) -> str:
               'Comparte el Form como editor con esa cuenta.'),
         429: 'Google limitó las peticiones (cuota); se reintenta solo en la siguiente corrida.',
     }
+    if codigo in (403, 404):
+        cuenta = cuenta_conectada()
+        if cuenta:
+            pistas[codigo] += f' La cuenta conectada es {cuenta}.'
     if (cuerpo or '').lstrip().startswith('<'):  # página HTML de error de Google: no aporta nada al registro
         cuerpo = '(página de error de Google)'
     return f'HTTP {codigo}: {pistas.get(codigo, "Error de Google.")} Detalle: {(cuerpo or "")[:300]}'
@@ -113,6 +117,17 @@ def ruta_cuenta_servicio():
         if doble.exists():
             return doble
     return ruta
+
+
+def cuenta_conectada() -> str | None:
+    """El correo con el que el programa entra a Google (para decir con quién compartir el Form). None si no se sabe."""
+    try:
+        if modo_google() == 'oauth':
+            datos = json.loads(ruta_token_oauth().read_text(encoding='utf-8'))
+            return datos.get('account') or None
+        return json.loads(ruta_cuenta_servicio().read_text(encoding='utf-8')).get('client_email') or None
+    except (OSError, ValueError, AttributeError):
+        return None
 
 
 def credenciales_listas() -> bool:
