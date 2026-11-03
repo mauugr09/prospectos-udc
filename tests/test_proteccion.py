@@ -226,7 +226,9 @@ def test_inactividad_redirige_al_acceso(client):
     s['ultima_actividad'] = time.time() - 3600
     s.save()
     r = client.get('/admin/herramientas/familias/')
-    assert r.status_code == 302 and r.url.startswith('/admin/login/')
+    assert r.status_code == 302 and r.url == '/admin/herramientas/sesion-cerrada/?motivo=inactividad'
+    html = client.get(r.url).content.decode()
+    assert '30 minutos' in html and 'Volver a entrar' in html
 
 
 def test_restablecer_la_clave_quita_el_bloqueo(client, promotor):

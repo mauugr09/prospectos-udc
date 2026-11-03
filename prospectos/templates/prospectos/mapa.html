@@ -27,7 +27,7 @@
       <button type="button" role="tab" data-modo="visita">Última visita</button>
       <button type="button" role="tab" data-modo="plantel">Plantel</button>
     </div>
-    {% if sedes_faltan and request.user.is_superuser %}<a class="mc-interruptor mc-vidrio" href="{% url 'prospectos:configurar_mapa' %}#sedes"><span class="material-symbols-outlined" style="font-size:18px">add_location</span>Ubicar {{ sedes_faltan|join:" y " }}</a>{% endif %}
+    {% if request.user.is_superuser %}{% for s in sedes_faltan %}<button type="button" class="mc-interruptor mc-vidrio mc-ubicar-sede" data-sede="{{ s.clave }}"><span class="material-symbols-outlined" style="font-size:18px">add_location</span>Ubicar {{ s.nombre }}</button>{% endfor %}{% endif %}
     {% if sedes %}<label class="mc-interruptor mc-vidrio"><input type="checkbox" id="mc-radios" checked> Distancias</label>{% endif %}
   </div>
 
@@ -41,10 +41,22 @@
   </aside>
 
   <div class="mc-leyenda mc-vidrio" id="mc-leyenda" aria-live="polite"></div>
+  {% if request.user.is_superuser and sedes_faltan %}
+  <form class="mc-colocar mc-vidrio" id="mc-colocar" hidden data-url="{% url 'prospectos:configurar_mapa' %}">{% csrf_token %}
+    <p><b id="mc-colocar-titulo"></b><span>Acerca el mapa y haz clic justo sobre el edificio. Puedes mover el escudo antes de guardar.</span></p>
+    <label class="mc-colocar-pegar"><span>¿Ya tienes las coordenadas o el enlace de Google Maps? Pégalos aquí:</span>
+      <input type="text" name="coordenadas" placeholder="19.6512, -99.1234" autocomplete="off"></label>
+    <div class="mc-colocar-botones">
+      <button type="button" class="udc-btn secundario" data-colocar="cancelar">Cancelar</button>
+      <button type="submit" class="udc-btn" id="mc-colocar-guardar" disabled><span class="material-symbols-outlined">check</span>Guardar aquí</button>
+    </div>
+    <p class="mc-colocar-error" id="mc-colocar-error" role="alert" hidden></p>
+  </form>
+  {% endif %}
   <p id="sin-internet" class="mc-aviso mc-vidrio" hidden><span class="material-symbols-outlined">wifi_off</span>Sin internet: solo los estados y las preparatorias.</p>
 </div>
 
-{{ puntos|json_script:"puntos" }}{{ tiles|json_script:"tiles" }}{{ sedes|json_script:"sedes" }}{{ acciones|json_script:"acciones" }}{{ hoy|json_script:"hoy" }}
+{{ puntos|json_script:"puntos" }}{{ tiles|json_script:"tiles" }}{{ sedes|json_script:"sedes" }}{{ acciones|json_script:"acciones" }}{{ hoy|json_script:"hoy" }}{{ sedes_faltan|json_script:"sedes-faltan" }}
 <script src="{% static 'prospectos/vendor/leaflet/leaflet.js' %}"></script>
 <script src="{% static 'prospectos/vendor/googlemutant/Leaflet.GoogleMutant.js' %}"></script>
 <script src="{% static 'prospectos/js/mapa-mx.js' %}"></script>

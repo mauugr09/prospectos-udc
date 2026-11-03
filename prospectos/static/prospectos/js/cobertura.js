@@ -57,6 +57,7 @@
     const mapa = MapaMX.crear(caja, { tiles: leer('tiles'), rueda: true,
                                       sinInternet: () => { $('sin-internet').hidden = false; } });
     mapa.zoomControl.setPosition('bottomright');
+    caja._mapa = mapa;  // para «Ubicar plantel» (abajo)
 
     // ---------------------------------------------------------------- planteles UDC y distancias
     const radios = L.layerGroup();
@@ -221,5 +222,61 @@
     mapa.on('click', () => { if (elegido) cerrar(); });
 
     leyenda(); lista();
+  });
+})();
+
+/* Ubicar un plantel con un clic (solo administradores): el escudo se coloca donde haces clic, se puede arrastrar,
+   y «Guardar aquí» lo guarda en Configuración → Mapa. También acepta coordenadas o un enlace de Google Maps pegados. */
+(function () {
+  const forma = document.getElementById('mc-colocar');
+  const caja = document.getElementById('mapa');
+  if (!forma || !caja) return;
+  const faltan = JSON.parse(document.getElementById('sedes-faltan').textContent);
+  const guardar = document.getElementById('mc-colocar-guardar');
+  const error = document.getElementById('mc-colocar-error');
+  const pegar = forma.querySelector('[name=coordenadas]');
+  let sede = null, marca = null, punto = null;
+
+  const mapa = () => caja._mapa;  // MapaMX.crear deja aquí la instancia de Leaflet
+  function avisar(t) { error.textContent = t || ''; error.hidden = !t; }
+  function poner(latlng) {
+    punto = latlng; guardar.disabled = false; avisar('');
+    const m = mapa(); if (!m) return;
+    if (!marca) {
+      marca = L.marker(latlng, { draggable: true, zIndexOffset: 200000, autoPan: true,
+        icon: L.divIcon({ className: 'mc-sede-icono', html: '', iconSize: [0, 0] }) }).addTo(m);
+      const pintar = () => { const e = marca.getElement(); if (e) e.replaceChildren(MapaMX.escudoSede(sede)); };
+      marca.on('add', pintar); pintar();
+      marca.on('dragend', () => { punto = marca.getLatLng(); });
+    } else marca.setLatLng(latlng);
+  }
+  function salir() {
+    forma.hidden = true; caja.classList.remove('mc-colocando'); sede = null; punto = null; guardar.disabled = true; pegar.value = '';
+    if (marca) { marca.remove(); marca = null; }
+    mapa()?.off('click', alClic);
+  }
+  function alClic(ev) { poner(ev.latlng); }
+  document.querySelectorAll('.mc-ubicar-sede').forEach((b) => b.addEventListener('click', () => {
+    if (!mapa()) return;
+    sede = faltan.find((s) => s.clave === b.dataset.sede); if (!sede) return;
+    document.getElementById('mc-colocar-titulo').textContent = `Ubicar el plantel ${sede.nombre}`;
+    forma.hidden = false; caja.classList.add('mc-colocando');
+    mapa().on('click', alClic);
+  }));
+  forma.querySelector('[data-colocar=cancelar]').addEventListener('click', salir);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !forma.hidden) salir(); });
+  pegar.addEventListener('input', () => { guardar.disabled = !(punto || pegar.value.trim()); });
+  forma.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const datos = new FormData(forma);
+    datos.set('accion', 'sede'); datos.set('clave', sede.clave);
+    if (!pegar.value.trim() && punto) { datos.set('lat', punto.lat.toFixed(7)); datos.set('lng', punto.lng.toFixed(7)); datos.delete('coordenadas'); }
+    guardar.disabled = true;
+    try {
+      const r = await fetch(forma.dataset.url, { method: 'POST', body: datos, headers: { 'X-Requested-With': 'fetch' } });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.ok) { avisar(j.error || 'No se pudo guardar. Intenta de nuevo.'); guardar.disabled = false; return; }
+      location.reload();
+    } catch (_) { avisar('No se pudo guardar: revisa la conexión con la computadora principal.'); guardar.disabled = false; }
   });
 })();

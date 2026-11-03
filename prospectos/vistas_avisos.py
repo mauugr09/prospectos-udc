@@ -110,4 +110,8 @@ def contexto(request):
     if not u or not u.is_authenticated or not u.is_staff or not request.path.startswith('/admin'):
         return {}
     from .servicios.asistente import nombre_mascota
-    return {'avisos_sin_leer': avisos.no_leidas(u), 'mascota_nombre': nombre_mascota()}
+    from django.conf import settings
+    from .servicios import dos_pasos
+    return {'avisos_sin_leer': avisos.no_leidas(u), 'mascota_nombre': nombre_mascota(),
+            'inactividad_minutos': int(settings.CONFIG.get('INACTIVIDAD_MINUTOS', 30) or 0),
+            'puede_olvidar_pc': bool(request.COOKIES.get(dos_pasos.COOKIE))}

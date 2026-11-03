@@ -107,7 +107,8 @@ class ProteccionDeAcceso:
       abierta no deja los datos de los aspirantes a la vista. La campanita revisando avisos NO cuenta como uso;
       la pantalla «En vivo» de un evento sí (se proyecta durante horas).
     """
-    SIN_CONTAR = ('/static/', '/salud/', '/marca/', '/admin/herramientas/avisos/contador/', '/favicon')
+    SIN_CONTAR = ('/static/', '/salud/', '/marca/', '/admin/herramientas/avisos/contador/', '/favicon',
+                  '/admin/herramientas/sesion-cerrada/')
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -128,8 +129,7 @@ class ProteccionDeAcceso:
                 logout(request)
                 if request.headers.get('x-requested-with') == 'fetch':
                     return JsonResponse({'ok': False, 'mensaje': 'La sesión se cerró por inactividad. Recarga la página.'}, status=401)
-                messages.info(request, f'Se cerró tu sesión después de {minutos} minutos sin usar el programa.')
-                return redirect(f'{self.login}?next={request.path}')
+                return redirect(reverse('prospectos:sesion_cerrada') + '?motivo=inactividad')
             request.session['ultima_actividad'] = ahora
         elif minutos and u is not None and u.is_authenticated and request.path == '/admin/herramientas/avisos/contador/':
             ultima = request.session.get('ultima_actividad', time.time())
