@@ -17,7 +17,7 @@ from unfold.decorators import display
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm
 from unfold.widgets import UnfoldAdminTextareaWidget
 
-from .formularios_panel import CarreraForm, NuevoUsuarioForm, OpcionesFormSet, PreguntaForm, PreparatoriaForm
+from .formularios_panel import CarreraForm, FormularioForm, NuevoUsuarioForm, OpcionesFormSet, PreguntaForm, PreparatoriaForm
 from .models import (etiqueta_segmento, Auditoria, Carrera, Configuracion, Cuestionario, Etiqueta, Evento, Formulario, Importacion, OpcionPregunta, Perfil,
                      PosibleCoincidencia, Pregunta, Preparatoria, Prospecto, Respaldo, Segmento, Seguimiento, TipoSeguimiento)
 from .servicios import auditoria, familias, importacion, inteligencia, reportes, respaldos, seguimiento
@@ -470,6 +470,7 @@ class ImportacionInline(TabularInline):
 
 @admin.register(Formulario)
 class FormularioAdmin(AccionesFila, ModelAdmin):
+    form = FormularioForm
     list_display = ['nombre', 'tipo', 'activo', 'ultima_importacion_en', 'ultima_respuesta_en', 'estado', 'mapeo']
     readonly_fields = ['ultima_respuesta_en', 'ultima_importacion_en', 'ultimo_error', 'errores_consecutivos']
     actions = ['sincronizar_google', 'importar_ahora']
