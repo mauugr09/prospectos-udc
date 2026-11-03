@@ -14,7 +14,7 @@
 </div>
 
 {% if vencidas and puede_tareas %}
-<div class="aviso"><span class="material-symbols-outlined">schedule</span><div>Hay <b>{{ vencidas }} llamada{{ vencidas|pluralize }} vencida{{ vencidas|pluralize }}</b>; se cuentan en el día de hoy. <a class="underline" href="{% url 'prospectos:cola' %}">Ir a «A quién llamar hoy»</a></div></div>
+<div class="aviso"><span class="material-symbols-outlined">schedule</span><div>Hay <b>{{ vencidas }} llamada{{ vencidas|pluralize }} vencida{{ vencidas|pluralize }}</b>; se cuentan en el día de hoy. <a class="underline" href="{% url 'prospectos:cola' %}">Ir a «Llamar hoy»</a></div></div>
 {% endif %}
 
 <div class="cal-cuerpo">

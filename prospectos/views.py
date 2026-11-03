@@ -17,7 +17,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from . import catalogos
-from .models import (Actividad, etiqueta_segmento, ACTIVOS, Preparatoria, Configuracion, Cuestionario, Evento, Formulario, PosibleCoincidencia, Pregunta, Prospecto,
+from .models import (Actividad, ACTIVOS, Preparatoria, Configuracion, Cuestionario, Evento, Formulario, PosibleCoincidencia, Pregunta, Prospecto,
                      Segmento, Seguimiento, TipoSeguimiento)
 from .servicios import auditoria, demo, importacion, inteligencia, reportes
 
@@ -168,7 +168,8 @@ def contexto_tablero(request, context=None) -> dict:
         ctx['llamar_total'] = base.count()
         listos = Prospecto.objects.utilizables().filter(estatus__in=ACTIVOS, segmentos__icontains=Segmento.LISTO.value).count()
         tareas = badge_tareas(request) or 0
-        coinc = PosibleCoincidencia.objects.filter(estado='pendiente').count()
+        from .vistas_prospectos import duplicados_pendientes
+        coinc = len(duplicados_pendientes())
         tarjetas += [
             {'valor': listos, 'etiqueta': 'Listos para inscribirse', 'icono': 'rocket_launch', 'tono': 'verde',
              'url': reverse('prospectos:cola') + '?segmento=listo_para_convertir',
@@ -177,7 +178,7 @@ def contexto_tablero(request, context=None) -> dict:
              'url': reverse('prospectos:cola') + '?tareas=1',
              'ayuda': 'Tareas abiertas de los asesores (incluye las automáticas por días sin contacto).'},
             {'valor': coinc, 'etiqueta': 'Posibles duplicados', 'icono': 'join_inner', 'tono': 'magenta',
-             'url': reverse('admin:prospectos_posiblecoincidencia_changelist'),
+             'url': reverse('prospectos:duplicados'),
              'ayuda': 'Dos registros que parecen la misma persona. Alguien debe decidir si se unen.'},
         ]
         ctx['formularios_error'] = Formulario.objects.filter(activo=True).exclude(ultimo_error='')
@@ -277,7 +278,8 @@ def badge_tareas(request):
 def badge_coincidencias(request):
     if not request.user.has_perm('prospectos.resolver_coincidencias'):
         return None
-    return PosibleCoincidencia.objects.filter(estado='pendiente').exclude(motivo__startswith='Familia').count() or None
+    from .vistas_prospectos import duplicados_pendientes
+    return len(duplicados_pendientes()) or None
 
 
 def badge_esperando(request):
@@ -505,39 +507,6 @@ def _cola_base():
             .annotate(tareas=Count('seguimientos', filter=Q(seguimientos__tipo=TipoSeguimiento.TAREA,
                                                             seguimientos__completada_en__isnull=True)))
             .order_by('-score', F('ultimo_contacto_en').asc(nulls_first=True)))
-
-
-@staff_member_required
-def cola(request):
-    _permiso(request, 'change_prospecto')
-    qs = _cola_base()
-    f = request.GET
-    if f.get('mios'):
-        qs = qs.filter(asesor=request.user)
-    if f.get('tareas'):
-        qs = qs.filter(tareas__gt=0)
-    if f.get('segmento'):
-        qs = qs.filter(segmentos__icontains=f'"{f["segmento"]}"')
-    if f.get('brecha'):
-        qs = qs.filter(tiene_brecha=True)
-    if f.get('plantel') in catalogos.PLANTELES:
-        qs = qs.filter(plantel=f['plantel'])
-    if f.get('canal') in ('whatsapp', 'correo'):
-        qs = qs.filter(canal_informacion=f['canal'])
-    if f.get('q'):
-        qs = qs.filter(nombre_aspirante__icontains=f['q'])
-    filas = list(qs[:200])
-    from .admin import iniciales
-    for p in filas:
-        todos = p.segmentos or []
-        p.segmentos_det = [(s, etiqueta_segmento(s)) for s in todos[:3]]
-        p.segmentos_mas = len(todos) - len(p.segmentos_det)
-        p.iniciales = iniciales(p.nombre_aspirante)
-    no_quieren = Prospecto.objects.utilizables().filter(estatus__in=ACTIVOS, no_contactar=True).count()
-    return render(request, 'prospectos/cola.html', _ctx(request, 'A quién llamar hoy', filas=filas, total=qs.count(),
-                                                          segmentos=[s for s in Segmento.choices if s[0] != Segmento.NO_CONTACTAR],
-                                                          planteles=catalogos.PLANTELES_CORTO.items(), f=f, no_quieren=no_quieren,
-                                                          hay_tutor=reportes.formulario_activo(Cuestionario.TUTOR)))
 
 
 # --------------------------------------------------------------------------- evento en vivo y QR
@@ -989,8 +958,9 @@ def familias_por_unir(request):
         messages.success(request, resultado.get('mensaje', 'Listo.'))
         return redirect(request.get_full_path())
 
+    from .vistas_prospectos import pestanas_revisar
     m = familias.mesa()
-    return render(request, 'prospectos/familias.html', _ctx(request, 'Familias por unir', **m))
+    return render(request, 'prospectos/familias.html', _ctx(request, 'Por revisar', pestanas_revisar=pestanas_revisar('familias'), **m))
 
 
 @staff_member_required
@@ -1425,41 +1395,6 @@ def _respuestas_visibles(request):
     if not u.is_superuser and u.has_perm('prospectos.ver_propios'):
         qs = qs.filter(Q(promotor=u) | Q(prospecto__promotor=u))
     return qs
-
-
-@staff_member_required
-def respuestas(request):
-    """Todas las respuestas que llegan de los Forms, con su estado explicado en palabras simples."""
-    from .models import EstadoRespuesta
-    _permiso(request, 'view_prospecto')
-    qs = _respuestas_visibles(request).prefetch_related('items').order_by('-enviada_en')
-    f = request.GET
-    if f.get('tipo') in (Cuestionario.ALUMNO, Cuestionario.TUTOR):
-        qs = qs.filter(cuestionario=f['tipo'])
-    if f.get('estado') in EstadoRespuesta.values:
-        qs = qs.filter(estado=f['estado'])
-    if f.get('q'):
-        qs = qs.filter(Q(nombre_aspirante__icontains=f['q']) | Q(prospecto__nombre_aspirante__icontains=f['q']))
-    conteos = dict(_respuestas_visibles(request).values_list('estado').annotate(n=Count('id')))
-    from django.core.paginator import Paginator
-    pagina = Paginator(qs, 40).get_page(request.GET.get('pagina'))
-    from .admin import iniciales
-    filas = []
-    for r in pagina:
-        etiqueta, tono, ayuda = reportes.explicar_estado(r)
-        nombre = r.nombre_aspirante or (r.prospecto.nombre_aspirante if r.prospecto else 'Sin nombre')
-        prepa = (r.prospecto.preparatoria if r.prospecto else None) or (r.evento.preparatoria if r.evento else None)
-        partes = [str(prepa) if prepa else 'Sin preparatoria']
-        if r.prospecto and r.prospecto.carrera:
-            partes.append(str(r.prospecto.carrera))
-        if r.evento:
-            partes.append(f'evento {r.evento.codigo}')
-        filas.append({'r': r, 'nombre': nombre, 'iniciales': iniciales(nombre), 'estado': etiqueta, 'tono': tono, 'ayuda': ayuda,
-                      'detalle': ' · '.join(partes)})
-    estados = [(k, *reportes.ESTADOS_LEGIBLES[k][:2], conteos.get(k, 0)) for k in
-               (EstadoRespuesta.VALIDA, EstadoRespuesta.CUARENTENA, EstadoRespuesta.SIN_CONSENTIMIENTO, EstadoRespuesta.DESCARTADA)]
-    return render(request, 'prospectos/respuestas.html', _ctx(request, 'Respuestas de los formularios', filas=filas, pagina=pagina,
-                                                                estados=estados, f=f, total=sum(conteos.values())))
 
 
 @staff_member_required

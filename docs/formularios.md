@@ -121,7 +121,7 @@ El **código** es el identificador estable que usa el sistema: no lo cambies.
 Industrial». El programa los entiende igual, pero los alumnos los ven: conviene corregirlos.
 
 > **«No, gracias»** significa que no quiere que lo contacten: el aspirante cuenta en reportes, pero
-> **no** entra a «A quién llamar hoy», no recibe el correo de bienvenida y no genera tareas.
+> **no** entra a «Prospectos → Llamar hoy», no recibe el correo de bienvenida y no genera tareas.
 
 ## 5. Encuesta para padres de familia
 
@@ -165,12 +165,12 @@ La encuesta no trae código de familia ni preparatoria, y los papás escriben el
 | Planteles distintos | −30 |
 
 - **70 o más, y el segundo candidato al menos 20 abajo** → se unen solas al importar.
-- **30 a 69** → van a **Familias por unir** (menú *Día a día*): se confirman con un clic, «Son la misma
+- **30 a 69** → van a **Por revisar → Familias por unir** (menú *Día a día*): se confirman con un clic, «Son la misma
   familia» o «No son». Ahí también se puede unir a mano buscando al alumno por nombre.
 - Sin ningún parecido en el nombre ni en los contactos, no se propone nada (apellido + mismo día no bastan).
 
 Mientras no se unan, **el permiso que dio la familia no llega al alumno**: el alumno menor sigue «Esperando
-permiso». Por eso conviene revisar Familias por unir seguido.
+permiso». Por eso conviene revisar Por revisar → Familias seguido.
 
 **Lo que más ayudaría (agregar a la encuesta de padres):** una pregunta **«Correo o teléfono del aspirante»**
 (respuesta corta, código `aspirante_contacto`). Con eso se une sola aunque el nombre venga mal escrito.

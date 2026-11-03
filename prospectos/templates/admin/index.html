@@ -94,7 +94,7 @@
   <div class="tb-hoy">
     {% if llamar is not None %}
     <section class="grupo tb-llamar">
-      <header class="grupo-cabecera"><h2>A quién llamar hoy</h2>
+      <header class="grupo-cabecera"><h2>Llamar hoy</h2>
         <a href="{% url 'prospectos:cola' %}">Ver los {{ llamar_total }}</a></header>
       <ul class="lista">
         {% for p in llamar %}

@@ -875,22 +875,49 @@ def exportar(request, queryset, con_contacto: bool):
 
 
 # --------------------------------------------------------------------------- coincidencias
+class EstadoCoincidenciaFiltro(admin.SimpleListFilter):
+    """Por omisión, pendientes; «Todas» se puede elegir (antes el filtro siempre regresaba a pendientes)."""
+    title = 'estado'
+    parameter_name = 'estado'
+
+    def lookups(self, request, model_admin):
+        return [('pendiente', 'Pendientes'), ('fusionada', 'Unidas'), ('rechazada', 'Descartadas'), ('todas', 'Todas')]
+
+    def choices(self, changelist):
+        valor = self.value() or 'pendiente'
+        for clave, titulo in self.lookup_choices:
+            yield {'selected': valor == clave, 'query_string': changelist.get_query_string({self.parameter_name: clave}), 'display': titulo}
+
+    def queryset(self, request, queryset):
+        valor = self.value() or 'pendiente'
+        return queryset if valor == 'todas' else queryset.filter(estado=valor)
+
+
+class TipoCoincidenciaFiltro(admin.SimpleListFilter):
+    title = 'tipo'
+    parameter_name = 'tipo'
+
+    def lookups(self, request, model_admin):
+        return [('duplicado', 'Misma persona dos veces'), ('familia', 'Familia ↔ alumno')]
+
+    def queryset(self, request, queryset):
+        if self.value() == 'familia':
+            return queryset.filter(motivo__startswith='Familia')
+        if self.value() == 'duplicado':
+            return queryset.exclude(motivo__startswith='Familia')
+        return queryset
+
+
 @admin.register(PosibleCoincidencia)
 class PosibleCoincidenciaAdmin(ModelAdmin):
+    """Historial completo. Para resolver, la pantalla «Por revisar» (sin pares repetidos)."""
     list_display = ['respuesta_nueva', 'prospecto_existente', 'similitud_pct', 'motivo', 'estado', 'creado_en']
-    list_filter = ['estado']
+    list_filter = [EstadoCoincidenciaFiltro, TipoCoincidenciaFiltro]
     actions = ['fusionar', 'rechazar']
     readonly_fields = ['prospecto', 'candidato', 'similitud', 'motivo', 'estado', 'revisado_por', 'revisado_en', 'creado_en']
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('prospecto__preparatoria', 'candidato__preparatoria')
-
-    def changelist_view(self, request, extra_context=None):
-        if 'estado__exact' not in request.GET and not request.GET.get('_changelist_filters'):
-            q = request.GET.copy()
-            q['estado__exact'] = 'pendiente'
-            return HttpResponseRedirect(f'{request.path}?{q.urlencode()}')
-        return super().changelist_view(request, extra_context)
 
     def has_add_permission(self, request):
         return False

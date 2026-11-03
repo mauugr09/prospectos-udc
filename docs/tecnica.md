@@ -38,7 +38,8 @@ recuperación.
 | `config/version.py` | Versión y autoría que muestran «Acerca de» y el `.exe` (`version.txt`). |
 | `prospectos/models.py` | Modelo de datos (sección 3). |
 | `prospectos/admin.py` | Listas y fichas del panel. `AccionesFila` agrega botones de editar y eliminar por fila según los permisos. |
-| `prospectos/views.py` | Pantallas propias: Inicio, A quién llamar, Respuestas, Familias por unir, mapa, calendario, eventos (QR, tarjetas, solicitud, becas, en vivo), reportes, encuestas, apariencia, ayuda. |
+| `prospectos/vistas_prospectos.py` | «Prospectos» (una lista con pestañas: llamar hoy, nuevos, todos, esperando permiso, respuestas de los Forms; dar de baja = anonimizar) y «Por revisar → Duplicados» (un par por pareja de registros, aunque haya propuestas en los dos sentidos). |
+| `prospectos/views.py` | Pantallas propias: Inicio, Familias por unir (Por revisar), mapa, calendario, eventos (QR, tarjetas, solicitud, becas, en vivo), reportes, encuestas, apariencia, ayuda. |
 | `prospectos/vistas_avisos.py` | Campanita: bandeja, panel, contador y preferencias. |
 | `prospectos/vistas_proteccion.py` | Protección de datos: copia externa, llave de recuperación y separar uniones. |
 | `prospectos/vistas_asistente.py` | Asistente: conversación, confirmación de propuestas y configuración (solo el nombre de la mascota). |

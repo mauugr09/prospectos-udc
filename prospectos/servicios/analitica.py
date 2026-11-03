@@ -14,7 +14,7 @@ from django.db.models import Count, Q
 from django.urls import reverse
 from django.utils import timezone
 
-from ..models import (ACTIVOS, Carrera, Estatus, Evento, PosibleCoincidencia, Preparatoria, Prospecto, Seguimiento,
+from ..models import (ACTIVOS, Carrera, Estatus, Evento, Preparatoria, Prospecto, Seguimiento,
                       TipoSeguimiento, etiqueta_segmento, Plantel)
 from . import texto
 
@@ -49,6 +49,11 @@ DIMENSIONES = {
 
 
 # --------------------------------------------------------------------------- utilidades
+
+
+def _duplicados() -> int:
+    from ..vistas_prospectos import duplicados_pendientes  # la misma cuenta que «Por revisar» (un par por pareja)
+    return len(duplicados_pendientes())
 
 def _fecha(v, defecto):
     try:
@@ -350,9 +355,9 @@ def pendientes(user, args) -> dict:
         {'que': 'Sin contacto en más de 14 días', 'n': frio.count(), 'enlace': reverse('prospectos:cola')},
         {'que': 'Llamadas pendientes ya vencidas', 'n': vencidas.count(), 'enlace': reverse('prospectos:calendario')},
         {'que': 'Menores esperando el permiso de su familia', 'n': base(user, 'esperando_permiso').count(),
-         'enlace': reverse('prospectos:respuestas'), 'por_que_importa': 'si en 30 días no llega el permiso, se borran'},
+         'enlace': reverse('prospectos:prospectos_ver', args=['permiso']), 'por_que_importa': 'si en 30 días no llega el permiso, se borran'},
         {'que': 'Encuestas de familias por unir con su alumno', 'n': familias_pendientes(),
          'enlace': reverse('prospectos:familias'), 'por_que_importa': 'sin unirlas, el permiso de la familia no llega al menor'},
-        {'que': 'Posibles duplicados por revisar', 'n': PosibleCoincidencia.objects.filter(estado='pendiente').exclude(motivo__startswith='Familia').count(),
-         'enlace': reverse('admin:prospectos_posiblecoincidencia_changelist')},
+        {'que': 'Posibles duplicados por revisar', 'n': _duplicados(),
+         'enlace': reverse('prospectos:duplicados')},
     ]}

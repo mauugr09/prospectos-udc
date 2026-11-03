@@ -1,0 +1,143 @@
+{% extends "prospectos/base.html" %}
+{% load static %}
+{% block ayuda %}dia{% endblock %}
+{% block subtitulo %}{% if perms.prospectos.view_prospecto %}<a class="pp-avanzada" href="{% url 'admin:prospectos_prospecto_changelist' %}" title="Tabla con todas las columnas, exportar a Excel y acciones por lote"><span class="material-symbols-outlined">table_view</span>Tabla completa y exportar</a>{% endif %}{% endblock %}
+{% block pagina %}
+<div class="pp" id="pp" data-baja="{% url 'prospectos:dar_de_baja' 0 %}">
+
+  <nav class="pp-pestanas" aria-label="Qué lista ver">
+    {% for p in pestanas %}
+    <a href="{{ p.url }}" class="pp-pestana{% if p.clave == ver %} activa{% endif %}" title="{{ p.ayuda }}"{% if p.clave == ver %} aria-current="page"{% endif %}>
+      <span class="material-symbols-outlined" aria-hidden="true">{{ p.icono }}</span>{{ p.titulo }}{% if p.n %}<b class="pp-n{% if p.clave == 'permiso' %} ambar{% endif %}">{{ p.n }}</b>{% endif %}
+    </a>
+    {% endfor %}
+  </nav>
+  <p class="pp-ayuda">{{ actual.ayuda }}{% if ver == 'llamar' and no_quieren %} {{ no_quieren }} no quieren información y no aparecen aquí (están en «Todos»).{% endif %}</p>
+
+  {% if ver == 'forms' %}
+  <div class="rs-estados mb-4">
+    <a href="?" class="rs-estado {% if not f.estado %}activo{% endif %}"><b>{{ pagina.paginator.count }}</b><span>{% if f.estado %}Ver todas{% else %}Todas{% endif %}</span></a>
+    {% for clave, etiqueta, tono, n in estados %}
+    <a href="?estado={{ clave }}&_todas=1{% if f.tipo %}&tipo={{ f.tipo }}{% endif %}" class="rs-estado tono-{{ tono }} {% if f.estado == clave %}activo{% endif %}"><b>{{ n }}</b><span>{{ etiqueta }}</span></a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="get" class="pp-filtros" role="search">
+    {% if f.estado and ver == 'forms' %}<input type="hidden" name="estado" value="{{ f.estado }}"><input type="hidden" name="_todas" value="1">{% endif %}
+    <label class="pp-buscar"><span class="material-symbols-outlined" aria-hidden="true">search</span>
+      <input type="search" name="q" value="{{ f.q }}" placeholder="{% if es_respuestas %}Buscar por nombre{% else %}Nombre, tutor o preparatoria{% endif %}" aria-label="Buscar"></label>
+    {% if es_respuestas %}
+      <select name="tipo" class="udc-campo" onchange="this.form.submit()" aria-label="Quién contestó">
+        <option value="">Alumnos y familias</option>
+        <option value="ALUMNO" {% if f.tipo == 'ALUMNO' %}selected{% endif %}>Solo alumnos</option>
+        <option value="TUTOR" {% if f.tipo == 'TUTOR' %}selected{% endif %}>Solo familias</option>
+      </select>
+    {% else %}
+      <select name="plantel" class="udc-campo" onchange="this.form.submit()" aria-label="Plantel"><option value="">Ambos planteles</option>{% for v, e in planteles %}<option value="{{ v }}" {% if f.plantel == v %}selected{% endif %}>{{ e }}</option>{% endfor %}</select>
+      <select name="segmento" class="udc-campo" onchange="this.form.submit()" aria-label="Grupo"><option value="">Todos los grupos</option>{% for v, e in segmentos %}<option value="{{ v }}" {% if f.segmento == v %}selected{% endif %}>{{ e }}</option>{% endfor %}</select>
+      {% if ver != 'llamar' %}<select name="estatus" class="udc-campo" onchange="this.form.submit()" aria-label="Estatus"><option value="">Cualquier estatus</option>{% for v, e in estatuses %}<option value="{{ v }}" {% if f.estatus == v %}selected{% endif %}>{{ e }}</option>{% endfor %}</select>{% endif %}
+      <details class="pp-mas"{% if f.canal or f.mios or f.tareas or f.brecha %} open{% endif %}>
+        <summary><span class="material-symbols-outlined" aria-hidden="true">tune</span>Más filtros</summary>
+        <div class="pp-mas-cuerpo">
+          <select name="canal" class="udc-campo" aria-label="Medio preferido"><option value="">WhatsApp o correo</option><option value="whatsapp" {% if f.canal == 'whatsapp' %}selected{% endif %}>Prefiere WhatsApp</option><option value="correo" {% if f.canal == 'correo' %}selected{% endif %}>Prefiere correo</option></select>
+          <label><input type="checkbox" name="mios" value="1" {% if f.mios %}checked{% endif %}> Asignados a mí</label>
+          <label><input type="checkbox" name="tareas" value="1" {% if f.tareas %}checked{% endif %}> Con llamadas pendientes</label>
+          {% if hay_tutor %}<label><input type="checkbox" name="brecha" value="1" {% if f.brecha %}checked{% endif %}> Alumno y familia contestaron distinto</label>{% endif %}
+        </div>
+      </details>
+    {% endif %}
+    <button class="udc-btn" type="submit"><span class="material-symbols-outlined" aria-hidden="true">search</span>Buscar</button>
+    {% if filtros_activos %}<a class="udc-btn secundario" href="{{ actual.url }}">Quitar filtros</a>{% endif %}
+  </form>
+
+  <p class="pp-cuenta">{{ pagina.paginator.count }} {% if es_respuestas %}respuesta{{ pagina.paginator.count|pluralize }}{% else %}aspirante{{ pagina.paginator.count|pluralize }}{% endif %}{% if filtros_activos %} con estos filtros{% endif %}</p>
+
+  <div class="pp-lista">
+  {% if es_respuestas %}
+    {% for x in filas %}
+    <div class="pp-fila">
+      <a class="pp-principal" href="{% url 'prospectos:respuesta' x.r.pk %}">
+        <span class="tb-avatar av-{% if x.r.cuestionario == 'ALUMNO' %}5{% else %}1{% endif %}">{{ x.iniciales }}</span>
+        <span class="pp-quien">
+          <span class="pp-nombre"><b>{{ x.nombre }}</b><span class="rs-tipo {{ x.r.cuestionario|lower }}">{% if x.r.cuestionario == 'ALUMNO' %}Alumno{% else %}Familia{% endif %}</span></span>
+          <small>{{ x.detalle }}</small>
+          {% if x.tono != 'verde' %}<small class="pp-nota">{{ x.ayuda }}</small>{% endif %}
+        </span>
+      </a>
+      <span class="pp-meta"><span class="rs-badge tono-{{ x.tono }}" title="{{ x.ayuda }}">{{ x.estado }}</span>
+        <small>{{ x.r.enviada_en|date:"j M, H:i" }}</small></span>
+      <span class="pp-acciones">
+        <a class="pp-accion" href="{% url 'prospectos:respuesta' x.r.pk %}" title="Ver la respuesta completa"><span class="material-symbols-outlined">visibility</span><span class="pp-et">Ver</span></a>
+        {% if x.r.prospecto and puede_editar and not x.r.prospecto.anonimizado_en %}<a class="pp-accion" href="{% url 'admin:prospectos_prospecto_change' x.r.prospecto.pk %}" title="Editar la ficha del aspirante"><span class="material-symbols-outlined">edit</span><span class="pp-et">Editar</span></a>{% endif %}
+        {% if puede_baja and x.r.prospecto and not x.r.prospecto.anonimizado_en %}<button type="button" class="pp-accion peligro" data-baja="{{ x.r.prospecto.pk }}" data-nombre="{{ x.nombre }}" title="Dar de baja: borra sus datos personales"><span class="material-symbols-outlined">person_remove</span><span class="pp-et">Baja</span></button>{% endif %}
+      </span>
+    </div>
+    {% empty %}
+    <div class="ay-vacio"><span class="material-symbols-outlined">inbox</span>
+      <b>{% if ver == 'permiso' %}Nadie está esperando permiso{% else %}Todavía no hay respuestas{% endif %}{% if filtros_activos %} con estos filtros{% endif %}.</b>
+      {% if ver == 'forms' and not filtros_activos %}<p>Si ya contestaste el Form, revisa que el programa esté abierto (la ventana negra) y que en <a class="underline" href="{% url 'admin:prospectos_formulario_changelist' %}">Formularios</a> aparezca con estado OK.</p>{% endif %}</div>
+    {% endfor %}
+  {% else %}
+    {% for p in filas %}
+    <div class="pp-fila">
+      <a class="pp-principal" href="{% url 'admin:prospectos_prospecto_change' p.pk %}">
+        <span class="pp-prioridad udc-score-{% if p.score >= 70 %}alto{% elif p.score >= 40 %}medio{% else %}bajo{% endif %}" title="Prioridad: más alta, llamar antes">{{ p.score }}</span>
+        <span class="pp-quien">
+          <span class="pp-nombre"><b>{{ p.nombre_aspirante }}</b>{% if p.no_contactar %}<span class="udc-chip udc-seg-no_contactar">No quiere información</span>{% endif %}</span>
+          <small>{{ p.preparatoria|default:"Sin preparatoria" }} · {{ p.carrera|default:"Aún no decide carrera" }}{% if p.plantel %} · {{ p.get_plantel_display }}{% endif %}</small>
+          <span class="udc-chips pp-chips">{% for s in p.segmentos_det %}<span class="udc-chip udc-seg-{{ s.0 }}">{{ s.1 }}</span>{% endfor %}{% if p.segmentos_mas %}<span class="udc-chip udc-seg-mas">+{{ p.segmentos_mas }}</span>{% endif %}</span>
+        </span>
+      </a>
+      <span class="pp-meta">
+        <span class="pp-estatus">{{ p.get_estatus_display }}</span>
+        <small>{{ p.quien }}{% if p.canal_informacion == 'whatsapp' %} · WhatsApp{% elif p.canal_informacion == 'correo' %} · Correo{% endif %}</small>
+        <small>{% if p.ultimo_contacto_en %}Contacto hace {{ p.ultimo_contacto_en|timesince }}{% else %}<span class="pp-nunca">Nunca contactado</span>{% endif %}{% if p.tareas %} · <b class="pp-tareas">{{ p.tareas }} llamada{{ p.tareas|pluralize }}</b>{% endif %}</small>
+        <small class="text-subtle">{{ p.asesor|default:"Sin asesor" }}</small>
+      </span>
+      <span class="pp-acciones">
+        {% if puede_editar %}<a class="pp-accion" href="{% url 'admin:prospectos_prospecto_change' p.pk %}" title="Abrir y editar la ficha"><span class="material-symbols-outlined">edit</span><span class="pp-et">Editar</span></a>
+        {% else %}<a class="pp-accion" href="{% url 'admin:prospectos_prospecto_change' p.pk %}" title="Ver la ficha"><span class="material-symbols-outlined">visibility</span><span class="pp-et">Ver</span></a>{% endif %}
+        {% if puede_baja %}<button type="button" class="pp-accion peligro" data-baja="{{ p.pk }}" data-nombre="{{ p.nombre_aspirante }}" title="Dar de baja: borra sus datos personales"><span class="material-symbols-outlined">person_remove</span><span class="pp-et">Baja</span></button>{% endif %}
+      </span>
+    </div>
+    {% empty %}
+    <div class="ay-vacio"><span class="material-symbols-outlined">groups</span>
+      <b>{% if filtros_activos %}Nadie coincide con estos filtros.{% elif ver == 'nuevos' %}No llegó nadie nuevo esta semana.{% else %}No hay aspirantes en esta lista.{% endif %}</b>
+      {% if filtros_activos %}<p><a class="underline" href="{{ actual.url }}">Quitar filtros</a></p>{% endif %}</div>
+    {% endfor %}
+  {% endif %}
+  </div>
+
+  {% if pagina.has_other_pages %}
+  <nav class="pp-paginas" aria-label="Páginas">
+    {% if pagina.has_previous %}<a class="udc-btn secundario" href="?{% if qs_sin_pagina %}{{ qs_sin_pagina }}&{% endif %}pagina={{ pagina.previous_page_number }}">Anteriores</a>{% endif %}
+    <span>Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}</span>
+    {% if pagina.has_next %}<a class="udc-btn secundario" href="?{% if qs_sin_pagina %}{{ qs_sin_pagina }}&{% endif %}pagina={{ pagina.next_page_number }}">Siguientes</a>{% endif %}
+  </nav>
+  {% endif %}
+</div>
+
+{% if puede_baja %}
+<dialog class="pp-dialogo" id="pp-baja" aria-labelledby="pp-baja-titulo">
+  <form method="post" action="" id="pp-baja-form">{% csrf_token %}
+    <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+    <h2 id="pp-baja-titulo">Dar de baja a <span id="pp-baja-nombre"></span></h2>
+    <p>Se borran su nombre, teléfonos, correos, CURP y lo que escribió. Queda solo como una cifra anónima en los reportes y en la bitácora.
+      <b>No se puede deshacer.</b></p>
+    <p class="pp-dialogo-nota">Si solo ya no quiere que lo llamen, mejor abre su ficha y marca «No quiere información».</p>
+    <fieldset class="pp-motivos"><legend>Motivo</legend>
+      {% for v, e in motivos_baja %}<label><input type="radio" name="motivo" value="{{ v }}" required> {{ e }}</label>{% endfor %}
+      <input type="text" name="nota" class="udc-campo" maxlength="300" placeholder="Detalle (obligatorio si es «Otro»)">
+    </fieldset>
+    <label class="pp-confirmar"><span>Para confirmar, escribe <b>BAJA</b>:</span>
+      <input type="text" name="confirmo" class="udc-campo" autocomplete="off" required pattern="[Bb][Aa][Jj][Aa]"></label>
+    <div class="pp-dialogo-botones">
+      <button type="button" class="udc-btn secundario" data-cerrar>Cancelar</button>
+      <button type="submit" class="udc-btn peligro"><span class="material-symbols-outlined">person_remove</span>Dar de baja</button>
+    </div>
+  </form>
+</dialog>
+<script src="{% static 'prospectos/js/prospectos.js' %}" defer></script>
+{% endif %}
+{% endblock %}

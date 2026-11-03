@@ -5,6 +5,7 @@ import time
 
 import pytest
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 from prospectos.models import DispositivoConfianza, Formulario, Perfil
 from prospectos.servicios import disco, dos_pasos, instalador, red, semillas
@@ -237,3 +238,34 @@ def test_escudos_en_el_acceso_y_en_el_menu(client):
     client.force_login(User.objects.create_superuser('r@x.mx', 'r@x.mx', CLAVE))
     html = client.get('/admin/').content.decode()
     assert 'escudos.svg' in html and 'escudos-oscuro.svg' in html
+
+
+def test_forms_udc_corrige_el_registro_que_no_existe_en_google(db):
+    from prospectos.servicios.semillas import FORMS_UDC, asegurar_forms_udc
+    alumno = Formulario.objects.create(nombre='Cuestionario vocacional', tipo='ALUMNO', google_form_id=FORMS_UDC[0]['google_form_id'],
+                                       activo=True)
+    malo = Formulario.objects.create(nombre='Cuestionario Vocacional Tutores', tipo='TUTOR', google_form_id='1XyZ' + 'a' * 30,
+                                     ultimo_error='HTTP 404: no existe', errores_consecutivos=7)
+    cambios = asegurar_forms_udc()
+    malo.refresh_from_db()
+    alumno.refresh_from_db()
+    assert malo.google_form_id == FORMS_UDC[1]['google_form_id'] and not malo.ultimo_error and malo.activo and malo.para_qr
+    assert 'viewform' in alumno.url_publica and alumno.para_qr
+    assert Formulario.objects.count() == 2 and cambios
+    assert asegurar_forms_udc() == []  # la segunda vez no hay nada que hacer
+
+
+def test_forms_udc_apaga_el_duplicado_que_sigue_en_404(db):
+    from prospectos.servicios.semillas import FORMS_UDC, asegurar_forms_udc
+    for f in FORMS_UDC:
+        Formulario.objects.create(**{k: v for k, v in f.items()}, ultima_importacion_en=timezone.now())
+    otro = Formulario.objects.create(nombre='Tutores viejo', tipo='TUTOR', google_form_id='1Otro' + 'b' * 30,
+                                     ultima_importacion_en=timezone.now(), ultimo_error='HTTP 404: no existe')
+    asegurar_forms_udc()
+    otro.refresh_from_db()
+    assert not otro.activo and Formulario.objects.filter(activo=True).count() == 2
+
+
+def test_forms_udc_no_toca_bases_sin_forms_reales(db):
+    from prospectos.servicios.semillas import asegurar_forms_udc
+    assert asegurar_forms_udc() == [] and not Formulario.objects.exists()

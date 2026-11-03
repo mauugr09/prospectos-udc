@@ -9,10 +9,12 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group, Permission
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from .. import catalogos
 from . import texto
+
 from ..models import (Carrera, Cuestionario, Estatus, Evento, Formulario, Perfil, Pregunta, Preparatoria, Prospecto,
                       TipoSeguimiento)
 
@@ -141,6 +143,7 @@ def preparar() -> None:
     crear_roles()
     actualizar_por_catalogo()
     mejoras_unicas()
+    asegurar_forms_udc()
 
 
 # Los Forms reales de la UDC (los de producción). Se registran solos al crear el administrador real;
@@ -165,6 +168,47 @@ def forms_predeterminados() -> int:
             creados += nuevo
     Configuracion.guardar('forms.predeterminados', True)
     return creados
+
+
+def asegurar_forms_udc() -> list[str]:
+    """
+    En cada arranque de una instalación real: los dos Forms de la UDC quedan registrados, activos y con su tipo.
+    - Si falta uno y hay un registro de ese tipo que nunca importó nada o que Google no encuentra (404), se corrige ESE
+      registro con el ID bueno (sin crear otro que choque); si no, se crea.
+    - Otro registro activo del mismo tipo que sigue en 404 se APAGA (no se borra): solo repetía el error cada minuto.
+    No toca instalaciones de demostración ni bases sin Forms. Devuelve lo que cambió (para la bitácora del arranque).
+    """
+    import logging
+    reales = Formulario.objects.exclude(google_form_id__startswith='demo-')
+    if not reales.exists():
+        return []
+    cambios: list[str] = []
+    for f in FORMS_UDC:
+        actual = reales.filter(google_form_id=f['google_form_id']).first()
+        if not actual:
+            actual = (reales.filter(tipo=f['tipo']).filter(Q(ultima_importacion_en__isnull=True) | Q(ultimo_error__contains='HTTP 404'))
+                      .order_by('-errores_consecutivos', 'pk').first())
+            if actual:
+                cambios.append(f'«{actual.nombre}» apuntaba a otro Form ({actual.google_form_id}); ahora usa {f["nombre"]}.')
+                actual.google_form_id = f['google_form_id']
+                actual.mapeo_campos, actual.campos_prellenado = {}, {}
+                actual.ultimo_error, actual.errores_consecutivos = '', 0
+            else:
+                actual = Formulario(**{k: v for k, v in f.items() if k != 'para_qr'})
+                cambios.append(f'Se registró «{f["nombre"]}».')
+        if not actual.url_publica:
+            actual.url_publica = f['url_publica']
+        actual.tipo, actual.activo = f['tipo'], True
+        actual.save()
+        if not reales.filter(tipo=f['tipo'], para_qr=True).exists():
+            Formulario.objects.filter(pk=actual.pk).update(para_qr=True)
+        for otro in reales.filter(tipo=f['tipo'], activo=True, ultimo_error__contains='HTTP 404').exclude(pk=actual.pk):
+            otro.activo, otro.para_qr = False, False
+            otro.save(update_fields=['activo', 'para_qr'])
+            cambios.append(f'Se apagó «{otro.nombre}»: Google no encuentra ese Form y ya está registrado el bueno.')
+    for c in cambios:
+        logging.getLogger('prospectos.importador').warning('Forms de la UDC: %s', c)
+    return cambios
 
 
 def tipo_por_titulo(titulo: str | None) -> str | None:

@@ -1,10 +1,15 @@
 from django.urls import path
 
-from . import views, vistas_asistente, vistas_avisos, vistas_perfil, vistas_proteccion
+from . import views, vistas_asistente, vistas_avisos, vistas_perfil, vistas_prospectos, vistas_proteccion
 
 app_name = 'prospectos'
 urlpatterns = [
-    path('cola/', views.cola, name='cola'),
+    path('prospectos/', vistas_prospectos.bandeja, name='prospectos'),
+    path('prospectos/<slug:ver>/', vistas_prospectos.bandeja, name='prospectos_ver'),
+    path('prospectos/<int:pk>/baja/', vistas_prospectos.dar_de_baja, name='dar_de_baja'),
+    path('cola/', vistas_prospectos.bandeja, {'ver': 'llamar'}, name='cola'),
+    path('revisar/', vistas_prospectos.revisar, name='revisar'),
+    path('duplicados/', vistas_prospectos.duplicados, name='duplicados'),
     path('perfil/', vistas_perfil.perfil, name='perfil'),
     path('perfil/foto/<int:pk>/', vistas_perfil.foto, name='perfil_foto'),
     path('perfil/dos-pasos/', vistas_perfil.configurar_dos_pasos, name='dos_pasos'),
@@ -28,7 +33,7 @@ urlpatterns = [
     path('calendario/', views.calendario, name='calendario'),
     path('encuestas/', views.encuestas, name='encuestas'),
     path('encuestas/nueva/', views.encuesta_nueva, name='encuesta_nueva'),
-    path('respuestas/', views.respuestas, name='respuestas'),
+    path('respuestas/', vistas_prospectos.bandeja, {'ver': 'forms'}, name='respuestas'),
     path('respuestas/<int:pk>/', views.respuesta, name='respuesta'),
     path('ayuda/', views.ayuda, name='ayuda'),
     path('primeros-pasos/', views.pasos, name='pasos'),

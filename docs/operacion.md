@@ -8,7 +8,7 @@
 |---|---|---|
 | **Administrador** | Todo: usuarios, roles, formularios, reglas de prioridad, auditoría, respaldos. | Borrar prospectos (solo anonimizar). |
 | **Coordinación** | Lo de Admisiones + preguntas y opciones, carreras, reglas de prioridad, sincronizar Forms y usuarios (no administradores). | Roles, administradores, auditoría, respaldos. |
-| **Admisiones** | A quién llamar hoy, fichas con contacto, seguimiento, revisar posibles duplicados, exportar, eventos y catálogos. | Usuarios, auditoría, reglas de prioridad. |
+| **Admisiones** | Prospectos (llamar hoy), fichas con contacto, seguimiento, revisar posibles duplicados, exportar, eventos y catálogos. | Usuarios, auditoría, reglas de prioridad. |
 | **Promotor** | Sus eventos, QR/tarjetas, modo en vivo, sus prospectos (contacto **enmascarado**). | Ver prospectos de otros, exportar, registrar seguimiento. |
 | **Directivo** | Tablero, mapa y reporte ejecutivo (solo cifras agregadas). | Ver fichas o datos personales. |
 
@@ -19,7 +19,7 @@
 
 ## «Contestaron y no aparece»
 
-Abre **Respuestas de los Forms**. Ahí está *todo* lo que llegó, aunque todavía no se pueda usar,
+Abre **Prospectos → Respuestas de los Forms**. Ahí está *todo* lo que llegó, aunque todavía no se pueda usar,
 con su estado en palabras simples:
 
 | Estado | Qué significa | Qué hacer |
@@ -141,7 +141,7 @@ descárgalo otra vez).
 
 ## Trabajo diario del asesor
 
-1. Abre **A quién llamar hoy**. Está ordenada por **prioridad** (0–100) y, a igual prioridad, por
+1. Abre **Prospectos → Llamar hoy**. Está ordenada por **prioridad** (0–100) y, a igual prioridad, por
    quien lleva más tiempo sin contacto. Filtra "Asignados a mí", "Con tareas abiertas", por grupo o
    con diferencias alumno/tutor.
 2. En la ficha revisa:
@@ -164,15 +164,15 @@ descárgalo otra vez).
 
 - Arriba a la derecha. El número rojo son los avisos sin leer; al abrir uno se marca como leído.
 - **Ver todos** → elegir qué avisos recibir. Los problemas del sistema solo les llegan a los administradores y no se apagan: si aparece «Falló el respaldo» o «No se pudieron traer las respuestas», atiéndelo el mismo día (ver «Si algo falla»).
-- Las llamadas vencidas llegan como un aviso al día con la cifra; el detalle está en *A quién llamar hoy*.
+- Las llamadas vencidas llegan como un aviso al día con la cifra; el detalle está en *Prospectos → Llamar hoy*.
 - Se generan cada 5 minutos solo mientras el programa está abierto en la PC del sistema.
 
-## Posibles duplicados (revisar al menos 2 veces por semana)
+## Por revisar → Duplicados (revisar al menos 2 veces por semana)
 
 Aparecen cuando el sistema **no está seguro** de que dos respuestas sean de la misma familia
 (nombre parecido pero incompleto, o tutor que contestó sin código de evento).
 
-En **Posibles duplicados**, cada fila muestra la respuesta nueva y el prospecto existente (con enlace a
+En **Por revisar → Duplicados**, cada fila muestra la respuesta nueva y el prospecto existente (con enlace a
 cada ficha). Selecciónala y elige la acción:
 - **Es la misma persona: fusionar**: se conserva el prospecto existente y recibe todo el historial
   de la respuesta nueva.
@@ -190,7 +190,7 @@ alumno menor, que sigue «Esperando permiso». Revisa esta lista al menos dos ve
 - Un **menor de edad** solo se usa con permiso de su mamá, papá o tutor. Mientras tanto queda
   «Esperando permiso»: no aparece en la cola, ni en reportes, ni recibe correos. Si en **30 días**
   no hay permiso, sus datos se borran solos.
-- **Cómo se obtiene sin cuestionario del tutor:** abre la respuesta en **Respuestas de los Forms** →
+- **Cómo se obtiene sin cuestionario del tutor:** abre la respuesta en **Prospectos → Respuestas de los Forms** →
   «Pedir el permiso del tutor». Llama o escribe **solo para pedir el permiso**, explica el aviso, y si
   acepta registra nombre del tutor y medio (llamada, WhatsApp, en persona, por escrito). Queda tu
   nombre, la fecha y el medio en el historial y en la bitácora. Si después el alumno contesta «No» al
