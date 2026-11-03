@@ -676,7 +676,7 @@ def mapa(request):
         request, 'Mapa de cobertura', puntos=puntos, plantel=plantel, planteles=catalogos.PLANTELES_CORTO.items(),
         sin_ubicar=sin_ubicar, puede_ubicar=u.has_perm('prospectos.change_preparatoria'), tiles=TILES(),
         resumen=resumen, acciones=acciones, sedes=sedes_udc(), hoy=timezone.localdate().isoformat(),
-        sedes_faltan=[n for c, n in catalogos.PLANTELES_CORTO.items() if c not in {s['clave'] for s in sedes_udc()}]))
+        sedes_faltan=sedes_faltantes()))
 
 
 # Ubicación conocida de cada plantel (se puede corregir en Configuración → Mapa). Cuautitlán: Plan de Ayala 29,
@@ -699,10 +699,26 @@ def sedes_udc() -> list[dict]:
     return res
 
 
+def sedes_faltantes() -> list[dict]:
+    """Planteles sin ubicar, con su escudo (para colocarlos con un clic en el mapa)."""
+    from django.templatetags.static import static
+    ubicadas = {s['clave'] for s in sedes_udc()}
+    res = []
+    for clave, nombre in catalogos.PLANTELES_CORTO.items():
+        if clave not in ubicadas:
+            archivo, universidad = ESCUDOS.get(clave, ('aguila', nombre))
+            res.append({'clave': clave, 'nombre': nombre, 'universidad': universidad, 'escudo': static(f'prospectos/marca/{archivo}.svg')})
+    return res
+
+
 def _coordenadas(texto: str):
     """«19.6693, -99.1795» (lo que copia Google Maps con clic derecho) → (lat, lng), o None si no se entiende."""
     import re
-    m = re.fullmatch(r'\s*(-?\d{1,2}(?:\.\d+)?)\s*[, ]\s*(-?\d{1,3}(?:\.\d+)?)\s*', texto or '')
+    texto = texto or ''
+    # Un enlace de Google Maps: «…/@19.6512,-99.1234,17z…», «…!3d19.6512!4d-99.1234…» o «?q=19.65,-99.12».
+    enlace = (re.search(r'!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)', texto) or re.search(r'@(-?\d+\.\d+),(-?\d+\.\d+)', texto)
+              or re.search(r'[?&](?:q|ll|query)=(-?\d+\.\d+),\s*(-?\d+\.\d+)', texto))
+    m = enlace or re.fullmatch(r'\s*(-?\d{1,2}(?:\.\d+)?)\s*[, ]\s*(-?\d{1,3}(?:\.\d+)?)\s*', texto)
     if not m:
         return None
     lat, lng = float(m.group(1)), float(m.group(2))
@@ -741,6 +757,17 @@ def configurar_mapa(request):
     """Elegir el mapa: Google Maps (con llave) u OpenStreetMap (sin llave)."""
     if not request.user.is_superuser:
         raise PermissionDenied
+    if request.method == 'POST' and request.POST.get('accion') == 'sede':
+        # Desde el mapa de cobertura: un plantel colocado con un clic (o pegando coordenadas / enlace de Google Maps).
+        clave = request.POST.get('clave')
+        c = _coordenadas(request.POST.get('coordenadas') or f"{request.POST.get('lat', '')}, {request.POST.get('lng', '')}")
+        if clave not in catalogos.PLANTELES_CORTO or not c:
+            return JsonResponse({'ok': False, 'error': 'Esa ubicación no está en México. Haz clic sobre el plantel en el mapa.'}, status=400)
+        sedes = dict(Configuracion.obtener('mapa.sedes') or {})
+        sedes[clave] = {'lat': round(c[0], 7), 'lng': round(c[1], 7)}
+        Configuracion.guardar('mapa.sedes', sedes, request.user)
+        auditoria.registrar('ubicar_plantel', None, {'plantel': clave}, request=request)
+        return JsonResponse({'ok': True, 'mensaje': f'Plantel {catalogos.PLANTELES_CORTO[clave]} ubicado.'})
     if request.method == 'POST' and request.POST.get('accion') == 'sedes':
         sedes = {}
         for clave, nombre in catalogos.PLANTELES_CORTO.items():

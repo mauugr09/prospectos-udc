@@ -82,6 +82,17 @@ El camino de una respuesta:
 | **Promotor** | Sus eventos, QR, tarjetas, la pantalla En vivo y sus aspirantes, con el contacto oculto. |
 | **Directivo** | Inicio, mapa y reporte ejecutivo: solo cifras, sin datos personales. |
 
+### Cerrar sesión
+
+Abajo a la izquierda, en tu nombre → **Cerrar sesión**. Se abre una ventana para confirmar: **Enter** cierra la sesión
+y **Esc** cancela. Si tienes la verificación en 2 pasos y esta computadora es «de confianza», aparece
+**Olvidar esta computadora**: márcala en una PC compartida, así la próxima vez se pedirá el código.
+
+**Si no usas el programa 30 minutos, la sesión se cierra sola.** Mover el mouse o escribir cuenta como uso, aunque no
+cambies de pantalla. Un minuto antes aparece **«¿Sigues ahí?»**: pulsa *Seguir trabajando* para continuar. Si nadie
+responde, la pantalla se cambia a «Sesión cerrada» para que los datos no queden a la vista. Lo que no hayas guardado
+en ese momento se pierde.
+
 ## 3. Inicio
 
 ![Inicio](img/inicio.jpg)
@@ -361,6 +372,9 @@ Cambia el estado del evento a *Realizado*.
 - Los alumnos escriben su prepa a mano. Las nuevas aparecen como «por revisar» y sin ubicación. Si dos son
   la misma escuela, en **Preparatorias** selecciónalas y usa **Unir**. Para ponerlas en el mapa, usa
   **Ubicar**: búscala o haz clic donde está.
+- **Planteles:** cada uno aparece con el escudo de su universidad. Si falta uno, un administrador ve el botón
+  **Ubicar Tultepec** (o el que falte). Púlsalo, acerca el mapa hasta ver el edificio y haz clic sobre él; puedes
+  arrastrar el escudo antes de **Guardar aquí**. También puedes pegar las coordenadas o el enlace de Google Maps.
 
 ## 13. Reporte ejecutivo
 

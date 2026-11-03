@@ -1,0 +1,30 @@
+{% load static %}
+<dialog class="sl-dialogo" id="sl-dialogo" aria-labelledby="sl-titulo" data-minutos="{{ inactividad_minutos }}"
+        data-sigo="{% url 'prospectos:sigo_aqui' %}" data-csrf="{{ csrf_token }}">
+  <form method="post" action="{% url 'prospectos:salir' %}" class="sl-forma" id="sl-forma">{% csrf_token %}
+    <input type="hidden" name="motivo" value="" id="sl-motivo">
+    <div class="sl-foto" aria-hidden="true" style="background-image:url('{% static 'prospectos/marca/udc-edificio.jpg' %}')"></div>
+    <button type="button" class="sl-cerrar" data-sl="cancelar" aria-label="Cancelar"><span class="material-symbols-outlined">close</span></button>
+    <div class="sl-escudos" aria-hidden="true">
+      <span class="sl-escudo">{% include "prospectos/_escudo_aguila.svg.html" %}</span>
+      <span class="sl-escudo">{% include "prospectos/_escudo_toro.svg.html" %}</span>
+    </div>
+    <div class="sl-normal">
+      <h2 id="sl-titulo">¿Cerrar sesión{% if request.user.perfil.nombre_corto %}, {{ request.user.perfil.nombre_corto }}{% endif %}?</h2>
+      <p>Para volver solo necesitas tu correo y tu contraseña.</p>
+      {% if puede_olvidar_pc %}
+      <label class="sl-olvidar"><input type="checkbox" name="olvidar" value="1">
+        <span><b>Olvidar esta computadora</b><small>La próxima vez pedirá el código de tu app de verificación. Úsalo en una PC compartida.</small></span></label>
+      {% endif %}
+    </div>
+    <div class="sl-inactivo" hidden>
+      <h2>¿Sigues ahí?</h2>
+      <p>Por seguridad, la sesión se cierra en <b id="sl-cuenta">60</b> segundos si no la usas.</p>
+    </div>
+    <div class="sl-botones">
+      <button type="button" class="sl-boton secundario" data-sl="cancelar" id="sl-cancelar">Cancelar</button>
+      <button type="submit" class="sl-boton" id="sl-confirmar" autofocus>Cerrar sesión</button>
+    </div>
+  </form>
+</dialog>
+<script src="{% static 'prospectos/js/salir.js' %}" defer></script>

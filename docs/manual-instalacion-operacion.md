@@ -65,7 +65,8 @@ El Inicio del administrador muestra una lista de **Primeros pasos** hasta que to
 2. **Registrar los Forms** del alumno y de la familia.
 3. **Revisar el mapeo**: que cada pregunta del Form corresponda a la del programa.
 4. **Ubicar los planteles y las prepas** en el mapa. El plantel Cuautitlán ya viene ubicado (Plan de Ayala 29); el de
-   **Tultepec hay que ponerlo** en Configuración → Mapa (clic derecho en Google Maps → copiar coordenadas). Cada plantel
+   **Tultepec hay que ponerlo**: en el Mapa de cobertura pulsa **Ubicar Tultepec** y haz clic sobre el edificio (o pega el
+   enlace de Google Maps). También se puede corregir en Configuración → Mapa. Cada plantel
    aparece en el mapa con el escudo de su universidad.
 5. **Crear los usuarios** (sección 5).
 6. **Configurar la protección de datos** (sección 7). No lo dejes para después.

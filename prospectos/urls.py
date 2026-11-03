@@ -1,9 +1,12 @@
 from django.urls import path
 
-from . import views, vistas_asistente, vistas_avisos, vistas_perfil, vistas_prospectos, vistas_proteccion
+from . import views, vistas_asistente, vistas_avisos, vistas_perfil, vistas_prospectos, vistas_proteccion, vistas_salir
 
 app_name = 'prospectos'
 urlpatterns = [
+    path('salir/', vistas_salir.salir, name='salir'),
+    path('sesion-cerrada/', vistas_salir.sesion_cerrada, name='sesion_cerrada'),
+    path('sigo-aqui/', vistas_salir.sigo_aqui, name='sigo_aqui'),
     path('prospectos/', vistas_prospectos.bandeja, name='prospectos'),
     path('prospectos/<slug:ver>/', vistas_prospectos.bandeja, name='prospectos_ver'),
     path('prospectos/<int:pk>/baja/', vistas_prospectos.dar_de_baja, name='dar_de_baja'),
