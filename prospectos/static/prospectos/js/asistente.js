@@ -10,7 +10,7 @@
   const NOMBRE = (tarjetaKuali && tarjetaKuali.dataset.nombre) || 'Kuali';
   const FRASES = { reposo: '¿En qué te ayudo?', pensando: 'Pensando…', contento: '¡Listo!', preocupado: 'Algo salió mal', dormido: 'Zzz…' };
   let avisosSinLeer = 0, estadoFijo = null, temporizador = null, ultimoMovimiento = Date.now();
-  const mascotas = () => document.querySelectorAll('svg.kuali');
+  const mascotas = () => document.querySelectorAll('.kuali');
   function pintarMascota(estado) {
     mascotas().forEach((svg) => {
       ['pensando', 'contento', 'avisando', 'preocupado', 'dormido'].forEach((e) => svg.classList.toggle(`k-${e}-on`, e === estado));
@@ -90,7 +90,7 @@
   document.body.appendChild(panel);
   panel.querySelector('h2').textContent = NOMBRE;
   panel.setAttribute('aria-label', NOMBRE);
-  const original = document.querySelector('#km svg.kuali') || boton.querySelector('svg.kuali');
+  const original = document.querySelector('#km .kuali') || boton.querySelector('.kuali');
   if (original) panel.querySelector('.as-logo-kuali').appendChild(original.cloneNode(true));
   const ocultar = panel.querySelector('.as-ocultar');
   const textoOcultar = () => { ocultar.textContent = oculta ? `Mostrar a ${NOMBRE} en el menú` : `Ocultar a ${NOMBRE} del menú`; };

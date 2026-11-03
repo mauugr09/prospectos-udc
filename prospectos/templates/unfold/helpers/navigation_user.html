@@ -1,7 +1,7 @@
 {% if avisos_sin_leer is not None %}
 <div class="km" id="km" data-nombre="{{ mascota_nombre }}" data-oculto="{% if request.user.perfil.kuali_oculto %}1{% else %}0{% endif %}" data-perfil="{% url 'prospectos:perfil' %}">
   <button type="button" class="km-boton" aria-label="Abrir a {{ mascota_nombre }}, el asistente">
-    {% include "prospectos/_kuali.svg.html" with k_id="nav" %}
+    {% include "prospectos/_kuali.html" with k_id="nav" %}
     <span class="km-texto"><b>{{ mascota_nombre }}</b><small>¿En qué te ayudo?</small></span>
   </button>
 </div>
