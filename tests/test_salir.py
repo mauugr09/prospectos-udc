@@ -89,3 +89,41 @@ def test_solo_administradores_ubican_planteles(client):
     assert 'data-sede=' not in client.get('/admin/herramientas/mapa/').content.decode()
     assert client.post('/admin/herramientas/mapa/configurar/', {'accion': 'sede', 'clave': 'tultepec', 'lat': '19.6',
                                                                 'lng': '-99.1'}).status_code == 403
+
+
+# --------------------------------------------------------------------------- formulario caducado (CSRF)
+def _cliente_csrf():
+    from django.test import Client
+    return Client(enforce_csrf_checks=True)
+
+
+def test_acceso_desde_pestana_vieja_regresa_con_aviso(db):
+    User.objects.create_superuser('jefa@x.mx', 'jefa@x.mx', 'Clave-larga-2026!')
+    c = _cliente_csrf()
+    c.get('/admin/login/')
+    c.cookies['csrftoken'] = 'x' * 32  # otra pestaña entró o salió: el código cambió
+    r = c.post('/admin/login/', {'username': 'jefa@x.mx', 'password': 'Clave-larga-2026!', 'next': '/admin/herramientas/mapa/',
+                                 'csrfmiddlewaretoken': 'y' * 32})
+    assert r.status_code == 302 and r.url == '/admin/login/?next=/admin/herramientas/mapa/'
+    html = c.get(r.url).content.decode()
+    assert 'había caducado' in html and '_auth_user_id' not in c.session  # no entra solo: hay que volver a pulsar Entrar
+
+
+def test_formulario_viejo_regresa_a_su_pagina(db):
+    u = User.objects.create_superuser('jefa@x.mx', 'jefa@x.mx', 'Clave-larga-2026!')
+    c = _cliente_csrf()
+    c.force_login(u)
+    c.get('/admin/')
+    c.cookies['csrftoken'] = 'x' * 32
+    r = c.post('/admin/herramientas/salir/', {'csrfmiddlewaretoken': 'y' * 32},
+               HTTP_REFERER='http://testserver/admin/herramientas/prospectos/todos/?q=ana')
+    assert r.status_code == 302 and r.url == '/admin/herramientas/prospectos/todos/?q=ana'
+    assert '_auth_user_id' in c.session  # no se hizo nada
+    r = c.post('/admin/herramientas/salir/', {'csrfmiddlewaretoken': 'y' * 32}, HTTP_REFERER='https://otro.sitio/x')
+    assert r.url == '/admin/'
+
+
+def test_sin_cookie_explica_que_hacer(db):
+    c = _cliente_csrf()
+    r = c.post('/admin/login/', {'username': 'a', 'password': 'b'})
+    assert r.status_code == 403 and 'no guardó la cookie' in r.content.decode()

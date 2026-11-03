@@ -413,6 +413,7 @@ que, en esa encuesta, pulses **Usar para los QR de las visitas**. Las imágenes 
 
 | Pregunta | Respuesta |
 |---|---|
+| Sale «El formulario caducó» o «La página de acceso había caducado». | Esa pestaña estaba abierta desde antes de entrar o salir en otra. No se guardó nada: vuelve a escribir y pulsa el botón otra vez. Si dice que el navegador no guardó la cookie, desbloquea las cookies para la dirección del programa o sal del modo privado. |
 | Un alumno dice que contestó y no aparece. | Busca en **Prospectos → Respuestas de los Forms**. Si está «Esperando permiso», falta su familia. Si no está, el programa estaba cerrado: se pone al día al abrirlo. |
 | ¿Por qué un aspirante tiene prioridad 100? | En su ficha, pestaña **Prioridad y grupos**, dice de dónde salen los puntos. |
 | Me salió «Se cerró tu sesión». | Pasaron 30 minutos sin uso. Vuelve a entrar; no se perdió nada. |

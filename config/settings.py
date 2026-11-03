@@ -196,6 +196,7 @@ SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_AGE = 8 * 3600
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # cerrar el navegador cierra la sesión
 CSRF_COOKIE_HTTPONLY = True
+CSRF_FAILURE_VIEW = 'prospectos.vistas_salir.csrf_fallo'  # pestaña vieja: regresa con formulario nuevo, no 403
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'same-origin'
