@@ -51,10 +51,14 @@ def explicar_http(codigo: int, cuerpo: str) -> str:
         401: 'Credenciales vencidas o inválidas.',
         403: ('Sin permiso: comparte el Form como COLABORADOR (editor) con el correo de la cuenta de servicio, '
               'o, si la universidad no permite compartir fuera del dominio, usa el modo OAuth (docs/formularios.md).'),
-        404: 'No existe un Form con ese ID (usa el ID de la URL de EDICIÓN: docs.google.com/forms/d/<ID>/edit).',
+        404: ('Google no deja ver ese Form. O el ID está mal (usa el de la URL de EDICIÓN: docs.google.com/forms/d/<ID>/edit), '
+              'o la cuenta conectada NO tiene acceso: Google responde «no existe» también cuando no hay permiso. '
+              'Comparte el Form como editor con esa cuenta.'),
         429: 'Google limitó las peticiones (cuota); se reintenta solo en la siguiente corrida.',
     }
-    return f'HTTP {codigo}: {pistas.get(codigo, "Error de Google.")} Detalle: {cuerpo}'
+    if (cuerpo or '').lstrip().startswith('<'):  # página HTML de error de Google: no aporta nada al registro
+        cuerpo = '(página de error de Google)'
+    return f'HTTP {codigo}: {pistas.get(codigo, "Error de Google.")} Detalle: {(cuerpo or "")[:300]}'
 
 
 def entries_publicos(url_publica: str, sesion=None) -> dict[str, str]:

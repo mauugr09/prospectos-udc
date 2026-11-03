@@ -10,7 +10,7 @@ from unfold.widgets import (UnfoldAdminCheckboxSelectMultipleWidget, UnfoldAdmin
                             UnfoldAdminTextareaWidget, UnfoldAdminTextInputWidget)
 
 from . import catalogos
-from .models import Carrera, Perfil, Preparatoria, Pregunta, TipoPregunta
+from .models import Carrera, Formulario, Perfil, Preparatoria, Pregunta, TipoPregunta
 
 
 class LineasField(forms.CharField):
@@ -170,3 +170,23 @@ class NuevoUsuarioForm(forms.ModelForm):
         u.groups.set([self.cleaned_data['rol']])
         Perfil.objects.update_or_create(usuario=u, defaults={'codigo_promotor': self.cleaned_data.get('codigo_promotor'),
                                                              'debe_cambiar_clave': True})
+
+
+class FormularioForm(forms.ModelForm):
+    """Normaliza el ID ANTES de validar: si no, la URL pegada pasa la revisión de duplicados y truena al guardar."""
+
+    class Meta:
+        model = Formulario
+        fields = '__all__'
+
+    def clean_google_form_id(self):
+        texto = (self.cleaned_data.get('google_form_id') or '').strip()
+        if '/forms/d/e/' in texto or texto.startswith('1FAIpQL'):
+            raise ValidationError('Ese es el enlace para CONTESTAR (viewform). Pega el de EDICIÓN: abre el Form en Google, '
+                                  'copia la dirección que termina en /edit.')
+        form_id = Formulario.extraer_id(texto)
+        otro = Formulario.objects.filter(google_form_id=form_id).exclude(pk=self.instance.pk).first()
+        if otro:
+            raise ValidationError(f'Ese Form ya está registrado como «{otro.nombre}» '
+                                  f'({otro.get_tipo_display()}). Usa ese registro o pega el ID del otro Form.')
+        return form_id
