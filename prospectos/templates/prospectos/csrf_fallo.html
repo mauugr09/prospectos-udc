@@ -1,0 +1,8 @@
+{% extends 'prospectos/acceso_base.html' %}
+{% block panel %}
+  <div class="sl-hecho" aria-hidden="true"><span class="material-symbols-outlined">refresh</span></div>
+  <h2 class="ac-titulo">El formulario caducó</h2>
+  <p class="ac-aviso" role="alert">{{ texto }}</p>
+  <a class="ac-boton sl-volver" href="{{ volver }}">Volver a intentarlo</a>
+  <p class="ac-pie">Es una protección: evita que otra página envíe formularios a tu nombre.</p>
+{% endblock %}

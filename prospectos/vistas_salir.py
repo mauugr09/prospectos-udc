@@ -54,3 +54,48 @@ def sigo_aqui(request):
     if not request.user.is_authenticated:
         return JsonResponse({'ok': False}, status=401)
     return JsonResponse({'ok': True})
+
+
+def csrf_fallo(request, reason=''):
+    """
+    CSRF_FAILURE_VIEW. Casi siempre es una pestaña vieja: al entrar o salir en otra pestaña (o al cerrarse la sesión por
+    inactividad) el código de seguridad del formulario cambia y el formulario abierto ya no sirve. La protección se
+    mantiene; en vez de un 403 en inglés técnico se regresa a la pantalla con un formulario nuevo. Nunca se reintenta
+    el envío por la persona: hay que volver a pulsar el botón.
+    """
+    import logging
+
+    from django.conf import settings
+    from django.contrib import admin, messages
+    from django.utils.http import url_has_allowed_host_and_scheme
+    sin_cookie = settings.CSRF_COOKIE_NAME not in request.COOKIES
+    logging.getLogger('prospectos.seguridad').warning(
+        'CSRF rechazado: %s · %s %s · cookie=%s · origen=%s · host=%s', reason, request.method, request.path,
+        'no' if sin_cookie else 'sí', request.META.get('HTTP_ORIGIN', '-'), request.get_host())
+    if sin_cookie:
+        texto = ('Tu navegador no guardó la cookie de seguridad de este sitio. Revisa que no estén bloqueadas las cookies '
+                 'para esta dirección (o sal del modo privado) y vuelve a intentarlo.')
+    elif request.path == reverse('admin:login'):
+        texto = ('La página de acceso había caducado (se entró o salió en otra pestaña). '
+                 'Escribe otra vez tu contraseña y pulsa Entrar.')
+    else:
+        texto = ('Esta página estaba abierta desde antes de entrar o salir en otra pestaña, así que su formulario caducó. '
+                 'No se guardó nada: vuelve a hacerlo.')
+    # De vuelta a la página donde estaba el formulario (no a la dirección que lo recibe: muchas solo aceptan POST).
+    from urllib.parse import urlsplit
+    ref = urlsplit(request.META.get('HTTP_REFERER', ''))
+    volver = '/admin/'
+    if ref.path and url_has_allowed_host_and_scheme(request.META.get('HTTP_REFERER', ''), allowed_hosts={request.get_host()}):
+        volver = ref.path + (f'?{ref.query}' if ref.query else '')
+    if request.path == reverse('admin:login'):
+        siguiente = request.POST.get('next') or request.GET.get('next') or ''
+        if siguiente and url_has_allowed_host_and_scheme(siguiente, allowed_hosts={request.get_host()}):
+            volver = f"{reverse('admin:login')}?next={siguiente}"
+    if not sin_cookie:
+        try:
+            messages.warning(request, texto)
+            return redirect(volver)
+        except Exception:  # noqa: BLE001 - sin sesión ni mensajes: se muestra la página
+            pass
+    return render(request, 'prospectos/csrf_fallo.html', admin.site.each_context(request) | {
+        'title': 'El formulario caducó', 'texto': texto, 'volver': volver}, status=403)
