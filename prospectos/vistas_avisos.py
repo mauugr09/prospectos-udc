@@ -13,7 +13,7 @@ from .servicios import avisos
 from .views import _ctx
 
 ICONOS = {TipoAviso.ASIGNADO: 'person_add', TipoAviso.VENCIDAS: 'phone_missed',
-          TipoAviso.EVENTO: 'event', TipoAviso.SISTEMA: 'error'}
+          TipoAviso.EVENTO: 'event', TipoAviso.SISTEMA: 'error', TipoAviso.REGISTRO: 'how_to_reg'}
 
 
 def _mios(request):

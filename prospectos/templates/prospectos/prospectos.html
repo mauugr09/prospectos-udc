@@ -14,6 +14,14 @@
   </nav>
   <p class="pp-ayuda">{{ actual.ayuda }}{% if ver == 'llamar' and no_quieren %} {{ no_quieren }} no quieren información y no aparecen aquí (están en «Todos»).{% endif %}</p>
 
+  {% if es_bajas %}
+  <div class="rs-estados mb-4">
+    <a href="?" class="rs-estado {% if not f.motivo %}activo{% endif %}"><b>{{ resumen_bajas.total }}</b><span>Bajas en total · {{ resumen_bajas.mes }} este mes</span></a>
+    {% for clave, etiqueta, n in resumen_bajas.motivos %}
+    <a href="?motivo={{ clave }}" class="rs-estado tono-gris {% if f.motivo == clave %}activo{% endif %}"><b>{{ n }}</b><span>{{ etiqueta }}</span></a>
+    {% endfor %}
+  </div>
+  {% endif %}
   {% if ver == 'forms' %}
   <div class="rs-estados mb-4">
     <a href="?" class="rs-estado {% if not f.estado %}activo{% endif %}"><b>{{ pagina.paginator.count }}</b><span>{% if f.estado %}Ver todas{% else %}Todas{% endif %}</span></a>
@@ -26,8 +34,11 @@
   <form method="get" class="pp-filtros" role="search">
     {% if f.estado and ver == 'forms' %}<input type="hidden" name="estado" value="{{ f.estado }}"><input type="hidden" name="_todas" value="1">{% endif %}
     <label class="pp-buscar"><span class="material-symbols-outlined" aria-hidden="true">search</span>
-      <input type="search" name="q" value="{{ f.q }}" placeholder="{% if es_respuestas %}Buscar por nombre{% else %}Nombre, tutor o preparatoria{% endif %}" aria-label="Buscar"></label>
-    {% if es_respuestas %}
+      <input type="search" name="q" value="{{ f.q }}" placeholder="{% if es_bajas %}Preparatoria{% elif es_respuestas %}Buscar por nombre{% else %}Nombre, tutor o preparatoria{% endif %}" aria-label="Buscar"></label>
+    {% if es_bajas %}
+      {% if f.motivo %}<input type="hidden" name="motivo" value="{{ f.motivo }}">{% endif %}
+      <select name="plantel" class="udc-campo" onchange="this.form.submit()" aria-label="Plantel"><option value="">Ambos planteles</option>{% for v, e in planteles %}<option value="{{ v }}" {% if f.plantel == v %}selected{% endif %}>{{ e }}</option>{% endfor %}</select>
+    {% elif es_respuestas %}
       <select name="tipo" class="udc-campo" onchange="this.form.submit()" aria-label="Quién contestó">
         <option value="">Alumnos y familias</option>
         <option value="ALUMNO" {% if f.tipo == 'ALUMNO' %}selected{% endif %}>Solo alumnos</option>
@@ -51,10 +62,30 @@
     {% if filtros_activos %}<a class="udc-btn secundario" href="{{ actual.url }}">Quitar filtros</a>{% endif %}
   </form>
 
-  <p class="pp-cuenta">{{ pagina.paginator.count }} {% if es_respuestas %}respuesta{{ pagina.paginator.count|pluralize }}{% else %}aspirante{{ pagina.paginator.count|pluralize }}{% endif %}{% if filtros_activos %} con estos filtros{% endif %}</p>
+  <p class="pp-cuenta">{{ pagina.paginator.count }} {% if es_bajas %}baja{{ pagina.paginator.count|pluralize }}{% elif es_respuestas %}respuesta{{ pagina.paginator.count|pluralize }}{% else %}aspirante{{ pagina.paginator.count|pluralize }}{% endif %}{% if filtros_activos %} con estos filtros{% endif %}</p>
 
   <div class="pp-lista">
-  {% if es_respuestas %}
+  {% if es_bajas %}
+    {% for x in filas %}
+    <div class="pp-fila pp-baja">
+      <span class="pp-principal">
+        <span class="pp-prioridad" aria-hidden="true"><span class="material-symbols-outlined">person_off</span></span>
+        <span class="pp-quien">
+          <span class="pp-nombre"><b>Baja #{{ x.p.pk }}</b><span class="udc-chip udc-seg-mas">{{ x.motivo }}</span></span>
+          <small>{{ x.p.preparatoria|default:"Sin preparatoria" }} · {{ x.p.carrera|default:"Sin carrera" }}{% if x.p.plantel %} · {{ x.p.get_plantel_display }}{% endif %}</small>
+        </span>
+      </span>
+      <span class="pp-meta">
+        <span class="pp-estatus">Baja el {{ x.p.baja_en|date:"j M Y" }}</span>
+        <small>Se registró el {{ x.p.creado_en|date:"j M Y" }}</small>
+      </span>
+      <span class="pp-acciones"></span>
+    </div>
+    {% empty %}
+    <div class="ay-vacio"><span class="material-symbols-outlined">person_off</span>
+      <b>{% if filtros_activos %}No hay bajas con estos filtros.{% else %}Nadie ha sido dado de baja.{% endif %}</b></div>
+    {% endfor %}
+  {% elif es_respuestas %}
     {% for x in filas %}
     <div class="pp-fila">
       <a class="pp-principal" href="{% url 'prospectos:respuesta' x.r.pk %}">

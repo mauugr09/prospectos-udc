@@ -36,6 +36,20 @@ class Metricas:
             qs = qs.filter(creado_en__lte=self.hasta)
         return qs
 
+    def bajas(self) -> dict:
+        """Dados de baja en el periodo (por la fecha de la baja), aparte de los interesados, con su motivo."""
+        from django.db.models import Count
+        from ..vistas_prospectos import MOTIVOS_BAJA
+        qs = Prospecto.objects.bajas()
+        if self.desde:
+            qs = qs.filter(baja_en__gte=self.desde)
+        if self.hasta:
+            qs = qs.filter(baja_en__lte=self.hasta)
+        conteo = dict(qs.values_list('baja_motivo').annotate(n=Count('id')))
+        etiquetas = {k: e.replace(' (escríbelo)', '') for k, e in MOTIVOS_BAJA}
+        return {'total': sum(conteo.values()),
+                'motivos': [{'clave': k, 'etiqueta': etiquetas[k], 'total': conteo.get(k, 0)} for k, _ in MOTIVOS_BAJA if conteo.get(k)]}
+
     def _items(self):
         qs = RespuestaItem.objects.filter(respuesta__estado=EstadoRespuesta.VALIDA)
         if self.desde:

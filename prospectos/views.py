@@ -1251,6 +1251,7 @@ def reporte(request):
         'conocer': m.frecuencia('quiere_conocer', Cuestionario.ALUMNO, 'quiere_conocer'),
         'modalidad': m.frecuencia('modalidad', Cuestionario.ALUMNO, 'modalidades'),
         'temas': m.temas_duda(), 'segmentos': m.por_segmento(), 'agregadas': m.preguntas_agregadas(),
+        'bajas': m.bajas(),
     }
     base = max(1, d['embudo'][0]['total'] if d['embudo'] else 1)
     for e in d['embudo']:

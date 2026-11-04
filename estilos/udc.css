@@ -1930,3 +1930,12 @@ button.mc-ubicar-sede { cursor: pointer; border: 0; font: inherit; }
 .sl-hecho .material-symbols-outlined { font-size: 30px; }
 .sl-texto { font-size: 14.5px; line-height: 1.5; opacity: .9; margin-bottom: 8px; }
 a.sl-volver { display: block; text-align: center; text-decoration: none; }
+
+/* Bajas: fila sin datos personales y aviso en el reporte */
+.pp-baja .pp-prioridad { background: var(--c-relleno); color: var(--c-texto-2); }
+.pp-baja .pp-prioridad .material-symbols-outlined { font-size: 21px; }
+.rp-bajas { display: flex; gap: 10px; align-items: flex-start; padding: 12px 16px; border-radius: var(--r-grande); background: var(--c-superficie);
+  font-size: 14px; color: var(--c-texto-2); }
+.rp-bajas b { color: var(--c-texto); } .rp-bajas .material-symbols-outlined { color: var(--c-texto-2); }
+button.av-sin-sonido { width: 100%; text-align: left; border: 0; font: inherit; color: inherit; cursor: pointer; }
+.av-sin-sonido .av-icono { color: var(--c-naranja); }

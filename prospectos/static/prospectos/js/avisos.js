@@ -61,14 +61,37 @@
   try { visto = parseInt(localStorage.getItem(CLAVE) || '', 10) || null; } catch (e) { /* sin almacenamiento */ }
   const recordar = (m) => { visto = m; try { localStorage.setItem(CLAVE, String(m)); } catch (e) { /* nada */ } };
 
-  let audio = null;
-  const desbloquear = () => {  // los navegadores solo dejan sonar después de un clic o una tecla
+  // Sonido. Los navegadores bloquean el audio hasta que la persona hace clic o escribe en la página; según el
+  // navegador, ese permiso se pierde al cambiar de pantalla. Por eso: se intenta preparar el audio al cargar; si sigue
+  // bloqueado cuando llega un aviso, el sonido queda pendiente y suena con el siguiente clic, y la ventanita lo dice.
+  let audio = null, pendiente = 0;
+  const quiereSonido = () => raiz.dataset.sonido === '1';
+  function preparar() {
     if (!audio) { try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { audio = null; } }
-    if (audio && audio.state === 'suspended') audio.resume();
+    if (audio && audio.state === 'suspended') audio.resume().catch(() => {});
+    return !!audio && audio.state === 'running';
+  }
+  const listo = () => !!audio && audio.state === 'running';
+  if (quiereSonido()) preparar();
+  const desbloquear = () => {
+    preparar();
+    setTimeout(() => {
+      if (listo()) {
+        document.querySelectorAll('.av-sin-sonido').forEach((e) => e.remove());
+        if (pendiente && Date.now() - pendiente < 5 * 60 * 1000) tocar();
+        pendiente = 0;
+      }
+    }, 60);
   };
   ['pointerdown', 'keydown'].forEach((t) => addEventListener(t, desbloquear, { capture: true, passive: true }));
-  function sonar() {
-    if (raiz.dataset.sonido !== '1' || !audio || audio.state !== 'running') return;
+  function sonar() {  // true si sonó
+    if (!quiereSonido()) return true;
+    preparar();
+    if (!listo()) { pendiente = Date.now(); return false; }
+    tocar();
+    return true;
+  }
+  function tocar() {
     const t = audio.currentTime;
     [[880, 0], [1318.5, 0.12]].forEach(([f, d]) => {  // dos notas suaves (La5 → Mi6)
       const o = audio.createOscillator(), g = audio.createGain();
@@ -106,6 +129,18 @@
     while (pila.children.length > 3) pila.lastElementChild.remove();
   }
 
+  function avisoSinSonido() {
+    if (document.querySelector('.av-sin-sonido')) return;
+    const el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'av-flotante av-sin-sonido';
+    el.innerHTML = '<span class="av-icono material-symbols-outlined" aria-hidden="true">volume_off</span>' +
+      '<div class="av-flotante-texto"><b>El navegador bloqueó el sonido</b><small>Haz clic aquí para activarlo. ' +
+      'Para que suene siempre, permite las notificaciones en Mi perfil.</small></div>';
+    el.onclick = () => { desbloquear(); setTimeout(() => el.remove(), 120); };
+    pila.prepend(el);
+  }
+
   let parpadeo = null;
   function llamarLaAtencion(n) {
     if (!document.hidden || parpadeo) return;
@@ -124,11 +159,15 @@
     if (!llegaron.length) return;
     recordar(mayor);
     llegaron.forEach(flotante);
-    sonar();
+    const sono = sonar();
+    if (!sono) avisoSinSonido();
     llamarLaAtencion(datos.sin_leer);
-    if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+    // La notificación de Windows/macOS suena por su cuenta: se usa con la pestaña oculta o si el navegador bloqueó el audio.
+    if ((document.hidden || !sono) && 'Notification' in window && Notification.permission === 'granted') {
       const a = llegaron[llegaron.length - 1];
-      const n = new Notification(a.titulo, { body: a.detalle || '', tag: 'prospectos-avisos', icon: raiz.dataset.icono || undefined });
+      const extra = llegaron.length > 1 ? ` (y ${llegaron.length - 1} más)` : '';
+      const n = new Notification(a.titulo + extra, { body: a.detalle || '', tag: 'prospectos-avisos', renotify: true, silent: false,
+                                                   icon: raiz.dataset.icono || undefined });
       n.onclick = () => { window.focus(); location.href = a.url; };
     }
   }
