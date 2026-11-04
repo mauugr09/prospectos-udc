@@ -40,7 +40,7 @@ def test_acumular_suma_mientras_no_se_lea(promotor):
 
 def test_preferencias_apagan_menos_los_del_sistema(promotor):
     avisos.guardar_preferencias(promotor, {'evento', 'sistema'})
-    assert avisos.apagados(promotor) == {'asignado', 'vencidas'}
+    assert avisos.apagados(promotor) == {'asignado', 'vencidas', 'registro'}
     assert avisos.avisar(promotor, TipoAviso.VENCIDAS, 'x', 't') is None
     assert avisos.avisar(promotor, TipoAviso.EVENTO, 'y', 't')
     avisos.guardar_preferencias(promotor, set())
@@ -85,7 +85,7 @@ def test_asignar_desde_la_ficha_avisa_al_asesor_pero_no_a_uno_mismo(client, f_al
     n = Notificacion.objects.get(usuario=promotor)
     assert n.titulo == 'Te asignaron un aspirante' and n.url.endswith(f'/{p.pk}/change/')
     client.post(url, datos | {'asesor': jefa.pk})
-    assert not Notificacion.objects.filter(usuario=jefa).exists()
+    assert not Notificacion.objects.filter(usuario=jefa).exclude(tipo='registro').exists()
 
 
 def test_vencidas_un_aviso_por_persona_con_la_cifra(f_alumno, evento, promotor):
@@ -168,7 +168,7 @@ def test_bandeja_guarda_preferencias(client, promotor):
     html = client.get(URL).content.decode()
     assert 'Qué avisos recibir' in html and 'Problemas del sistema' not in html  # no es admin
     client.post(URL, {'tipo': ['evento']})
-    assert avisos.apagados(promotor) == {'asignado', 'vencidas'}
+    assert avisos.apagados(promotor) == {'asignado', 'vencidas', 'registro'}
 
 
 def test_revisar_marca_punto_de_partida_sin_avisar_historico(f_alumno, evento, promotor):

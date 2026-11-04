@@ -26,6 +26,13 @@
     <div class="text-xs text-subtle">Eventos: ${{ d.costo.costo_total|floatformat:0 }}{% if d.costo.costo_por_prospecto is None %}. Para calcularlo, el Form necesita el código de evento.{% endif %}</div></div><span class="udc-kpi-icono ambar material-symbols-outlined">payments</span></div></div>
 </div>
 
+{% if d.bajas.total %}
+<p class="rp-bajas mb-6"><span class="material-symbols-outlined" aria-hidden="true">person_off</span>
+  <span><b>{{ d.bajas.total }} dado{{ d.bajas.total|pluralize }} de baja en el periodo</b> (no se cuentan arriba ni en las gráficas):
+  {% for b in d.bajas.motivos %}{{ b.etiqueta|lower }} {{ b.total }}{% if not forloop.last %}, {% endif %}{% endfor %}.
+  <a class="underline" href="{% url 'prospectos:prospectos_ver' 'bajas' %}">Ver bajas</a></span></p>
+{% endif %}
+
 <div class="grid gap-4 xl:grid-cols-2 mb-6">
   <section class="udc-panel"><header><span class="material-symbols-outlined">filter_alt</span>De la respuesta a la inscripción</header><div class="udc-cuerpo">
     {% for e in d.embudo %}<div class="udc-embudo-fila"><span class="text-subtle font-semibold">{{ e.etapa }}</span>

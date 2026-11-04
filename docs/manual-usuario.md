@@ -113,7 +113,8 @@ Arriba a la derecha. El número rojo indica cuántos avisos no has leído.
 
 | Aviso | Cuándo llega |
 |---|---|
-| **Aspirantes nuevos** | Cuando alguien te asigna uno, o cuando se registran con tu código o QR. Se juntan en uno solo mientras no lo abras. |
+| **Cada alumno que se registra** | Admisiones, Coordinación y administradores: un aviso por cada alumno que contesta el cuestionario, con su prepa, carrera y hora (sin nombre; **Ver** abre su ficha). Si es menor, dice que espera el permiso de su familia. Si llegan más de 10 juntos, por ejemplo cuando el programa estuvo cerrado, llega uno solo con la cifra. |
+| **Aspirantes nuevos** | Promotores: cuando alguien te asigna uno, o cuando se registran con tu código o QR. Se juntan en uno solo mientras no lo abras. |
 | **Llamadas vencidas** | Un aviso al día con la cifra («Tienes 12 llamadas vencidas»). |
 | **Visitas** | Un día antes de cada visita (con cuántas cartas de beca llevar), y si a una semana aún no se pide permiso a la prepa. |
 | **Problemas del sistema** | Solo administradores: respaldo que falló, copia externa sin hacer, Form que no se pudo leer. No se pueden apagar. |
@@ -127,7 +128,11 @@ Arriba a la derecha. El número rojo indica cuántos avisos no has leído.
 **Avisos nuevos:** aparece una ventanita en la esquina inferior derecha con **Ver** y suena un tono corto. Si el
 programa está en una pestaña de fondo, el título de la pestaña parpadea. En **Mi perfil → Preferencias** puedes
 apagar el sonido, probarlo, y activar *«Avisarme aunque esté en otra ventana»* para recibirlos como avisos de Windows.
-(El navegador solo deja sonar después de que hiciste al menos un clic en la página.)
+
+**Si no suena:** el navegador solo deja sonar una página si llegaste a ella con un clic (por ejemplo, desde el menú) o
+si ya hiciste clic en ella. Si abriste la pestaña escribiendo la dirección y no has tocado nada, el aviso sale con
+*«El navegador bloqueó el sonido»*: haz clic ahí y suena. Para que suene siempre, aunque no toques la página, activa
+*«Avisarme aunque esté en otra ventana»*: el aviso de Windows trae su propio sonido.
 
 ## 5. Kuali, el asistente
 
@@ -217,7 +222,7 @@ Todo lo de los aspirantes está en **Prospectos** (menú *Día a día*). Arriba 
 
 Quien contestó **«No, gracias»** a recibir información no aparece en *Llamar hoy* y **no se le llama**.
 
-### Dar de baja a un aspirante
+### Dar de baja a un aspirante (y la pestaña «Bajas»)
 
 El programa **no borra** registros: los **da de baja**. Se eliminan su nombre, teléfonos, correos, CURP y lo
 que escribió, y queda solo como una cifra anónima en los reportes. Así se cumple la ley de datos personales
@@ -229,6 +234,11 @@ sin descuadrar las estadísticas. **No se puede deshacer.**
 
 Queda en la bitácora quién lo hizo, cuándo y por qué. Si la persona solo ya no quiere que la llamen, **no la
 des de baja**: abre su ficha y marca «No quiere información».
+
+Quien se da de baja **sale de las cifras de aspirantes interesados**: Inicio, Reporte ejecutivo, mapa y Kuali.
+Pasa a la pestaña **Prospectos → Bajas**, que tiene su propia cuenta: total, las de este mes y cuántas por cada
+motivo, con filtro por motivo y por plantel. Ahí aparece solo como «Baja #número», con su prepa, carrera, plantel y
+fechas, sin nombre. El Reporte ejecutivo muestra aparte cuántas bajas hubo en el periodo.
 
 ## 7. La ficha del aspirante
 

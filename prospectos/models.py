@@ -524,8 +524,13 @@ class ProspectoQuerySet(models.QuerySet):
         return self.filter(consentimiento=True, fusionado_en__isnull=True, anonimizado_en__isnull=True)
 
     def reportables(self):
-        """Para estadísticas: con consentimiento y sin fusionar (incluye anonimizados)."""
-        return self.filter(consentimiento=True, fusionado_en__isnull=True)
+        """Para estadísticas de interesados: con consentimiento y sin fusionar. Incluye a los anonimizados por tiempo
+        (siguen contando como lo que fueron), pero NO a los dados de baja: esos tienen su propia cifra (bajas())."""
+        return self.filter(consentimiento=True, fusionado_en__isnull=True, baja_en__isnull=True)
+
+    def bajas(self):
+        """Dados de baja a mano (Prospectos → Baja): sin datos personales; se cuentan aparte, por motivo."""
+        return self.filter(baja_en__isnull=False, fusionado_en__isnull=True)
 
 
 class Prospecto(models.Model):
@@ -589,6 +594,8 @@ class Prospecto(models.Model):
     ultima_actividad_en = models.DateTimeField(null=True, blank=True, db_index=True)
     bienvenida_enviada_en = models.DateTimeField(null=True, blank=True)
     anonimizado_en = models.DateTimeField(null=True, blank=True)
+    baja_en = models.DateTimeField('dado de baja el', null=True, blank=True, db_index=True, editable=False)
+    baja_motivo = models.CharField('motivo de la baja', max_length=24, blank=True, editable=False)
     fusionado_en = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL, related_name='absorbidos')
     creado_en = models.DateTimeField('registro', default=timezone.now, db_index=True)
     actualizado_en = models.DateTimeField(auto_now=True)
@@ -774,6 +781,7 @@ class TipoAviso(models.TextChoices):
     VENCIDAS = 'vencidas', 'Llamadas vencidas'
     EVENTO = 'evento', 'Visitas próximas'
     SISTEMA = 'sistema', 'Problemas del sistema'
+    REGISTRO = 'registro', 'Cada alumno que se registra'
 
 
 class Notificacion(models.Model):

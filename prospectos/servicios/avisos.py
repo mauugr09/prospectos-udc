@@ -29,7 +29,9 @@ DESCRIPCIONES = {
     TipoAviso.VENCIDAS: 'Un resumen al día de las llamadas que ya se pasaron de fecha.',
     TipoAviso.EVENTO: 'Un día antes de cada visita, y si falta pedir permiso a la prepa.',
     TipoAviso.SISTEMA: 'Respaldos o importaciones que fallaron. Solo administradores; no se puede apagar.',
+    TipoAviso.REGISTRO: 'Cada vez que un alumno contesta el cuestionario (si llegan muchos juntos, uno solo con la cifra).',
 }
+UNO_POR_UNO = 10  # más registros juntos que esto (p. ej. al ponerse al día tras tener la PC apagada): un aviso con la cifra
 
 
 def apagados(usuario) -> set[str]:
@@ -95,6 +97,57 @@ def asignado(asesor, prospecto, por=None) -> None:
             n.titulo = f'Te asignaron {n.cantidad} aspirantes'
         n.detalle = f'Asignado por {por.get_full_name() or por.get_username()}' if por and n.cantidad == 1 else 'Revisa tu lista y haz el primer contacto.'
         n.save(update_fields=['url', 'titulo', 'detalle'])
+
+
+def destinatarios_de_registros() -> list:
+    """Quien trabaja con aspirantes (Admisiones, Coordinación, administradores). Los promotores ya reciben los de sus
+    visitas agrupados (registrados_en_mis_visitas) y no ven los de otros."""
+    res = []
+    for u in get_user_model().objects.filter(is_active=True, is_staff=True):
+        if u.is_superuser or (u.has_perm('prospectos.change_prospecto') and not u.has_perm('prospectos.ver_propios')):
+            res.append(u)
+    return res
+
+
+def registros_nuevos(formulario: Formulario, desde_pk: int, primera_vez: bool = False) -> int:
+    """
+    Un aviso por cada alumno que contestó en esta importación (sin su nombre: prepa, carrera y hora; el enlace abre la
+    ficha). Si son más de UNO_POR_UNO, o es la primera lectura del Form (el histórico), un solo aviso con la cifra.
+    """
+    from ..models import Cuestionario, EstadoRespuesta, Respuesta
+    if formulario.tipo != Cuestionario.ALUMNO or formulario.google_form_id.startswith('demo-'):
+        return 0
+    rs = list(Respuesta.objects.filter(pk__gt=desde_pk, formulario=formulario, cuestionario=Cuestionario.ALUMNO, version=1)
+              .exclude(estado__in=[EstadoRespuesta.SIN_CONSENTIMIENTO, EstadoRespuesta.DESCARTADA])
+              .select_related('prospecto__preparatoria', 'prospecto__carrera', 'evento__preparatoria').order_by('pk'))
+    if not rs:
+        return 0
+    usuarios = destinatarios_de_registros()
+    if primera_vez or len(rs) > UNO_POR_UNO:
+        url = reverse('prospectos:prospectos_ver', args=['nuevos'])
+        for u in usuarios:
+            n = avisar(u, TipoAviso.REGISTRO, f'registros:{timezone.localdate().isoformat()}', '', url=url, cantidad=len(rs), acumular=True)
+            if n:
+                n.titulo = _plural(n.cantidad, 'Llegó 1 registro nuevo de alumno', 'Llegaron {n} registros nuevos de alumnos')
+                n.detalle = 'Están en Prospectos → Nuevos.' if not primera_vez else 'Los que ya estaban en el Form antes de conectarlo.'
+                n.save(update_fields=['titulo', 'detalle'])
+        return len(rs)
+    for r in rs:
+        p = r.prospecto
+        prepa = (p.preparatoria if p else None) or (r.evento.preparatoria if r.evento else None)
+        partes = [str(prepa) if prepa else 'Sin preparatoria']
+        if p and p.carrera:
+            partes.append(str(p.carrera))
+        partes.append(timezone.localtime(r.enviada_en).strftime('%H:%M'))
+        espera = r.estado == EstadoRespuesta.CUARENTENA
+        titulo = 'Nuevo registro: espera el permiso de su familia' if espera else 'Nuevo registro de alumno'
+        if p and not espera and p.consentimiento and not p.anonimizado_en:
+            url = reverse('admin:prospectos_prospecto_change', args=[p.pk])
+        else:
+            url = reverse('prospectos:respuesta', args=[r.pk])
+        for u in usuarios:
+            avisar(u, TipoAviso.REGISTRO, f'registro:{r.pk}', titulo, ' · '.join(partes)[:300], url=url)
+    return len(rs)
 
 
 def registrados_en_mis_visitas() -> int:

@@ -8,8 +8,8 @@ Dos pantallas para el día a día, en lugar de cinco que mostraban a las mismas 
       Familias (encuesta de padres ↔ alumno; pantalla existente) · Duplicados (la misma persona dos veces).
       Cada par se muestra UNA vez aunque haya propuestas en los dos sentidos.
 
-«Dar de baja» anonimiza (seguridad.anonimizar): borra nombre, contactos y texto libre, conserva la cifra anónima
-para los reportes y queda en la bitácora. No se borra el registro (regla del proyecto y de la ley de datos personales).
+«Dar de baja» anonimiza (seguridad.anonimizar): borra nombre, contactos y texto libre y queda en la bitácora. El
+prospecto pasa a la pestaña «Bajas» con su motivo y deja de contar como interesado (reportables() lo excluye). No se borra el registro (regla del proyecto y de la ley de datos personales).
 """
 
 from datetime import timedelta
@@ -35,6 +35,7 @@ PESTANAS = [
     ('todos', 'Todos', 'groups', 'Todos los aspirantes con permiso, también inscritos, descartados y los que no quieren información.'),
     ('permiso', 'Esperando permiso', 'hourglass_top', 'Menores de edad sin el permiso de su familia: no se usan hasta tenerlo.'),
     ('forms', 'Respuestas de los Forms', 'inbox', 'Cada envío de los Forms tal como llegó, con su estado.'),
+    ('bajas', 'Bajas', 'person_off', 'Dados de baja: sin datos personales y fuera de las cifras de interesados. Aquí tienen su propia cuenta.'),
 ]
 MOTIVOS_BAJA = [
     ('derecho_arco', 'Pidió que se borren sus datos'),
@@ -67,6 +68,14 @@ def _respuestas_visibles(request):
     u = request.user
     if not u.is_superuser and u.has_perm('prospectos.ver_propios'):
         qs = qs.filter(Q(promotor=u) | Q(prospecto__promotor=u))
+    return qs
+
+
+def _bajas_visibles(request):
+    qs = Prospecto.objects.bajas()
+    u = request.user
+    if not u.is_superuser and u.has_perm('prospectos.ver_propios'):
+        qs = qs.filter(Q(promotor=u) | Q(asesor=u))
     return qs
 
 
@@ -151,6 +160,7 @@ def bandeja(request, ver=None):
         'llamar': _base(request, 'llamar').count() if puede_llamar else None,
         'nuevos': _base(request, 'nuevos').count(),
         'permiso': _respuestas_visibles(request).filter(estado=EstadoRespuesta.CUARENTENA).count(),
+        'bajas': _bajas_visibles(request).count(),
     }
     pestanas = [{'clave': c, 'titulo': t, 'icono': i, 'ayuda': a, 'n': cuentas.get(c),
                  'url': reverse('prospectos:prospectos_ver', args=[c])}
@@ -158,12 +168,30 @@ def bandeja(request, ver=None):
     actual = next(p for p in pestanas if p['clave'] == ver)
 
     ctx = {'ver': ver, 'pestanas': pestanas, 'actual': actual, 'f': f, 'es_respuestas': ver in ('permiso', 'forms'),
+           'es_bajas': ver == 'bajas',
            'planteles': catalogos.PLANTELES_CORTO.items(), 'segmentos': [s for s in Segmento.choices],
            'estatuses': Estatus.choices, 'puede_baja': puede_dar_de_baja(u), 'motivos_baja': MOTIVOS_BAJA,
            'hay_tutor': reportes.formulario_activo(Cuestionario.TUTOR), 'puede_editar': puede_llamar,
            'filtros_activos': any(f.get(k) for k in ('q', 'plantel', 'canal', 'segmento', 'estatus', 'mios', 'tareas', 'brecha', 'tipo', 'estado'))}
 
-    if ctx['es_respuestas']:
+    if ctx['es_bajas']:
+        qs = _bajas_visibles(request).select_related('preparatoria', 'carrera').order_by('-baja_en')
+        todas = qs
+        if f.get('motivo') in dict(MOTIVOS_BAJA):
+            qs = qs.filter(baja_motivo=f['motivo'])
+        if f.get('plantel') in catalogos.PLANTELES:
+            qs = qs.filter(plantel=f['plantel'])
+        if f.get('q'):
+            qs = qs.filter(preparatoria__nombre__icontains=f['q'].strip())
+        pagina = Paginator(qs, POR_PAGINA).get_page(f.get('pagina'))
+        etiquetas = {k: e.replace(' (escríbelo)', '') for k, e in MOTIVOS_BAJA}
+        ctx['filas'] = [{'p': p, 'motivo': etiquetas.get(p.baja_motivo, 'Sin motivo')} for p in pagina]
+        conteo = dict(todas.values_list('baja_motivo').annotate(n=Count('id')))
+        inicio_mes = timezone.localdate().replace(day=1)
+        ctx['resumen_bajas'] = {'total': todas.count(), 'mes': todas.filter(baja_en__date__gte=inicio_mes).count(),
+                                'motivos': [(k, etiquetas[k], conteo.get(k, 0)) for k, _ in MOTIVOS_BAJA]}
+        ctx['filtros_activos'] = any(f.get(k) for k in ('q', 'plantel', 'motivo'))
+    elif ctx['es_respuestas']:
         qs = _respuestas_visibles(request).prefetch_related('items').order_by('-enviada_en')
         if ver == 'permiso':
             qs = qs.filter(estado=EstadoRespuesta.CUARENTENA)
@@ -214,8 +242,9 @@ def dar_de_baja(request, pk):
         return redirect(volver)
     nombre = p.nombre_aspirante
     seguridad.anonimizar(p, motivo, descartar_respuestas=True)
+    Prospecto.objects.filter(pk=p.pk).update(baja_en=timezone.now(), baja_motivo=motivo)  # cifra aparte, fuera de interesados
     auditoria.registrar('dar_de_baja', p, {'motivo': motivo, 'nota': nota}, request=request)
-    messages.success(request, f'{nombre} quedó dado(a) de baja: se borraron sus datos personales y queda solo como cifra anónima.')
+    messages.success(request, f'{nombre} quedó dado(a) de baja: se borraron sus datos personales y pasó a la pestaña «Bajas». Ya no cuenta como interesado.')
     return redirect(volver)
 
 

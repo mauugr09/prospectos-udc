@@ -195,6 +195,8 @@ def importar(formulario: Formulario, fuente=None) -> Importacion:
         except Exception:  # noqa: BLE001 - sin conexión: la importación de abajo registra el error
             pass
     marca = formulario.ultima_respuesta_en
+    primera_vez = marca is None
+    tope_respuestas = Respuesta.objects.order_by('-pk').values_list('pk', flat=True).first() or 0
     desde = marca - timedelta(minutes=settings.PROSPECTOS['TRASLAPE_MINUTOS']) if marca else None
     try:
         for cruda in fuente.respuestas(formulario, desde):
@@ -207,6 +209,11 @@ def importar(formulario: Formulario, fuente=None) -> Importacion:
         formulario.errores_consecutivos = 0
         formulario.save()
         registro.estado = 'ok'
+        try:  # la campanita: un aviso por alumno nuevo (o uno con la cifra si son muchos)
+            from . import avisos
+            avisos.registros_nuevos(formulario, tope_respuestas, primera_vez)
+        except Exception:  # noqa: BLE001 - un aviso que falla no debe tumbar la importación
+            log.exception('No se pudieron crear los avisos de registros nuevos')
     except Exception as e:  # noqa: BLE001 - se registra por formulario y se sigue
         # La marca de agua NO avanza: lo procesado es idempotente y lo pendiente se reintenta.
         msg = f'{type(e).__name__}: {e}'[:2000]
